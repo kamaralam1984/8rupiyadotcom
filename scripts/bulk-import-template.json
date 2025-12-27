@@ -1,0 +1,33 @@
+[
+  {
+    "shop_name": "Example Restaurant",
+    "main_image_url": "https://example.com/image.jpg",
+    "full_address": "123 Main Street, Area Name, Patna, Bihar - 800001",
+    "area": "Area Name",
+    "city": "Patna",
+    "state": "Bihar",
+    "pincode": "800001",
+    "latitude": "25.5941",
+    "longitude": "85.1376",
+    "phone_number": "+91-1234567890",
+    "category": "Restaurants",
+    "rating": "4.5",
+    "website_url": "https://example.com"
+  },
+  {
+    "shop_name": "Another Shop",
+    "main_image_url": "",
+    "full_address": "456 Second Street, Another Area, Patna, Bihar - 800002",
+    "area": "Another Area",
+    "city": "Patna",
+    "state": "Bihar",
+    "pincode": "800002",
+    "latitude": "25.5950",
+    "longitude": "85.1380",
+    "phone_number": "+91-9876543210",
+    "category": "Shops",
+    "rating": "4.0",
+    "website_url": ""
+  }
+]
+
