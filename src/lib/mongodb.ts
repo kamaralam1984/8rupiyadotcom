@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { registerAllModels } from '@/models';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/8rupiya';
 
@@ -61,6 +62,9 @@ async function connectDB() {
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .then((mongoose) => {
         console.log('✅ MongoDB connected successfully');
+        // Register all models to prevent schema registration errors
+        registerAllModels();
+        console.log('✅ All models registered');
         return mongoose;
       })
       .catch((error) => {
