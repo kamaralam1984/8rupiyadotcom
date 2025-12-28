@@ -5,6 +5,9 @@ import { existsSync, mkdirSync } from 'fs';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/types/user';
 
+// Force Node.js runtime for file system operations
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
