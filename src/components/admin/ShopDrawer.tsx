@@ -60,6 +60,7 @@ interface Shop {
   isFeatured: boolean;
   rating: number;
   reviewCount: number;
+  visitorCount?: number;
   rankScore: number;
   manualRank?: number;
   homepagePriority: number;
@@ -84,6 +85,10 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+  const [increasingVisitors, setIncreasingVisitors] = useState(false);
 
   useEffect(() => {
     fetchShopDetails();
@@ -181,6 +186,111 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
     }
   };
 
+  const handleEdit = () => {
+    if (shop) {
+      setEditFormData({
+        name: shop.name,
+        description: shop.description,
+        category: shop.category,
+        address: shop.address,
+        area: shop.area || '',
+        city: shop.city,
+        state: shop.state,
+        pincode: shop.pincode,
+        phone: shop.phone,
+        email: shop.email,
+        website: shop.website || '',
+        latitude: shop.location?.coordinates?.[1]?.toString() || '',
+        longitude: shop.location?.coordinates?.[0]?.toString() || '',
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login again');
+        return;
+      }
+
+      // Prepare update data with location coordinates
+      const updateData: any = { ...editFormData };
+      
+      // Update location if latitude and longitude are provided
+      if (updateData.latitude && updateData.longitude) {
+        updateData.location = {
+          type: 'Point',
+          coordinates: [parseFloat(updateData.longitude), parseFloat(updateData.latitude)], // [longitude, latitude]
+        };
+        // Remove latitude and longitude from updateData as they're not part of the schema
+        delete updateData.latitude;
+        delete updateData.longitude;
+      }
+
+      const response = await fetch(`/api/shops/${shopId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        alert('Shop updated successfully!');
+        setIsEditing(false);
+        fetchShopDetails(); // Refresh shop data
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update shop');
+      }
+    } catch (err: any) {
+      alert('Failed to update shop: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleIncreaseVisitors = async (amount: number) => {
+    if (!confirm(`Add ${amount} visitors to this shop?`)) {
+      return;
+    }
+
+    try {
+      setIncreasingVisitors(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please login again');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/shops/${shopId}/visitors`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || `Successfully added ${amount} visitors!`);
+        fetchShopDetails(); // Refresh shop data
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to increase visitors');
+      }
+    } catch (err: any) {
+      alert('Failed to increase visitors: ' + err.message);
+    } finally {
+      setIncreasingVisitors(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 overflow-hidden">
@@ -204,13 +314,26 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Details</h2>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <FiX className="text-2xl" />
-              </button>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {isEditing ? 'Edit Shop' : 'Shop Details'}
+              </h2>
+              <div className="flex items-center gap-2">
+                {!isEditing && shop && (
+                  <button
+                    onClick={handleEdit}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-blue-600"
+                    title="Edit Shop"
+                  >
+                    <FiEdit className="text-xl" />
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <FiX className="text-2xl" />
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -225,6 +348,186 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
                 </div>
               ) : shop ? (
                 <>
+                  {isEditing ? (
+                    /* Edit Form */
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Shop Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.name || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Description *
+                        </label>
+                        <textarea
+                          value={editFormData.description || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Category *
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.category || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            City *
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.city || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Address *
+                        </label>
+                        <textarea
+                          value={editFormData.address || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            State *
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.state || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Pincode *
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.pincode || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, pincode: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Phone *
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.phone || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Email *
+                          </label>
+                          <input
+                            type="email"
+                            value={editFormData.email || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Website
+                        </label>
+                        <input
+                          type="url"
+                          value={editFormData.website || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, website: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Area
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.area || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, area: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Latitude *
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            value={editFormData.latitude || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, latitude: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="e.g., 25.5941"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Longitude *
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            value={editFormData.longitude || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, longitude: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            placeholder="e.g., 85.1376"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-4 pt-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleSaveEdit}
+                          disabled={saving}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Save Changes'}
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setIsEditing(false)}
+                          className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          Cancel
+                        </motion.button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                   {/* Shop Images */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
@@ -276,7 +579,7 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                            shop.status === 'approved'
+                            shop.status === 'active' || shop.status === 'approved'
                               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                               : shop.status === 'pending'
                               ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
@@ -567,6 +870,45 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
                     </div>
                   )}
 
+                  {/* Visitor Management */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <FiUser /> Visitor Management
+                    </h3>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Current Visitors</p>
+                          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                            {shop.visitorCount || 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Increase Visitors</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          {[100, 200, 300].map((amount) => (
+                            <motion.button
+                              key={amount}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleIncreaseVisitors(amount)}
+                              disabled={increasingVisitors}
+                              className="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              +{amount}
+                            </motion.button>
+                          ))}
+                        </div>
+                        {increasingVisitors && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                            Updating visitors...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Timestamps */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
@@ -587,6 +929,8 @@ export default function ShopDrawer({ shopId, onClose }: ShopDrawerProps) {
                       </div>
                     </div>
                   </div>
+                    </>
+                  )}
                 </>
               ) : null}
             </div>

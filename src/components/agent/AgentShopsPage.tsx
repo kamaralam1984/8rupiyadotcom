@@ -53,6 +53,7 @@ export default function AgentShopsPage() {
     contactPerson: '',
     email: '',
     // Step 2: Location
+    area: '',
     latitude: '',
     longitude: '',
     city: '',
@@ -68,46 +69,70 @@ export default function AgentShopsPage() {
   });
   const [plans, setPlans] = useState<Array<{ _id: string; name: string; price: number }>>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [categories, setCategories] = useState<Array<{ _id: string; name: string; slug: string }>>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Fetch plans
-    const fetchPlans = async () => {
-      setLoadingPlans(true);
-      try {
-        const response = await fetch('/api/plans');
-        const data = await response.json();
-        
-        console.log('Plans API response:', data);
-        
-        if (response.ok && data.success && data.plans && Array.isArray(data.plans)) {
-          if (data.plans.length > 0) {
-            const formattedPlans = data.plans.map((plan: any) => ({
-              _id: plan._id || plan._id?.toString() || '',
-              name: plan.name || 'Unknown Plan',
-              price: plan.price || 0,
-            })).filter((plan: any) => plan._id); // Filter out invalid plans
-            
-            setPlans(formattedPlans);
-            console.log('Plans loaded successfully:', formattedPlans.length, formattedPlans);
-          } else {
-            console.warn('No plans found in database. Please initialize plans.');
-            setPlans([]);
-          }
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setCategories(data.categories || []);
+      } else {
+        console.error('Failed to fetch categories:', data.error);
+        setCategories([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch categories:', err);
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const fetchPlans = async () => {
+    setLoadingPlans(true);
+    try {
+      const response = await fetch('/api/plans');
+      const data = await response.json();
+      
+      console.log('Plans API response:', data);
+      
+      if (response.ok && data.success && data.plans && Array.isArray(data.plans)) {
+        if (data.plans.length > 0) {
+          const formattedPlans = data.plans.map((plan: any) => ({
+            _id: plan._id || plan._id?.toString() || '',
+            name: plan.name || 'Unknown Plan',
+            price: plan.price || 0,
+          })).filter((plan: any) => plan._id); // Filter out invalid plans
+          
+          setPlans(formattedPlans);
+          console.log('Plans loaded successfully:', formattedPlans.length, formattedPlans);
         } else {
-          console.error('Failed to fetch plans:', data.error || 'Unknown error');
+          console.warn('No plans found in database. Please initialize plans.');
           setPlans([]);
         }
-      } catch (err: any) {
-        console.error('Error fetching plans:', err);
+      } else {
+        console.error('Failed to fetch plans:', data.error || 'Unknown error');
         setPlans([]);
-      } finally {
-        setLoadingPlans(false);
       }
-    };
+    } catch (err: any) {
+      console.error('Error fetching plans:', err);
+      setPlans([]);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch plans and categories
     fetchPlans();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -233,6 +258,7 @@ export default function AgentShopsPage() {
         address: '',
         contactPerson: '',
         email: '',
+        area: '',
         latitude: '',
         longitude: '',
         city: '',
@@ -348,6 +374,7 @@ export default function AgentShopsPage() {
         description: formData.address || formData.name, // Use address as description
         category: formData.category,
         address: formData.address,
+        area: formData.area || '',
         city: formData.city || 'Patna',
         state: formData.state || 'Bihar',
         pincode: formData.pincode,
@@ -566,7 +593,7 @@ export default function AgentShopsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredShops.map((shop) => (
                 <motion.tr
                   key={shop._id}
@@ -791,24 +818,26 @@ export default function AgentShopsPage() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Category: *
                           </label>
-                          <select
-                            required
-                            value={formData.category || ''}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                          >
-                            <option value="">-- Select Category --</option>
-                            <option value="Retail">Retail</option>
-                            <option value="Restaurant">Restaurant</option>
-                            <option value="Electronics">Electronics</option>
-                            <option value="Clothing">Clothing</option>
-                            <option value="Grocery">Grocery</option>
-                            <option value="Pharmacy">Pharmacy</option>
-                            <option value="Hardware">Hardware</option>
-                            <option value="Jewelry">Jewelry</option>
-                            <option value="Automobile">Automobile</option>
-                            <option value="Furniture">Furniture</option>
-                          </select>
+                          {loadingCategories ? (
+                            <div className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                              <span className="text-gray-600 dark:text-gray-400">Loading categories...</span>
+                            </div>
+                          ) : (
+                            <select
+                              required
+                              value={formData.category || ''}
+                              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            >
+                              <option value="">-- Select Category --</option>
+                              {categories.map((cat) => (
+                                <option key={cat._id} value={cat.name}>
+                                  {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
 
                         <div>
@@ -852,6 +881,20 @@ export default function AgentShopsPage() {
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                           />
                         </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            City: *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={formData.city || ''}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            placeholder="Enter city name"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -874,6 +917,19 @@ export default function AgentShopsPage() {
                             required
                             value={formData.address || ''}
                             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Area (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.area || ''}
+                            onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                            placeholder="Enter area/locality (e.g., Kankarbagh, Patna)"
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                           />
                         </div>

@@ -21,13 +21,25 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       if (status === 'pending') {
-        // Pending shops = shops that are not approved (pending, rejected, or expired)
-        query.status = { $ne: ShopStatus.APPROVED };
+        // Only return shops with pending status
+        query.status = ShopStatus.PENDING;
+      } else if (status === 'active') {
+        // Active shops (approved by admin/accountant) - include both active and approved for backward compatibility
+        query.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
+      } else if (status === 'approved') {
+        // For backward compatibility, also include 'approved' status
+        query.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
+      } else if (status === 'expired') {
+        // Expired shops = active/approved shops with expired plan
+        query.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
+        query.planExpiry = { $lt: new Date() };
       } else {
+        // For rejected - use exact status match
         query.status = status;
       }
     } else {
-      query.status = ShopStatus.APPROVED; // Default to approved for public
+      // Default to active shops for public (website) - include both active and approved
+      query.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
     }
 
     if (category) {
@@ -38,6 +50,11 @@ export async function GET(req: NextRequest) {
       query.city = { $regex: city, $options: 'i' };
     }
 
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Shops API Query:', JSON.stringify(query, null, 2));
+    }
+
     const shops = await Shop.find(query)
       .populate('planId')
       .populate('shopperId', 'name email phone')
@@ -45,13 +62,55 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .skip(skip);
 
-    const total = await Shop.countDocuments(query);
+    // Additional client-side filtering to ensure correct status
+    let filteredShops = shops;
+    if (status === 'pending') {
+      filteredShops = shops.filter(s => s.status === ShopStatus.PENDING);
+    } else if (status === 'active' || status === 'approved') {
+      // Show both active and approved shops (for backward compatibility)
+      filteredShops = shops.filter(s => s.status === ShopStatus.ACTIVE || s.status === ShopStatus.APPROVED);
+    } else if (status === 'expired') {
+      filteredShops = shops.filter(s => {
+        return (s.status === ShopStatus.ACTIVE || s.status === ShopStatus.APPROVED) && s.planExpiry && new Date(s.planExpiry) < new Date();
+      });
+    } else if (status === 'rejected') {
+      filteredShops = shops.filter(s => s.status === ShopStatus.REJECTED);
+    }
+
+    // Calculate total count based on the actual filtered results
+    // Build count query separately to ensure accuracy
+    let countQuery: any = {};
+    
+    if (status === 'pending') {
+      countQuery.status = ShopStatus.PENDING;
+    } else if (status === 'active' || status === 'approved') {
+      // Count both active and approved shops (for backward compatibility)
+      countQuery.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
+    } else if (status === 'expired') {
+      // Count active/approved shops with expired planExpiry
+      countQuery.status = { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] };
+      countQuery.planExpiry = { $lt: new Date() };
+    } else if (status === 'rejected') {
+      countQuery.status = ShopStatus.REJECTED;
+    } else {
+      countQuery = query;
+    }
+    
+    // Apply category and city filters to count query
+    if (category) {
+      countQuery.category = { $regex: category, $options: 'i' };
+    }
+    if (city) {
+      countQuery.city = { $regex: city, $options: 'i' };
+    }
+    
+    const total = await Shop.countDocuments(countQuery);
 
     return NextResponse.json({
-      shops,
+      shops: filteredShops,
       page,
       limit,
-      total,
+      total: total,
       pages: Math.ceil(total / limit),
     });
   } catch (error: any) {
@@ -74,13 +133,28 @@ export const POST = withAuth(async (req: AuthRequest) => {
 
     const shopData: any = {
       ...body,
+      // Always set status to PENDING for new shops - cannot be overridden
       status: ShopStatus.PENDING,
       shopperId: user.role === UserRole.SHOPPER ? user.userId : body.shopperId,
     };
+    
+    // Ensure status is always PENDING (override any status from body)
+    shopData.status = ShopStatus.PENDING;
 
     // Set agent/operator IDs based on role
     if (user.role === UserRole.AGENT) {
       shopData.agentId = user.userId;
+      // Find approved operator for this agent
+      const AgentRequest = (await import('@/models/AgentRequest')).default;
+      const RequestStatus = (await import('@/models/AgentRequest')).RequestStatus;
+      const approvedRequest = await AgentRequest.findOne({
+        agentId: user.userId,
+        status: RequestStatus.APPROVED
+      }).sort({ createdAt: 1 }); // Get the first approved operator
+      
+      if (approvedRequest) {
+        shopData.operatorId = approvedRequest.operatorId;
+      }
     } else if (user.role === UserRole.OPERATOR) {
       shopData.operatorId = user.userId;
       // Get agentId from operator's profile

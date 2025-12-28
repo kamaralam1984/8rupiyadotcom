@@ -44,6 +44,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="format-detection" content="telephone=yes" />
         <link rel="canonical" href="https://8rupiya.com" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicon_192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
@@ -57,7 +61,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <LanguageProvider>
-          {children}
+        {children}
         </LanguageProvider>
       </body>
     </html>

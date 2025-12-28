@@ -16,7 +16,6 @@ import AdvertisementBanner from './AdvertisementBanner';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from './LanguageSwitcher';
 
 interface Shop {
   _id?: string;
@@ -484,7 +483,7 @@ export default function HomepageClient() {
         className="relative bg-black/95 backdrop-blur-md shadow-lg border-b border-gray-800/50 sticky top-0 z-50"
         role="banner"
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-[8.4px] sm:py-[11.2px]">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             {/* Logo and Connection Status */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -517,8 +516,16 @@ export default function HomepageClient() {
 
             {/* Login/Register or User Profile */}
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
-              {/* Language Switcher */}
-              <LanguageSwitcher />
+              {/* ADD SHOP Button */}
+              <Link
+                href="/add-shop"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base flex items-center gap-1 sm:gap-2"
+                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+              >
+                <FiShoppingBag className="text-base sm:text-lg" />
+                <span className="hidden sm:inline">ADD SHOP</span>
+                <span className="sm:hidden">SHOP</span>
+              </Link>
               
               {userLoading ? (
                 <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>

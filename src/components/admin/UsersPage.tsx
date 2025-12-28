@@ -97,7 +97,13 @@ export default function UsersPage({ role }: UsersPageProps) {
       console.log('Fetch users response:', { status: response.status, data });
       
       if (response.ok && data.success) {
-        setUsers(data.users || []);
+        // Ensure role is included for each user
+        const usersWithRole = (data.users || []).map((user: any) => ({
+          ...user,
+          role: user.role || role, // Fallback to page role if not provided
+        }));
+        console.log('Users with roles:', usersWithRole); // Debug log
+        setUsers(usersWithRole);
       } else {
         if (response.status === 403) {
           setError('Access denied. Please ensure you are logged in as an admin user.');
@@ -209,6 +215,46 @@ export default function UsersPage({ role }: UsersPageProps) {
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(data.error || 'Failed to update user');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login again');
+        setSubmitting(false);
+        return;
+      }
+
+      const response = await fetch(`/api/admin/users/delete?userId=${user._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSuccess(data.message || 'User deleted successfully');
+        fetchUsers();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.error || 'Failed to delete user');
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -424,6 +470,9 @@ export default function UsersPage({ role }: UsersPageProps) {
                   Phone
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
@@ -431,7 +480,7 @@ export default function UsersPage({ role }: UsersPageProps) {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {users.map((user) => (
                 <motion.tr
                   key={user._id}
@@ -452,6 +501,29 @@ export default function UsersPage({ role }: UsersPageProps) {
                   </td>
                   <td className="px-6 py-4 text-gray-900 dark:text-white">{user.email}</td>
                   <td className="px-6 py-4 text-gray-900 dark:text-white">{user.phone}</td>
+                  <td className="px-6 py-4">
+                    {user.role ? (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        user.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                          : user.role === 'agent'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                          : user.role === 'operator'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          : user.role === 'accountant'
+                          ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                          : user.role === 'shopper'
+                          ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
+                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleToggleActive(user)}
@@ -482,7 +554,11 @@ export default function UsersPage({ role }: UsersPageProps) {
                         <FiEdit />
                         Edit
                       </button>
-                      <button className="text-red-600 hover:text-red-800 dark:text-red-400 flex items-center gap-1">
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={submitting}
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <FiTrash2 />
                         Delete
                       </button>

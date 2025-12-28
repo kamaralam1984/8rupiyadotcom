@@ -2,7 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export enum ShopStatus {
   PENDING = 'pending',
-  APPROVED = 'approved',
+  ACTIVE = 'active',
+  APPROVED = 'approved', // Keep for backward compatibility
   REJECTED = 'rejected',
 }
 
@@ -41,6 +42,7 @@ export interface IShop extends Document {
   homepagePriority: number;
   rating: number;
   reviewCount: number;
+  visitorCount: number; // Total visitors/views
   // Plan-based fields
   photos: string[]; // Array of photo URLs
   offers: Array<{
@@ -101,6 +103,7 @@ const ShopSchema = new Schema<IShop>(
     homepagePriority: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
+    visitorCount: { type: Number, default: 0 },
     // Plan-based fields
     photos: [{ type: String }],
     offers: [{

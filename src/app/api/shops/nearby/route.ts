@@ -78,8 +78,8 @@ export async function GET(req: NextRequest) {
 
     const mergedShops: MergedShop[] = [];
 
-    // 1. Get shops from MongoDB
-    let mongoQuery: any = { status: ShopStatus.APPROVED };
+    // 1. Get shops from MongoDB (only active shops for website)
+    let mongoQuery: any = { status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] } };
 
     // If we have valid coordinates, use $near to get shops within 500km radius
     // This is more efficient than fetching all shops

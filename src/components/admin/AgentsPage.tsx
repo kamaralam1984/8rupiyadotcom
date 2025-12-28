@@ -54,7 +54,8 @@ export default function AgentsPage() {
         return;
       }
 
-      const response = await fetch('/api/admin/users?role=agent', {
+      // Fetch agents with real stats from API
+      const response = await fetch('/api/admin/agents/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -63,55 +64,18 @@ export default function AgentsPage() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Map users to agents with performance data
-        const agentsWithStats = await Promise.all(
-          (data.users || []).map(async (user: any) => {
-            // Fetch stats for each agent (you can implement real API calls here)
-            const stats = await fetchAgentStats(user._id);
-            return {
-              _id: user._id,
-              name: user.name,
-              email: user.email,
-              phone: user.phone,
-              shops: stats.shops,
-              earnings: stats.earnings,
-              operators: stats.operators,
-              isActive: user.isActive,
-              createdAt: user.createdAt,
-            };
-          })
-        );
-        setAgents(agentsWithStats);
+        setAgents(data.agents || []);
       } else {
-        // Fallback to mock data
-        setAgents([
-          { _id: '1', name: 'Rahul Sharma', email: 'rahul@example.com', phone: '9876543210', shops: 25, earnings: 125000, operators: 5, isActive: true, createdAt: '2024-01-10' },
-          { _id: '2', name: 'Mohit Patel', email: 'mohit@example.com', phone: '9876543211', shops: 18, earnings: 95000, operators: 3, isActive: true, createdAt: '2024-01-12' },
-          { _id: '3', name: 'Amit Kumar', email: 'amit@example.com', phone: '9876543212', shops: 32, earnings: 180000, operators: 8, isActive: false, createdAt: '2024-01-15' },
-        ]);
+        setError(data.error || 'Failed to fetch agents');
+        setAgents([]);
       }
     } catch (err: any) {
       console.error('Error fetching agents:', err);
       setError(err.message || 'Failed to fetch agents');
-      // Fallback to mock data
-      setAgents([
-        { _id: '1', name: 'Rahul Sharma', email: 'rahul@example.com', phone: '9876543210', shops: 25, earnings: 125000, operators: 5, isActive: true, createdAt: '2024-01-10' },
-        { _id: '2', name: 'Mohit Patel', email: 'mohit@example.com', phone: '9876543211', shops: 18, earnings: 95000, operators: 3, isActive: true, createdAt: '2024-01-12' },
-        { _id: '3', name: 'Amit Kumar', email: 'amit@example.com', phone: '9876543212', shops: 32, earnings: 180000, operators: 8, isActive: false, createdAt: '2024-01-15' },
-      ]);
+      setAgents([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchAgentStats = async (agentId: string) => {
-    // TODO: Implement real API call to fetch agent stats
-    // For now, return mock data
-    return {
-      shops: Math.floor(Math.random() * 50) + 10,
-      earnings: Math.floor(Math.random() * 200000) + 50000,
-      operators: Math.floor(Math.random() * 10) + 1,
-    };
   };
 
   useEffect(() => {
@@ -364,6 +328,7 @@ export default function AgentsPage() {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Agent</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Shops</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Earnings</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Operators</th>
@@ -371,7 +336,7 @@ export default function AgentsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {agents.map((agent) => (
                 <motion.tr
                   key={agent._id}
@@ -390,6 +355,11 @@ export default function AgentsPage() {
                         <p className="text-xs text-gray-400 dark:text-gray-500">ID: {agent._id}</p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      Agent
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-gray-900 dark:text-white">{agent.shops}</td>
                   <td className="px-6 py-4 text-gray-900 dark:text-white">₹{agent.earnings.toLocaleString()}</td>

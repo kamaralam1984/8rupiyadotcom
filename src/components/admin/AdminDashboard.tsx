@@ -9,7 +9,10 @@ import {
   FiUsers,
   FiTrendingUp,
   FiEye,
+  FiUser,
+  FiArrowRight,
 } from 'react-icons/fi';
+import Link from 'next/link';
 import {
   LineChart,
   Line,
@@ -45,11 +48,18 @@ interface PendingShop {
   createdAt: string;
 }
 
+interface ChartData {
+  monthlyRevenue: Array<{ name: string; revenue: number }>;
+  dailyShops: Array<{ name: string; shops: number }>;
+  planDistribution: Array<{ name: string; value: number }>;
+}
+
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pendingShops, setPendingShops] = useState<PendingShop[]>([]);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
   const [selectedShop, setSelectedShop] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [adminExists, setAdminExists] = useState<boolean | null>(null);
@@ -70,22 +80,62 @@ export default function AdminDashboard() {
     checkAdmin();
 
     // Fetch dashboard data
-    setTimeout(() => {
-      setStats({
-        totalShops: 1250,
-        activeShops: 980,
-        totalRevenue: 1250000,
-        agents: 45,
-        operators: 120,
-        todaySales: 12500,
-      });
-      setPendingShops([
-        { _id: '1', name: 'ABC Store', agentName: 'Rahul', planName: 'Pro', planPrice: 3000, createdAt: '2024-01-15' },
-        { _id: '2', name: 'XYZ Shop', agentName: 'Mohit', planName: 'Basic', planPrice: 200, createdAt: '2024-01-16' },
-        { _id: '3', name: 'Super Mart', agentName: 'Amit', planName: 'Business', planPrice: 4000, createdAt: '2024-01-17' },
-      ]);
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/admin/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Dashboard API error:', response.status, errorData);
+          
+          if (response.status === 401 || response.status === 403) {
+            // Token invalid or user not admin - redirect to login
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+            return;
+          }
+          
+          throw new Error(errorData.error || errorData.message || 'Failed to fetch dashboard data');
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+          setStats(data.stats);
+          setPendingShops(data.pendingShops || []);
+          setChartData(data.charts || null);
+        } else {
+          throw new Error(data.error || 'Failed to fetch dashboard data');
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        // Set default values on error
+        setStats({
+          totalShops: 0,
+          activeShops: 0,
+          totalRevenue: 0,
+          agents: 0,
+          operators: 0,
+          todaySales: 0,
+        });
+        setPendingShops([]);
+        setChartData(null);
+      } finally {
       setLoading(false);
-    }, 1000);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   const handleInitAdmin = async () => {
@@ -112,33 +162,27 @@ export default function AdminDashboard() {
     }
   };
 
-  // Chart data
-  const revenueData = [
-    { name: 'Jan', revenue: 120000 },
-    { name: 'Feb', revenue: 150000 },
-    { name: 'Mar', revenue: 180000 },
-    { name: 'Apr', revenue: 200000 },
-    { name: 'May', revenue: 220000 },
-    { name: 'Jun', revenue: 250000 },
+  // Chart data - use real data from API or fallback to empty
+  const revenueData = chartData?.monthlyRevenue || [
+    { name: 'Jan', revenue: 0 },
+    { name: 'Feb', revenue: 0 },
+    { name: 'Mar', revenue: 0 },
+    { name: 'Apr', revenue: 0 },
+    { name: 'May', revenue: 0 },
+    { name: 'Jun', revenue: 0 },
   ];
 
-  const shopsData = [
-    { name: 'Mon', shops: 12 },
-    { name: 'Tue', shops: 19 },
-    { name: 'Wed', shops: 15 },
-    { name: 'Thu', shops: 22 },
-    { name: 'Fri', shops: 18 },
-    { name: 'Sat', shops: 25 },
-    { name: 'Sun', shops: 20 },
+  const shopsData = chartData?.dailyShops || [
+    { name: 'Mon', shops: 0 },
+    { name: 'Tue', shops: 0 },
+    { name: 'Wed', shops: 0 },
+    { name: 'Thu', shops: 0 },
+    { name: 'Fri', shops: 0 },
+    { name: 'Sat', shops: 0 },
+    { name: 'Sun', shops: 0 },
   ];
 
-  const planData = [
-    { name: 'Starter', value: 150 },
-    { name: 'Basic', value: 200 },
-    { name: 'Pro', value: 80 },
-    { name: 'Business', value: 50 },
-    { name: 'Enterprise', value: 30 },
-  ];
+  const planData = chartData?.planDistribution || [];
 
   const statCards = [
     { icon: FiShoppingBag, label: 'Total Shops', value: stats?.totalShops || 0, color: 'from-blue-500 to-blue-600' },
@@ -227,6 +271,60 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* Quick Links to Panels */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Access to Panels</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/agent"
+            className="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:shadow-xl transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <FiUser className="text-2xl" />
+                  <h3 className="text-lg font-bold">Agent Panel</h3>
+                </div>
+                <p className="text-blue-100 text-sm">Manage agent operations and shops</p>
+              </div>
+              <FiArrowRight className="text-xl group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/operator"
+            className="group relative overflow-hidden bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-6 text-white hover:shadow-xl transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <FiUsers className="text-2xl" />
+                  <h3 className="text-lg font-bold">Operator Panel</h3>
+                </div>
+                <p className="text-green-100 text-sm">View operator details and agents</p>
+              </div>
+              <FiArrowRight className="text-xl group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/operators"
+            className="group relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg p-6 text-white hover:shadow-xl transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <FiUsers className="text-2xl" />
+                  <h3 className="text-lg font-bold">Operator Details</h3>
+                </div>
+                <p className="text-purple-100 text-sm">View detailed operator information</p>
+              </div>
+              <FiArrowRight className="text-xl group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+        </div>
+      </div>
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
@@ -237,9 +335,9 @@ export default function AdminDashboard() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
+              <Tooltip formatter={(value: any) => `₹${value.toLocaleString()}`} />
               <Legend />
-              <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} />
+              <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -263,25 +361,33 @@ export default function AdminDashboard() {
       {/* Plan Distribution */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Plan Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={planData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {planData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
+        {planData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+            <FiShoppingBag className="text-4xl text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="text-lg font-medium">No plan data available</p>
+            <p className="text-sm">Shops with plans will appear here</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={planData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {planData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Pending Shops */}
@@ -315,7 +421,18 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {pendingShops.map((shop) => (
+              {pendingShops.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <FiShoppingBag className="text-4xl text-gray-300 dark:text-gray-600" />
+                      <p className="text-lg font-medium">No pending shops</p>
+                      <p className="text-sm">All shops have been reviewed</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                pendingShops.map((shop) => (
                 <motion.tr
                   key={shop._id}
                   initial={{ opacity: 0 }}
@@ -335,7 +452,11 @@ export default function AdminDashboard() {
                     ₹{shop.planPrice.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                    {shop.createdAt}
+                    {new Date(shop.createdAt).toLocaleDateString('en-IN', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
@@ -347,7 +468,8 @@ export default function AdminDashboard() {
                     </button>
                   </td>
                 </motion.tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>

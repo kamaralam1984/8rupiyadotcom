@@ -44,6 +44,7 @@ interface FormData {
   category: string;
   pincode: string;
   area: string;
+  city: string;
   fullAddress: string;
   
   // SEO Fields
@@ -60,6 +61,8 @@ interface FormData {
     lat: number;
     lng: number;
   } | null;
+  manualLatitude: string;
+  manualLongitude: string;
   amount: number;
   receiptNo: string;
   sendSmsReceipt: boolean;
@@ -85,6 +88,7 @@ export default function AddNewShopPage() {
     category: '',
     pincode: '',
     area: '',
+    city: '',
     fullAddress: '',
     seoTitle: '',
     seoDescription: '',
@@ -92,6 +96,8 @@ export default function AddNewShopPage() {
     photo: null,
     photoPreview: '',
     location: null,
+    manualLatitude: '',
+    manualLongitude: '',
     amount: 0,
     receiptNo: '',
     sendSmsReceipt: false,
@@ -190,26 +196,20 @@ export default function AddNewShopPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/shops');
-      if (response.ok) {
-        const data = await response.json();
-        // Extract unique categories from shops
-        const uniqueCategories = Array.from(
-          new Set(data.shops?.map((s: any) => s.category) || [])
-        ) as string[];
-        setCategories(uniqueCategories);
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Extract category names from database categories
+        const categoryNames = (data.categories || []).map((cat: any) => cat.name);
+        setCategories(categoryNames);
+      } else {
+        console.error('Failed to fetch categories:', data.error);
+        setCategories([]);
       }
     } catch (err) {
-      // Use default categories
-      setCategories([
-        'Grocery',
-        'Beauty & Personal Care',
-        'Cctv Security System',
-        'Beauty Spa',
-        'Audio Devices',
-        'Ayurveda',
-        'Appliance Repair',
-      ]);
+      console.error('Failed to fetch categories:', err);
+      setCategories([]);
     }
   };
 
@@ -323,9 +323,36 @@ export default function AddNewShopPage() {
         return;
       }
     } else if (currentStep === 4) {
-      if (!formData.location) {
-        setError('Please capture location');
+      // Check if location is captured or manually entered
+      if (!formData.location && (!formData.manualLatitude || !formData.manualLongitude)) {
+        setError('Please capture location or enter coordinates manually');
         return;
+      }
+      
+      // If manual coordinates are provided, use them
+      if (formData.manualLatitude && formData.manualLongitude) {
+        const lat = parseFloat(formData.manualLatitude);
+        const lng = parseFloat(formData.manualLongitude);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          setError('Please enter valid latitude and longitude coordinates');
+          return;
+        }
+        
+        if (lat < -90 || lat > 90) {
+          setError('Latitude must be between -90 and 90');
+          return;
+        }
+        
+        if (lng < -180 || lng > 180) {
+          setError('Longitude must be between -180 and 180');
+          return;
+        }
+        
+        setFormData({
+          ...formData,
+          location: { lat, lng },
+        });
       }
     }
     
@@ -382,14 +409,18 @@ export default function AddNewShopPage() {
         description: formData.fullAddress,
         category: formData.category,
         address: formData.fullAddress,
-        city: formData.area || 'Patna',
+        area: formData.area || '',
+        city: formData.city || 'Patna',
         state: 'Bihar',
         pincode: formData.pincode,
         phone: `+91${formData.mobileNumber}`,
         email: formData.email,
         location: {
           type: 'Point',
-          coordinates: [formData.location!.lng, formData.location!.lat],
+          coordinates: [
+            formData.location?.lng || parseFloat(formData.manualLongitude),
+            formData.location?.lat || parseFloat(formData.manualLatitude)
+          ],
         },
         images: photoUrl ? [photoUrl] : [],
         photos: photoUrl ? [photoUrl] : [], // Plan-based photos array
@@ -803,6 +834,22 @@ export default function AddNewShopPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.city || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    placeholder="Enter city name"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Address *
                   </label>
                   <textarea
@@ -956,6 +1003,10 @@ export default function AddNewShopPage() {
                       <span className="font-medium">{formData.area || 'N/A'}</span>
                     </div>
                     <div>
+                      <span className="text-gray-600">City:</span>{' '}
+                      <span className="font-medium">{formData.city || 'N/A'}</span>
+                    </div>
+                    <div>
                       <span className="text-gray-600">Address:</span>{' '}
                       <span className="font-medium">{formData.fullAddress}</span>
                     </div>
@@ -974,19 +1025,66 @@ export default function AddNewShopPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location *
                   </label>
+                  
+                  {/* Capture Location Button */}
                   <button
                     type="button"
                     onClick={captureLocation}
-                    className="w-full px-6 py-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-6 py-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2 mb-4"
                   >
                     <FiMapPin className="text-xl" />
                     Capture Current Location
                   </button>
-                  {formData.location && (
+                  
+                  {/* Manual Input Option */}
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-3">
+                      Or Enter Coordinates Manually:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Latitude *
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={formData.manualLatitude}
+                          onChange={(e) => setFormData({ ...formData, manualLatitude: e.target.value })}
+                          placeholder="e.g., 25.5941"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter latitude (-90 to 90)
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Longitude *
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={formData.manualLongitude}
+                          onChange={(e) => setFormData({ ...formData, manualLongitude: e.target.value })}
+                          placeholder="e.g., 85.1376"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter longitude (-180 to 180)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Display Location */}
+                  {(formData.location || (formData.manualLatitude && formData.manualLongitude)) && (
                     <>
                       <p className="mt-2 text-sm text-gray-600 mb-3">
-                        Location captured: {formData.location.lat.toFixed(6)},{' '}
-                        {formData.location.lng.toFixed(6)}
+                        Location: {formData.location 
+                          ? `${formData.location.lat.toFixed(6)}, ${formData.location.lng.toFixed(6)}`
+                          : `${formData.manualLatitude}, ${formData.manualLongitude}`
+                        }
                       </p>
                       
                       {/* Map Preview */}
@@ -1002,12 +1100,16 @@ export default function AddNewShopPage() {
                             loading="lazy"
                             allowFullScreen
                             referrerPolicy="no-referrer-when-downgrade"
-                            src={`https://www.google.com/maps?q=${formData.location.lat},${formData.location.lng}&output=embed&zoom=15`}
+                            src={`https://www.google.com/maps?q=${
+                              formData.location?.lat || formData.manualLatitude
+                            },${
+                              formData.location?.lng || formData.manualLongitude
+                            }&output=embed&zoom=15`}
                             title="Map Preview"
                           />
                         </div>
                         <p className="text-xs text-gray-500 mt-2">
-                          Coordinates: Lat {formData.location.lat.toFixed(6)}, Lng {formData.location.lng.toFixed(6)}
+                          Coordinates: Lat {formData.location?.lat.toFixed(6) || formData.manualLatitude}, Lng {formData.location?.lng.toFixed(6) || formData.manualLongitude}
                         </p>
                       </div>
                     </>

@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     });
     const activeShops = await Shop.countDocuments({ 
       agentId: agent._id, 
-      status: 'approved' 
+      status: { $in: ['active', 'approved'] } // Include both for backward compatibility
     });
     const pendingShops = await Shop.countDocuments({ 
       agentId: agent._id, 
@@ -76,6 +76,14 @@ export async function GET(req: NextRequest) {
     });
     const totalEarnings = payments.reduce((sum, p) => sum + p.amount, 0);
 
+    // Get commissions from Commission model (preferred source)
+    const commissions = await Commission.find({ agentId: agent._id });
+    const totalCommissionFromModel = commissions.reduce((sum, c) => sum + c.agentAmount, 0);
+    
+    // Calculate commission as 20% of total earnings (fallback if no commission records)
+    const calculatedCommission = totalEarnings * 0.20;
+    const commission = totalCommissionFromModel > 0 ? totalCommissionFromModel : calculatedCommission;
+
     // Get monthly earnings (current month)
     const monthlyPayments = await Payment.find({
       shopId: { $in: agentShopIds },
@@ -83,10 +91,14 @@ export async function GET(req: NextRequest) {
       createdAt: { $gte: currentMonth }
     });
     const monthlyEarnings = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
-
-    // Get commissions
-    const commissions = await Commission.find({ agentId: agent._id });
-    const totalCommission = commissions.reduce((sum, c) => sum + c.amount, 0);
+    
+    // Get monthly commissions from Commission model
+    const monthlyCommissions = await Commission.find({
+      agentId: agent._id,
+      createdAt: { $gte: currentMonth }
+    });
+    const monthlyCommissionFromModel = monthlyCommissions.reduce((sum, c) => sum + c.agentAmount, 0);
+    const monthlyCommission = monthlyCommissionFromModel > 0 ? monthlyCommissionFromModel : (monthlyEarnings * 0.20);
 
     // Get recent shops
     const recentShops = await Shop.find({ agentId: agent._id })
@@ -112,10 +124,11 @@ export async function GET(req: NextRequest) {
         shopsThisMonth,
         activeShops,
         pendingShops,
-        totalCommission,
-        totalEarnings,
+        commission, // 20% of total earnings
+        totalEarnings, // Keep for reference
         operators,
         monthlyEarnings,
+        monthlyCommission, // 20% of monthly earnings
       },
       recentShops: recentShops.map(shop => ({
         _id: shop._id.toString(),

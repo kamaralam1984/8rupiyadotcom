@@ -7,9 +7,7 @@ import {
   FiPlus,
   FiShoppingBag,
   FiCreditCard,
-  FiMapPin,
   FiBarChart2,
-  FiRefreshCw,
   FiSettings,
   FiEye,
 } from 'react-icons/fi';
@@ -19,7 +17,8 @@ interface DashboardStats {
   totalShops: number;
   shopsToday: number;
   shopsThisMonth: number;
-  totalEarnings: number;
+  commission: number; // 20% of total earnings
+  totalEarnings: number; // Keep for reference
 }
 
 interface RecentShop {
@@ -57,99 +56,45 @@ export default function AgentDashboard() {
 
         if (response.ok) {
           const data = await response.json();
-          setStats(data.stats);
-          setAgent(data.agent);
-          setRecentShops(data.recentShops || []);
+          if (data.success) {
+            setStats(data.stats);
+            setAgent(data.agent);
+            setRecentShops(data.recentShops || []);
+          } else {
+            // Set default values on error
+            setStats({
+              totalShops: 0,
+              shopsToday: 0,
+              shopsThisMonth: 0,
+              commission: 0,
+              totalEarnings: 0,
+            });
+            setAgent(null);
+            setRecentShops([]);
+          }
         } else {
-          // Use mock data for now
+          // Set default values on API error
           setStats({
-            totalShops: 27,
+            totalShops: 0,
             shopsToday: 0,
-            shopsThisMonth: 27,
-            totalEarnings: 1378,
+            shopsThisMonth: 0,
+            commission: 0,
+            totalEarnings: 0,
           });
-          setAgent({
-            name: 'afroz',
-            agentId: 'AG001',
-          });
-          setRecentShops([
-            {
-              _id: '1',
-              name: 'Lyqa',
-              category: 'Cctv Security System',
-              pincode: '800001',
-              plan: 'BASIC',
-              status: 'approved',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '2',
-              name: 'Shree Ganesh grocery',
-              category: 'Grocery',
-              pincode: '842001',
-              plan: 'BASIC',
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '3',
-              name: 'N shopee',
-              category: 'Beauty & Personal Care',
-              pincode: '800007',
-              plan: 'BASIC',
-              status: 'approved',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '4',
-              name: 'Fresh Mart grocery',
-              category: 'Grocery',
-              pincode: '800020',
-              plan: 'BASIC',
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '5',
-              name: 'aman hussain shop',
-              category: 'Beauty Spa',
-              pincode: '800006',
-              plan: 'BASIC',
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '6',
-              name: 'kaam shop',
-              category: 'Audio Devices',
-              pincode: '800006',
-              plan: 'BASIC',
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            },
-            {
-              _id: '7',
-              name: 'higg shop',
-              category: 'Ayurveda',
-              pincode: '800006',
-              plan: 'BASIC',
-              status: 'pending',
-              createdAt: new Date().toISOString(),
-            },
-          ]);
+          setAgent(null);
+          setRecentShops([]);
         }
       } catch (err) {
-        // Use mock data on error
+        console.error('Error fetching dashboard data:', err);
+        // Set default values on error
         setStats({
-          totalShops: 27,
+          totalShops: 0,
           shopsToday: 0,
-          shopsThisMonth: 27,
-          totalEarnings: 1378,
+          shopsThisMonth: 0,
+          commission: 0,
+          totalEarnings: 0,
         });
-        setAgent({
-          name: 'afroz',
-          agentId: 'AG001',
-        });
+        setAgent(null);
         setRecentShops([]);
       } finally {
         setLoading(false);
@@ -201,89 +146,91 @@ export default function AgentDashboard() {
     { icon: FiPlus, label: 'Add New Shop', href: '/agent/shops/new', color: 'bg-blue-600 hover:bg-blue-700' },
     { icon: FiShoppingBag, label: 'My Shops', href: '/agent/shops', color: 'bg-blue-600 hover:bg-blue-700' },
     { icon: FiCreditCard, label: 'Payments', href: '/agent/payments', color: 'bg-blue-600 hover:bg-blue-700' },
-    { icon: FiMapPin, label: 'Map View', href: '#', color: 'bg-blue-600 hover:bg-blue-700' },
-    { icon: FiBarChart2, label: 'Daily Report', href: '/agent/reports', color: 'bg-blue-600 hover:bg-blue-700' },
-    { icon: FiRefreshCw, label: 'Renew Shops', href: '#', color: 'bg-blue-600 hover:bg-blue-700' },
     { icon: FiSettings, label: 'Settings', href: '/agent/settings', color: 'bg-blue-600 hover:bg-blue-700' },
   ];
 
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg">
-        <h1 className="text-2xl font-bold mb-1">Welcome, {agent.name}</h1>
-        <p className="text-blue-100">Agent ID: {agent.agentId}</p>
-      </div>
+      {agent && (
+        <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg">
+          <h1 className="text-2xl font-bold mb-1">Welcome, {agent.name}</h1>
+          <p className="text-blue-100">Agent ID: {agent.agentId}</p>
+        </div>
+      )}
 
       {/* Key Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total Shops Today</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.shopsToday}</p>
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Shops Today</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.shopsToday || 0}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiBarChart2 className="text-blue-600 text-xl" />
+              </div>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiBarChart2 className="text-blue-600 text-xl" />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">This Month</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.shopsThisMonth}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">This Month</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.shopsThisMonth || 0}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiCalendar className="text-blue-600 text-xl" />
+              </div>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiCalendar className="text-blue-600 text-xl" />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total Shops</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalShops}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Shops</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalShops || 0}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiShoppingBag className="text-blue-600 text-xl" />
+              </div>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiShoppingBag className="text-blue-600 text-xl" />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">₹{stats.totalEarnings.toLocaleString()}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Commission</p>
+                <p className="text-2xl font-bold text-gray-900">₹{(stats.commission || 0).toLocaleString('en-IN')}</p>
+                <p className="text-xs text-gray-500 mt-1">20% of Total Earnings</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiDollarSign className="text-blue-600 text-xl" />
+              </div>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <FiDollarSign className="text-blue-600 text-xl" />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Action Buttons Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -336,7 +283,7 @@ export default function AgentDashboard() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {recentShops.map((shop) => (
                 <motion.tr
                   key={shop._id}

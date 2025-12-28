@@ -2,18 +2,40 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import {
+  FiHome,
+  FiShoppingBag,
+  FiUsers,
+  FiDollarSign,
+  FiSettings,
+  FiMenu,
+  FiX,
+  FiLogOut,
+  FiAlertCircle,
+  FiTrendingUp,
+  FiUserCheck,
+} from 'react-icons/fi';
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agentName, setAgentName] = useState('Agent');
+  const [agentEmail, setAgentEmail] = useState('');
+  const [userRole, setUserRole] = useState<string>('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   useEffect(() => {
-    // Fetch agent info
+    // Fetch agent info and verify role
     const fetchAgentInfo = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          router.push('/login');
+          return;
+        }
 
         const response = await fetch('/api/auth/me', {
           headers: {
@@ -23,44 +45,176 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
 
         if (response.ok) {
           const data = await response.json();
-          setAgentName(data.user?.name || 'Agent');
+          if (data.success && data.user) {
+            // Only allow agent or admin
+            if (data.user.role !== 'agent' && data.user.role !== 'admin') {
+              setShowErrorModal(true);
+              setTimeout(() => {
+                localStorage.removeItem('token');
+                router.push('/login');
+              }, 2000);
+              return;
+            }
+            setAgentName(data.user?.name || 'Agent');
+            setAgentEmail(data.user?.email || '');
+            setUserRole(data.user.role || '');
+          } else {
+            router.push('/login');
+          }
+        } else {
+          router.push('/login');
         }
       } catch (err) {
         console.error('Failed to fetch agent info:', err);
+        router.push('/login');
       }
     };
 
     fetchAgentInfo();
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/login');
   };
 
+  // Menu items - removed Shops, Agents, Shoppers from agent panel
+  const allMenuItems = [
+    { name: 'Dashboard', icon: FiHome, href: '/agent' },
+    { name: 'Payments', icon: FiDollarSign, href: '/agent/payments' },
+    { name: 'Settings', icon: FiSettings, href: '/agent/settings' },
+  ];
+
+  // Filter menu items based on user role
+  const menuItems = userRole === 'admin' 
+    ? allMenuItems.filter(item => item.name === 'Dashboard' || item.name === 'Settings')
+    : allMenuItems;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Header Bar */}
-      <div className="bg-blue-600 text-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">8rupiya.com</h1>
-            <p className="text-sm text-blue-100">Agent Panel</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm">Welcome, {agentName}</span>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-medium transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Agent Panel</h1>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          {sidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
+        </button>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">{children}</div>
+      <div className="flex">
+        {/* Sidebar */}
+        <aside
+          className={`${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 lg:translate-x-0`}
+        >
+          <div className="h-full flex flex-col">
+            {/* Logo/Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                8Rupiya
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Agent Panel</p>
+            </div>
+
+            {/* User Info */}
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <p className="font-semibold text-gray-900 dark:text-white">{agentName}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{agentEmail}</p>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Icon className="text-xl" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Logout */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <FiLogOut className="text-xl" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 lg:ml-0">
+          <div className="p-6">{children}</div>
+        </main>
+      </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Error Modal for Non-Agent Users */}
+      <AnimatePresence>
+        {showErrorModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                  <FiAlertCircle className="text-red-600 dark:text-red-400 text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Access Denied
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  Sorry Not Valid account
+                </p>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 2, ease: 'linear' }}
+                    className="bg-red-600 h-2 rounded-full"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Redirecting to login page...
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
       .populate('planId', 'name')
       .sort({ createdAt: -1 });
 
-    const total = commissions.reduce((sum, c) => sum + c.amount, 0);
-    const paid = commissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0);
-    const pending = commissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
+    const total = commissions.reduce((sum, c) => sum + c.agentAmount, 0);
+    const paid = commissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.agentAmount, 0);
+    const pending = commissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.agentAmount, 0);
 
     return NextResponse.json({
       success: true,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         _id: commission._id,
         shopName: (commission.shopId as any)?.name || 'N/A',
         planName: (commission.planId as any)?.name || (commission.shopId as any)?.planId?.name || 'N/A',
-        amount: commission.amount,
+        amount: commission.agentAmount,
         status: commission.status,
         date: commission.createdAt.toISOString().split('T')[0],
       })),

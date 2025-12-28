@@ -176,20 +176,20 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
                       const isSelected = selectedCategory === displayCategory || 
                         (categoryKey === 'All Categories' && (selectedCategory === 'All Categories' || selectedCategory === t('category.all')));
                       return (
-                        <button
+                      <button
                           key={categoryKey}
-                          type="button"
+                        type="button"
                           onClick={() => handleCategorySelect(displayCategory)}
-                          role="option"
+                        role="option"
                           aria-selected={isSelected}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                             isSelected
-                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
-                              : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
-                        >
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                            : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
                           {displayCategory}
-                        </button>
+                      </button>
                       );
                     })}
                   </motion.div>

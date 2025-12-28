@@ -84,7 +84,7 @@ export default function CommissionsPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {commissions.map((comm) => (
                 <motion.tr
                   key={comm._id}

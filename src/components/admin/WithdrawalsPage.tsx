@@ -72,7 +72,7 @@ export default function WithdrawalsPage() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {withdrawals.map((withdrawal) => (
                 <motion.tr
                   key={withdrawal._id}

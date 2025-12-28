@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,6 +25,7 @@ import {
   FiDatabase,
   FiFile,
   FiGlobe,
+  FiAlertCircle,
 } from 'react-icons/fi';
 
 interface MenuItem {
@@ -52,9 +53,19 @@ const menuItems: MenuItem[] = [
     icon: FiShoppingBag,
     children: [
       { name: 'Pending Approval', href: '/admin/shops?status=pending' },
-      { name: 'Active Shops', href: '/admin/shops?status=approved' },
+      { name: 'Active Shops', href: '/admin/shops?status=active' },
       { name: 'Expired Shops', href: '/admin/shops?status=expired' },
       { name: 'Rejected Shops', href: '/admin/shops?status=rejected' },
+    ],
+  },
+  {
+    name: 'Other Panels',
+    icon: FiUsers,
+    children: [
+      { name: 'Agent Panel', href: '/agent' },
+      { name: 'Operator Panel', href: '/operator' },
+      { name: 'Operator Details', href: '/admin/operators' },
+      { name: 'Agent Requests', href: '/admin/agent-requests' },
     ],
   },
   { name: 'Plans', icon: FiCreditCard, href: '/admin/plans' },
@@ -75,9 +86,60 @@ const menuItems: MenuItem[] = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Users', 'Shops']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['Users', 'Shops', 'Other Panels']);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [adminName, setAdminName] = useState('Admin');
+  const [adminEmail, setAdminEmail] = useState('');
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    // Verify admin or accountant role
+    const checkAdmin = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Allow both admin and accountant
+            if (data.user.role !== 'admin' && data.user.role !== 'accountant') {
+              // Show error modal for non-admin/accountant users
+              setShowErrorModal(true);
+              // Redirect to login after 2 seconds
+              setTimeout(() => {
+                localStorage.removeItem('token');
+                router.push('/login');
+              }, 2000);
+              return;
+            }
+            // Set admin name and email
+            setAdminName(data.user.name || 'Admin');
+            setAdminEmail(data.user.email || '');
+          } else {
+            router.push('/login');
+          }
+        } else {
+          router.push('/login');
+        }
+      } catch (err) {
+        console.error('Failed to verify admin:', err);
+        router.push('/login');
+      }
+    };
+
+    checkAdmin();
+  }, [router]);
 
   const toggleMenu = (menuName: string) => {
     setExpandedMenus((prev) =>
@@ -134,6 +196,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     8rupiya.com
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Admin Dashboard</p>
+                </div>
+
+                {/* User Info */}
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <p className="font-semibold text-gray-900 dark:text-white">{adminName}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{adminEmail}</p>
                 </div>
 
                 {/* Menu */}
@@ -229,6 +297,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <main id="main-content" role="main" className="p-6 flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
+
+      {/* Error Modal for Non-Admin Users */}
+      <AnimatePresence>
+        {showErrorModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                  <FiAlertCircle className="text-red-600 dark:text-red-400 text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Access Denied
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  Sorry Not Valid account
+                </p>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 2, ease: 'linear' }}
+                    className="bg-red-600 h-2 rounded-full"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Redirecting to login page...
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

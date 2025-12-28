@@ -84,6 +84,14 @@ export async function POST(req: NextRequest) {
     const planExpiry = new Date();
     planExpiry.setDate(planExpiry.getDate() + plan.duration);
 
+    // Find approved operators for this agent
+    const AgentRequest = (await import('@/models/AgentRequest')).default;
+    const RequestStatus = (await import('@/models/AgentRequest')).RequestStatus;
+    const approvedRequest = await AgentRequest.findOne({
+      agentId: user._id,
+      status: RequestStatus.APPROVED
+    }).sort({ createdAt: 1 }); // Get the first approved operator
+
     // Create shop with all data
     const shopData: any = {
       name: shopName.trim(),
@@ -104,11 +112,13 @@ export async function POST(req: NextRequest) {
       photos: body.images || [], // Same as images for plan-based system
       offers: [],
       pages: [],
-      status: ShopStatus.PENDING, // All shops start as pending, require admin/accountant approval
+      // All shops start as pending, require admin/accountant approval - cannot be overridden
+      status: ShopStatus.PENDING,
       paymentStatus: paymentMode === 'online' ? PaymentStatus.PAID : PaymentStatus.PENDING,
       paymentMode: paymentMode,
       shopperId: user._id.toString(), // Use agent's ID as shopperId
       agentId: user._id.toString(),
+      operatorId: approvedRequest?.operatorId?.toString() || undefined, // Set operatorId if agent has approved operator
       planId: plan._id,
       planExpiry: planExpiry,
       rankScore: plan.rank || plan.priority || 0,
@@ -121,6 +131,9 @@ export async function POST(req: NextRequest) {
         seoKeywords: `${shopName}, ${category}, ${body.city || 'Patna'}, ${body.pincode || ''}`,
       }),
     };
+    
+    // Ensure status is always PENDING (override any status that might have been set)
+    shopData.status = ShopStatus.PENDING;
 
     const shop = await Shop.create(shopData) as any;
 

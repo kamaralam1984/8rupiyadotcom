@@ -39,13 +39,31 @@ export async function createCommission(paymentId: string, shopId: string): Promi
   const shop = await Shop.findById(shopId);
   if (!shop) throw new Error('Shop not found');
 
-  const breakdown = calculateCommission(payment.amount, shop.agentId?.toString(), shop.operatorId?.toString());
+  // If operatorId is missing but agentId exists, find the approved operator for this agent
+  let operatorId = shop.operatorId;
+  if (!operatorId && shop.agentId) {
+    const AgentRequest = (await import('@/models/AgentRequest')).default;
+    const RequestStatus = (await import('@/models/AgentRequest')).RequestStatus;
+    const approvedRequest = await AgentRequest.findOne({
+      agentId: shop.agentId,
+      status: RequestStatus.APPROVED
+    }).sort({ createdAt: 1 }); // Get the first approved operator
+    
+    if (approvedRequest) {
+      operatorId = approvedRequest.operatorId;
+      // Also update the shop to set operatorId for future queries
+      shop.operatorId = operatorId;
+      await shop.save();
+    }
+  }
+
+  const breakdown = calculateCommission(payment.amount, shop.agentId?.toString(), operatorId?.toString());
 
   await Commission.create({
     paymentId: payment._id,
     shopId: shop._id,
     agentId: shop.agentId,
-    operatorId: shop.operatorId,
+    operatorId: operatorId,
     ...breakdown,
     status: 'pending',
   });

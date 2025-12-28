@@ -3,15 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiHome,
-  FiShoppingBag,
-  FiUsers,
+  FiUserCheck,
   FiDollarSign,
   FiSettings,
   FiMenu,
   FiX,
   FiLogOut,
+  FiAlertCircle,
 } from 'react-icons/fi';
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,8 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [operator, setOperator] = useState({ name: 'Operator', email: '' });
+  const [userRole, setUserRole] = useState<string>('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -35,11 +38,17 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user) {
-          if (data.user.role !== 'operator') {
-            router.push('/login');
+          // Only allow operator or admin
+          if (data.user.role !== 'operator' && data.user.role !== 'admin') {
+            setShowErrorModal(true);
+            setTimeout(() => {
+              localStorage.removeItem('token');
+              router.push('/login');
+            }, 2000);
             return;
           }
           setOperator({ name: data.user.name, email: data.user.email });
+          setUserRole(data.user.role || '');
         } else {
           router.push('/login');
         }
@@ -52,13 +61,18 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
     router.push('/login');
   };
 
-  const menuItems = [
+  // Menu items - hide Shops, Agents, Shoppers, Payments for admin users
+  const allMenuItems = [
     { name: 'Dashboard', icon: FiHome, href: '/operator' },
-    { name: 'Shops', icon: FiShoppingBag, href: '/operator/shops' },
-    { name: 'Shoppers', icon: FiUsers, href: '/operator/shoppers' },
+    { name: 'Agents', icon: FiUserCheck, href: '/operator/agents' },
     { name: 'Payments', icon: FiDollarSign, href: '/operator/payments' },
     { name: 'Settings', icon: FiSettings, href: '/operator/settings' },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = userRole === 'admin' 
+    ? allMenuItems.filter(item => item.name === 'Dashboard' || item.name === 'Settings')
+    : allMenuItems;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -143,6 +157,48 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Error Modal for Non-Operator Users */}
+      <AnimatePresence>
+        {showErrorModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                  <FiAlertCircle className="text-red-600 dark:text-red-400 text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Access Denied
+                </h3>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  Sorry Not Valid account
+                </p>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 2, ease: 'linear' }}
+                    className="bg-red-600 h-2 rounded-full"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Redirecting to login page...
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

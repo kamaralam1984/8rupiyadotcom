@@ -62,7 +62,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
     }
 
     if (action === 'approve') {
-      shop.status = ShopStatus.APPROVED;
+      shop.status = ShopStatus.ACTIVE; // Set status as 'active' when approved
     } else if (action === 'reject') {
       shop.status = ShopStatus.REJECTED;
     } else {
