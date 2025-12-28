@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { verifyToken } from '@/lib/auth';
-import { UserRole } from '@/models/User';
+import { UserRole } from '@/types/user';
 
 export async function POST(req: NextRequest) {
   try {
