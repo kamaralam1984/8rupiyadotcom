@@ -120,8 +120,9 @@ export default function HomepageClient() {
     }
   };
 
-  // Fetch homepage layout
+  // Fetch homepage layout and user info in parallel (non-blocking)
   useEffect(() => {
+    // Fetch both in parallel for faster loading
     const fetchLayout = async () => {
       try {
         const response = await fetch('/api/homepage-layout');
@@ -133,7 +134,10 @@ export default function HomepageClient() {
         console.error('Failed to fetch homepage layout:', error);
       }
     };
+    
+    // Run both fetches in parallel (don't await - non-blocking)
     fetchLayout();
+    fetchUser();
   }, []);
 
   // Update selectedCategory when language changes
@@ -142,11 +146,6 @@ export default function HomepageClient() {
       setSelectedCategory(t('category.all'));
     }
   }, [language, t]);
-
-  // Fetch user info on mount
-  useEffect(() => {
-    fetchUser();
-  }, []);
 
   // Listen for storage changes (when user logs in from another tab/window)
   useEffect(() => {
@@ -183,8 +182,12 @@ export default function HomepageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Get user location
+  // Get user location (non-blocking - don't wait for it to load shops)
   useEffect(() => {
+    // Load shops immediately without waiting for location
+    fetchShops(undefined, undefined, selectedCategory, selectedCity);
+    
+    // Get location in background (non-blocking)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -195,18 +198,17 @@ export default function HomepageClient() {
             lat: userLat,
             lng: userLng,
           });
-          // Immediately fetch shops with location once we have it
-          // This ensures shops are loaded with distance calculated
+          // Update shops with location for distance calculation (non-blocking)
           fetchShops(userLat, userLng, selectedCategory, selectedCity);
         },
         (error) => {
           console.warn('⚠️ Location access denied or failed:', error.message);
-          // Location denied, continue without it
+          // Location denied, continue without it - shops already loaded
         },
         {
-          enableHighAccuracy: true,
-          timeout: 10000, // Increased timeout
-          maximumAge: 0, // Don't use cached position
+          enableHighAccuracy: false, // Faster, less accurate
+          timeout: 5000, // Reduced timeout from 10s to 5s
+          maximumAge: 300000, // Use cached position up to 5 minutes old
         }
       );
     } else {
@@ -215,7 +217,7 @@ export default function HomepageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch shops function
+  // Fetch shops function (optimized for speed)
   const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string) => {
     try {
       setLoading(true);
@@ -226,24 +228,20 @@ export default function HomepageClient() {
       const useCategory = category !== undefined ? category : selectedCategory;
       const useCity = city !== undefined ? city : selectedCity;
       
-      // Always use nearby API system
+      // Add location if provided (for distance calculation)
       if (lat && lng) {
         params.append('lat', lat.toString());
         params.append('lng', lng.toString());
-        params.append('google', 'true');
-        console.log('📍 Using provided location:', { lat, lng });
+        params.append('google', 'false'); // Don't fetch from Google for faster response
       } else if (location && location.lat && location.lng) {
         // Use stored location if available
         params.append('lat', location.lat.toString());
         params.append('lng', location.lng.toString());
         params.append('google', 'false');
-        console.log('📍 Using stored location:', location);
-      } else {
-        console.warn('⚠️ No location available for distance calculation');
       }
-      // If no location, nearby API will return all shops without distance
+      // If no location, nearby API will return all shops without distance (faster)
       
-      if (useCategory && useCategory !== 'All Categories') {
+      if (useCategory && useCategory !== 'All Categories' && useCategory !== t('category.all')) {
         params.append('category', useCategory);
       }
       
@@ -251,79 +249,75 @@ export default function HomepageClient() {
         params.append('city', useCity);
       }
       
-      params.append('limit', '100'); // Get more shops
+      params.append('limit', '50'); // Reduced from 100 to 50 for faster initial load
 
-      const response = await fetch(`/api/shops/nearby?${params}`);
+      const response = await fetch(`/api/shops/nearby?${params}`, {
+        // Add cache headers for better performance
+        cache: 'default',
+      });
       const data = await response.json();
 
       if (data.shops && data.shops.length > 0) {
-        // Log shops with distance info for debugging
-        const shopsWithDistance = data.shops.filter((s: Shop) => s.distance !== undefined);
-        const shopsWithoutDistance = data.shops.filter((s: Shop) => s.distance === undefined);
-        console.log(`✅ Loaded ${data.shops.length} shops from nearby system`);
-        console.log(`📍 Shops with distance: ${shopsWithDistance.length}, without: ${shopsWithoutDistance.length}`);
-        if (shopsWithDistance.length > 0) {
-          console.log('Sample shop with distance:', {
-            name: shopsWithDistance[0].name,
-            distance: shopsWithDistance[0].distance,
-          });
-        }
         setShops(data.shops);
+        setLoading(false); // Set loading false immediately after getting shops
       } else {
         fetchAllShops();
       }
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load shops');
-      fetchAllShops();
-    } finally {
+      // Don't call fetchAllShops on error to avoid double loading
       setLoading(false);
     }
   };
 
-  // Fetch shops when category, city, or location changes
+  // Fetch shops when category or city changes (don't wait for location)
   useEffect(() => {
     // Use a small delay to debounce rapid changes
     const timeoutId = setTimeout(() => {
+      // Use location if available, otherwise fetch without it (faster)
       if (location && location.lat && location.lng) {
-        // Always pass location when available to ensure distance calculation
         fetchShops(location.lat, location.lng, selectedCategory, selectedCity);
       } else {
-        // If no location, still fetch shops but without distance
+        // Fetch immediately without location - don't block on geolocation
         fetchShops(undefined, undefined, selectedCategory, selectedCity);
       }
     }, 100); // Small delay to debounce
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedCity, location]);
+  }, [selectedCategory, selectedCity]); // Removed location dependency to avoid blocking
 
   const fetchAllShops = async () => {
     try {
-      // Always use nearby API system for "All Shops"
+      // Always use nearby API system for "All Shops" (optimized)
       const params = new URLSearchParams();
       
       // Add location if available (for distance calculation)
-      if (location) {
+      if (location && location.lat && location.lng) {
         params.append('lat', location.lat.toString());
         params.append('lng', location.lng.toString());
       }
       
-      params.append('limit', '100'); // Get more shops for "All Shops"
-      params.append('google', 'false'); // Don't fetch from Google for "all shops"
+      params.append('limit', '50'); // Reduced from 100 to 50 for faster load
+      params.append('google', 'false'); // Don't fetch from Google for faster response
       
-      const response = await fetch(`/api/shops/nearby?${params}`);
+      const response = await fetch(`/api/shops/nearby?${params}`, {
+        cache: 'default', // Use browser cache
+      });
       const data = await response.json();
       
       if (data.shops && data.shops.length > 0) {
         setShops(data.shops);
-        console.log(`✅ Loaded ${data.shops.length} shops from nearby system`);
+        setLoading(false);
       } else {
         // Fallback: If nearby API returns empty, try regular shops API
-        const fallbackResponse = await fetch('/api/shops?limit=100&status=approved');
+        const fallbackResponse = await fetch('/api/shops?limit=50&status=approved', {
+          cache: 'default',
+        });
         const fallbackData = await fallbackResponse.json();
         if (fallbackData.shops && fallbackData.shops.length > 0) {
-          // Calculate distance on client side if location is available
+          // Calculate distance on client side if location is available (non-blocking)
           const shopsWithDistance = fallbackData.shops.map((shop: Shop) => {
             if (location && shop.location?.coordinates) {
               // Simple distance calculation (Haversine)
@@ -342,10 +336,14 @@ export default function HomepageClient() {
             return shop;
           });
           setShops(shopsWithDistance);
+          setLoading(false);
+        } else {
+          setLoading(false);
         }
       }
     } catch (err) {
       console.error('Fetch all shops error:', err);
+      setLoading(false);
     }
   };
 
