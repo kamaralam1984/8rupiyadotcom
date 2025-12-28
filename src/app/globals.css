@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #fafafe;
+  --text: #0f0f0f;
+  --card: #ffffff;
+  --main: #ffffff;
+  --background: #fafafe;
+  --foreground: #0f0f0f;
 }
 
 @theme inline {
@@ -12,10 +16,90 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Light mode (default, explicit) */
+:root,
+:root.light,
+.light {
+  --bg: #fafafe;
+  --text: #0f0f0f;
+  --card: #ffffff;
+  --main: #ffffff;
+  --background: #fafafe;
+  --foreground: #0f0f0f;
+}
+
+/* Dark mode support - Force dark mode when .dark class is present */
+html.dark,
+html.dark body,
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+.dark {
+  --bg: #0f0f0f;
+  --text: #ffffff;
+  --card: #2a2a2a;
+  --main: #0f0f0f;
+  --background: #0f0f0f;
+  --foreground: #ffffff;
+}
+
+/* Ensure dark mode classes work everywhere */
+html.dark,
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html.light,
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Apply CSS variables to body and common elements */
+body,
+body > div,
+#__next,
+#app,
+.home,
+.page,
+.copy {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Navbar and Header */
+.navbar,
+.header,
+header,
+[role="banner"] {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+/* Cards */
+.shop_card,
+.score_card,
+.card,
+[class*="card"] {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .shop_card,
+.dark .score_card,
+.dark .card,
+.dark [class*="card"] {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* System preference (only when no explicit class is set) */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light):not(.dark) {
+    --bg: #0f0f0f;
+    --text: #ffffff;
+    --card: #2a2a2a;
+    --main: #0f0f0f;
+    --background: #0f0f0f;
+    --foreground: #ffffff;
   }
 }
 
@@ -155,6 +239,10 @@ html {
   background: #f1f1f1;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 5px;
@@ -162,4 +250,12 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #4c63d2 0%, #5a3f8c 100%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a3f8c 0%, #4c63d2 100%);
 }

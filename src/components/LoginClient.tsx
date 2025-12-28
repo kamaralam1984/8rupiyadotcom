@@ -165,34 +165,34 @@ export default function LoginClient() {
     } flex items-center justify-center p-4 relative overflow-hidden`}>
       {/* Animated Background Particles */}
       {mounted && (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {particles.map((particle, i) => (
-            <motion.div
-              key={i}
-              className={`absolute rounded-full ${
-                darkMode ? 'bg-white/10' : 'bg-blue-300/30'
-              }`}
-              style={{
+          <motion.div
+            key={i}
+            className={`absolute rounded-full ${
+              darkMode ? 'bg-white/10' : 'bg-blue-300/30'
+            }`}
+            style={{
                 width: particle.width,
                 height: particle.height,
                 left: `${particle.left}%`,
                 top: `${particle.top}%`,
-              }}
-              animate={{
+            }}
+            animate={{
                 x: particle.x,
                 y: particle.y,
                 scale: particle.scale,
                 opacity: particle.opacity,
-              }}
-              transition={{
+            }}
+            transition={{
                 duration: particle.duration,
-                repeat: Infinity,
-                ease: 'easeInOut',
+              repeat: Infinity,
+              ease: 'easeInOut',
                 delay: particle.delay,
-              }}
-            />
-          ))}
-        </div>
+            }}
+          />
+        ))}
+      </div>
       )}
 
       {/* Gradient Orbs */}

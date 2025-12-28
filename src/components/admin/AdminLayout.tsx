@@ -27,6 +27,7 @@ import {
   FiGlobe,
   FiAlertCircle,
 } from 'react-icons/fi';
+import ThemeToggle from '../ThemeToggle';
 
 interface MenuItem {
   name: string;
@@ -168,6 +169,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           8rupiya.com
         </h2>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
         <button
           type="button"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -177,6 +180,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           {sidebarOpen ? <FiX className="text-2xl" aria-hidden="true" /> : <FiMenu className="text-2xl" aria-hidden="true" />}
         </button>
+        </div>
       </header>
 
       <div className="flex">
@@ -270,8 +274,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   ))}
                 </nav>
 
-                {/* Logout */}
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Theme Toggle and Logout */}
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="flex justify-center">
+                    <ThemeToggle />
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

@@ -16,6 +16,7 @@ import AdvertisementBanner from './AdvertisementBanner';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ThemeToggle from './ThemeToggle';
 
 interface Shop {
   _id?: string;
@@ -435,7 +436,7 @@ export default function HomepageClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -444,9 +445,9 @@ export default function HomepageClient() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"
+            className="w-16 h-16 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
           />
-          <p className="text-gray-600 text-lg font-medium">{t('common.loading')}</p>
+          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">{t('common.loading')}</p>
         </motion.div>
       </div>
     );
@@ -461,16 +462,17 @@ export default function HomepageClient() {
       >
         Skip to main content
       </a>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
         {/* Animated Background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          className="absolute top-20 left-10 w-72 h-72 bg-blue-300 dark:bg-blue-900 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10"
           animate={{ x: [0, 100, 0], y: [0, -50, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute top-40 right-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          className="absolute top-40 right-10 w-72 h-72 bg-purple-300 dark:bg-purple-900 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10"
           animate={{ x: [0, -100, 0], y: [0, 50, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -516,6 +518,9 @@ export default function HomepageClient() {
 
             {/* Login/Register or User Profile */}
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+              
               {/* ADD SHOP Button */}
               <Link
                 href="/add-shop"
@@ -739,11 +744,11 @@ export default function HomepageClient() {
             <motion.div
               key={index}
               whileHover={{ scale: 1.05, y: -5 }}
-              className="bg-white/60 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-gray-200/50"
+              className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50"
             >
-              <stat.icon className="text-4xl text-blue-600 mx-auto mb-4" />
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
-              <div className="text-gray-600">{stat.label}</div>
+              <stat.icon className="text-4xl text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+              <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{stat.number}</div>
+              <div className="text-gray-600 dark:text-gray-300">{stat.label}</div>
             </motion.div>
           ))}
         </motion.div>
@@ -756,7 +761,7 @@ export default function HomepageClient() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="relative bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white py-12 mt-20"
+        className="relative bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white py-12 mt-20"
         role="contentinfo"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

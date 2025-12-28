@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { generateMetadata as generateSEOMetadata, generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,7 @@ export default function RootLayout({
   const websiteSchema = generateWebSiteSchema();
 
   return (
-    <html lang="en-IN">
+    <html lang="en-IN" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#2563eb" />
@@ -56,13 +57,49 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme') || 'light';
+                  const root = document.documentElement;
+                  
+                  // Ensure theme is either light or dark
+                  const validTheme = (theme === 'light' || theme === 'dark') ? theme : 'light';
+                  
+                  // Remove all theme classes first
+                  root.classList.remove('light', 'dark');
+                  // Add the theme class immediately
+                  root.classList.add(validTheme);
+                  
+                  // Set data attribute for additional styling
+                  root.setAttribute('data-theme', validTheme);
+                  
+                  // Force color-scheme property
+                  root.style.colorScheme = validTheme;
+                } catch (e) {
+                  // If anything fails, default to light mode
+                  const root = document.documentElement;
+                  root.classList.remove('light', 'dark');
+                  root.classList.add('light');
+                  root.setAttribute('data-theme', 'light');
+                  root.style.colorScheme = 'light';
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ background: 'var(--bg)', color: 'var(--text)' }}
       >
+        <ThemeProvider>
         <LanguageProvider>
         {children}
         </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
