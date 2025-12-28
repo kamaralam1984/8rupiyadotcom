@@ -4,7 +4,6 @@ import "./globals.css";
 import { generateMetadata as generateSEOMetadata, generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import AdSenseLoader from "@/components/AdSenseLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -106,12 +105,20 @@ export default function RootLayout({
             }}
           />
         )}
+        
+        {/* Google AdSense - Load directly in head to avoid data-nscript warning */}
+        {process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID}`}
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ background: 'var(--bg)', color: 'var(--text)' }}
       >
-        <AdSenseLoader />
         <ThemeProvider>
         <LanguageProvider>
         {children}
