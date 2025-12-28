@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Shop, { ShopStatus } from '@/models/Shop';
+import Plan from '@/models/Plan';
 import { cacheGet, cacheSet } from '@/lib/redis';
 import { calculateDistance } from '@/lib/location';
 import { calculateRankScore, getPlanPriority } from '@/lib/ranking';

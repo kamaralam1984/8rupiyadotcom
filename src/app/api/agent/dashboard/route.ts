@@ -4,8 +4,9 @@ import User from '@/models/User';
 import Shop from '@/models/Shop';
 import Commission from '@/models/Commission';
 import Payment from '@/models/Payment';
+import Plan from '@/models/Plan';
 import { verifyToken } from '@/lib/auth';
-import { UserRole } from '@/models/User';
+import { UserRole } from '@/types/user';
 
 export async function GET(req: NextRequest) {
   try {

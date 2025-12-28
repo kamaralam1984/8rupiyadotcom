@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Shop, { ShopStatus } from '@/models/Shop';
+import Plan from '@/models/Plan';
 import { withAuth, AuthRequest } from '@/middleware/auth';
-import { UserRole } from '@/models/User';
+import { UserRole } from '@/types/user';
 
 // GET /api/shops - List shops (with filters)
 export async function GET(req: NextRequest) {

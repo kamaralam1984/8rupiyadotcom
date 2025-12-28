@@ -4,8 +4,9 @@ import Shop from '@/models/Shop';
 import Payment from '@/models/Payment';
 import Commission from '@/models/Commission';
 import User from '@/models/User';
+import Plan from '@/models/Plan';
 import { withAuth, AuthRequest } from '@/middleware/auth';
-import { UserRole } from '@/models/User';
+import { UserRole } from '@/types/user';
 import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 // Import autotable to extend jsPDF

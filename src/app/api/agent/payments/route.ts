@@ -3,8 +3,9 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
 import Shop from '@/models/Shop';
+import Plan from '@/models/Plan';
 import { verifyToken } from '@/lib/auth';
-import { UserRole } from '@/models/User';
+import { UserRole } from '@/types/user';
 
 export async function GET(req: NextRequest) {
   try {
