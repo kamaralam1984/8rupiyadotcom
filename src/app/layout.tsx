@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { generateMetadata as generateSEOMetadata, generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
+import { generateMetadata as generateSEOMetadata } from "@/lib/seo";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +33,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const organizationSchema = generateOrganizationSchema();
-  const websiteSchema = generateWebSiteSchema();
-
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <head>
@@ -50,70 +48,14 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/favicon_192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png" />
         <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme') || 'light';
-                  const root = document.documentElement;
-                  
-                  // Ensure theme is either light or dark
-                  const validTheme = (theme === 'light' || theme === 'dark') ? theme : 'light';
-                  
-                  // Remove all theme classes first
-                  root.classList.remove('light', 'dark');
-                  // Add the theme class immediately
-                  root.classList.add(validTheme);
-                  
-                  // Set data attribute for additional styling
-                  root.setAttribute('data-theme', validTheme);
-                  
-                  // Force color-scheme property
-                  root.style.colorScheme = validTheme;
-                } catch (e) {
-                  // If anything fails, default to light mode
-                  const root = document.documentElement;
-                  root.classList.remove('light', 'dark');
-                  root.classList.add('light');
-                  root.setAttribute('data-theme', 'light');
-                  root.style.colorScheme = 'light';
-                }
-              })();
-            `,
-          }}
-        />
-        
-        {/* Microsoft Clarity Analytics */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-              `,
-            }}
-          />
-        )}
-        
-        {/* Google AdSense - Load directly in head to avoid data-nscript warning */}
-        {process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID && (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID}`}
-            crossOrigin="anonymous"
-          />
-        )}
+  async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984"
+  crossOrigin="anonymous">
+
+</script>
+
+
+
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

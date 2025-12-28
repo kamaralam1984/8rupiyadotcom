@@ -89,38 +89,9 @@ export default function AdSlot({ slot, className = '', style }: AdSlotProps) {
             setCustomAds(settings.customAds[slot].filter((ad: CustomAd) => ad.enabled));
           }
           
-          // If AdSense code is provided, inject it
-          if (settings.adsenseCode && typeof window !== 'undefined') {
-            // Check if script already exists
-            const existingMarker = document.querySelector('script[data-adsense-injected]');
-            if (!existingMarker && settings.adsenseCode) {
-              try {
-                // Parse and inject the AdSense script
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(settings.adsenseCode, 'text/html');
-                const scripts = doc.querySelectorAll('script');
-                
-                scripts.forEach((script) => {
-                  const newScript = document.createElement('script');
-                  if (script.src) {
-                    newScript.src = script.src;
-                  }
-                  if (script.innerHTML) {
-                    newScript.innerHTML = script.innerHTML;
-                  }
-                  newScript.async = script.async || true;
-                  document.head.appendChild(newScript);
-                });
-                
-                // Mark as injected
-                const marker = document.createElement('script');
-                marker.setAttribute('data-adsense-injected', 'true');
-                document.head.appendChild(marker);
-              } catch (err) {
-                console.error('Error injecting AdSense code:', err);
-              }
-            }
-          }
+          // Note: AdSense script is already loaded in layout.tsx
+          // We don't need to inject it here to avoid hydration mismatches
+          // The AdSense script in layout.tsx will handle all ad initializations
         }
       }
     } catch (error) {

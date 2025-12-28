@@ -74,6 +74,7 @@ interface HomepageLayout {
 export default function HomepageClient() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const [mounted, setMounted] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -88,7 +89,7 @@ export default function HomepageClient() {
   const [homepageLayout, setHomepageLayout] = useState<HomepageLayout | null>(null);
   const [logoError, setLogoError] = useState(false);
 
-  // Fetch user info function
+  // Define functions BEFORE hooks (so they're available in useEffect)
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -120,104 +121,6 @@ export default function HomepageClient() {
     }
   };
 
-  // Fetch homepage layout and user info in parallel (non-blocking)
-  useEffect(() => {
-    // Fetch both in parallel for faster loading
-    const fetchLayout = async () => {
-      try {
-        const response = await fetch('/api/homepage-layout');
-        const data = await response.json();
-        if (data.success && data.layout) {
-          setHomepageLayout(data.layout);
-        }
-      } catch (error) {
-        console.error('Failed to fetch homepage layout:', error);
-      }
-    };
-    
-    // Run both fetches in parallel (don't await - non-blocking)
-    fetchLayout();
-    fetchUser();
-  }, []);
-
-  // Update selectedCategory when language changes
-  useEffect(() => {
-    if (selectedCategory === 'All Categories' || selectedCategory === t('category.all')) {
-      setSelectedCategory(t('category.all'));
-    }
-  }, [language, t]);
-
-  // Listen for storage changes (when user logs in from another tab/window)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token') {
-        if (e.newValue) {
-          fetchUser();
-        } else {
-          setUser(null);
-        }
-      }
-    };
-
-    // Also check for token changes when page becomes visible (user might have logged in in same tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Re-fetch user info in case token was updated
-          fetchUser();
-        } else {
-          setUser(null);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Get user location (non-blocking - don't wait for it to load shops)
-  useEffect(() => {
-    // Load shops immediately without waiting for location
-    fetchShops(undefined, undefined, selectedCategory, selectedCity);
-    
-    // Get location in background (non-blocking)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLat = position.coords.latitude;
-          const userLng = position.coords.longitude;
-          console.log('📍 User location obtained:', { lat: userLat, lng: userLng });
-          setLocation({
-            lat: userLat,
-            lng: userLng,
-          });
-          // Update shops with location for distance calculation (non-blocking)
-          fetchShops(userLat, userLng, selectedCategory, selectedCity);
-        },
-        (error) => {
-          console.warn('⚠️ Location access denied or failed:', error.message);
-          // Location denied, continue without it - shops already loaded
-        },
-        {
-          enableHighAccuracy: false, // Faster, less accurate
-          timeout: 5000, // Reduced timeout from 10s to 5s
-          maximumAge: 300000, // Use cached position up to 5 minutes old
-        }
-      );
-    } else {
-      console.warn('⚠️ Geolocation not supported by browser');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Fetch shops function (optimized for speed)
   const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string) => {
     try {
       setLoading(true);
@@ -271,26 +174,9 @@ export default function HomepageClient() {
     }
   };
 
-  // Fetch shops when category or city changes (don't wait for location)
-  useEffect(() => {
-    // Use a small delay to debounce rapid changes
-    const timeoutId = setTimeout(() => {
-      // Use location if available, otherwise fetch without it (faster)
-      if (location && location.lat && location.lng) {
-        fetchShops(location.lat, location.lng, selectedCategory, selectedCity);
-      } else {
-        // Fetch immediately without location - don't block on geolocation
-        fetchShops(undefined, undefined, selectedCategory, selectedCity);
-      }
-    }, 100); // Small delay to debounce
-
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedCity]); // Removed location dependency to avoid blocking
-
   const fetchAllShops = async () => {
     try {
-      // Always use nearby API system for "All Shops" (optimized)
+      // Always use nearby API system for "All Shops"
       const params = new URLSearchParams();
       
       // Add location if available (for distance calculation)
@@ -347,9 +233,143 @@ export default function HomepageClient() {
     }
   };
 
+  // FIX #2: All hooks must run in same order every render
+  // Set mounted state first
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fetch homepage layout and user info in parallel (non-blocking)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Fetch both in parallel for faster loading
+    const fetchLayout = async () => {
+      try {
+        const response = await fetch('/api/homepage-layout');
+        const data = await response.json();
+        if (data.success && data.layout) {
+          setHomepageLayout(data.layout);
+        }
+      } catch (error) {
+        console.error('Failed to fetch homepage layout:', error);
+      }
+    };
+    
+    // Run both fetches in parallel (don't await - non-blocking)
+    fetchLayout();
+    fetchUser();
+  }, [mounted]);
+
+  // Update selectedCategory when language changes
+  useEffect(() => {
+    if (!mounted) return;
+    if (selectedCategory === 'All Categories' || selectedCategory === t('category.all')) {
+      setSelectedCategory(t('category.all'));
+    }
+  }, [language, t, selectedCategory, mounted]);
+
+  // Listen for storage changes (when user logs in from another tab/window)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        if (e.newValue) {
+          fetchUser();
+        } else {
+          setUser(null);
+        }
+      }
+    };
+
+    // Also check for token changes when page becomes visible (user might have logged in in same tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const token = localStorage.getItem('token');
+        if (token) {
+          // Re-fetch user info in case token was updated
+          fetchUser();
+        } else {
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [mounted]);
+
+  // Get user location (non-blocking - don't wait for it to load shops)
+  // Empty dependency array [] ensures this runs only once (fixes location API spam)
+  useEffect(() => {
+    // Only fetch location after component is mounted
+    if (!mounted) return;
+
+    // Load shops immediately without waiting for location
+    fetchShops(undefined, undefined, selectedCategory, selectedCity);
+    
+    // Get location in background (non-blocking) - runs only once
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+          console.log('📍 User location obtained:', { lat: userLat, lng: userLng });
+          setLocation({
+            lat: userLat,
+            lng: userLng,
+          });
+          // Update shops with location for distance calculation (non-blocking)
+          fetchShops(userLat, userLng, selectedCategory, selectedCity);
+        },
+        (error) => {
+          console.warn('⚠️ Location access denied or failed:', error.message);
+          // Location denied, continue without it - shops already loaded
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 300000, // 5 minutes cache
+        }
+      );
+    } else {
+      console.warn('⚠️ Geolocation not supported by browser');
+    }
+  }, [mounted]); // Only run when mounted changes
+
+  // Fetch shops when category or city changes (don't wait for location)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Use a small delay to debounce rapid changes
+    const timeoutId = setTimeout(() => {
+      // Use location if available, otherwise fetch without it (faster)
+      if (location && location.lat && location.lng) {
+        fetchShops(location.lat, location.lng, selectedCategory, selectedCity);
+      } else {
+        // Fetch immediately without location - don't block on geolocation
+        fetchShops(undefined, undefined, selectedCategory, selectedCity);
+      }
+    }, 100); // Small delay to debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedCategory, selectedCity, mounted, location]);
+
+  // FIX #2: Mounted check AFTER all hooks (hooks must run in same order)
+  if (!mounted) {
+    return null;
+  }
+
+  // Helper functions for event handlers
   const handleSearch = (query: string) => {
     setSelectedCity(query);
-    fetchShops();
+    // fetchShops will be triggered by useEffect when selectedCity changes
   };
 
   const handleCategoryChange = (category: string) => {
@@ -801,8 +821,42 @@ export default function HomepageClient() {
         className="relative bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white py-12 mt-20"
         role="contentinfo"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-lg">{t('footer.copyright')}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Footer Links */}
+          <div className="flex flex-wrap justify-center gap-6 mb-8">
+            <Link 
+              href="/privacy-policy" 
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+            >
+              Privacy Policy
+            </Link>
+            <span className="text-gray-400 dark:text-gray-600">|</span>
+            <Link 
+              href="/terms" 
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+            >
+              Terms & Conditions
+            </Link>
+            <span className="text-gray-400 dark:text-gray-600">|</span>
+            <Link 
+              href="/about" 
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+            >
+              About Us
+            </Link>
+            <span className="text-gray-400 dark:text-gray-600">|</span>
+            <Link 
+              href="/contact" 
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+            >
+              Contact Us
+            </Link>
+          </div>
+          
+          {/* Copyright */}
+          <div className="text-center border-t border-gray-300 dark:border-gray-700 pt-8">
+            <p className="text-lg">{t('footer.copyright')}</p>
+          </div>
         </div>
       </motion.footer>
       )}

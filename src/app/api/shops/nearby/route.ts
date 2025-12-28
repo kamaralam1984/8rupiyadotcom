@@ -79,10 +79,27 @@ export async function GET(req: NextRequest) {
     const mergedShops: MergedShop[] = [];
 
     // 1. Get shops from MongoDB (only active shops for website)
-    let mongoQuery: any = { status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] } };
+    // PART-4: Always filter for shops with valid lat/lng to prevent 500 errors
+    let mongoQuery: any = { 
+      status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] },
+      $and: [
+        {
+          'location.coordinates': {
+            $exists: true,
+            $ne: null,
+            $size: 2, // Must have exactly 2 coordinates [lng, lat]
+          },
+        },
+        {
+          'location.coordinates.0': { $nin: [null, 0] }, // longitude not null/0
+        },
+        {
+          'location.coordinates.1': { $nin: [null, 0] }, // latitude not null/0
+        },
+      ],
+    };
 
-    // If we have valid coordinates, use $near to get shops within 500km radius
-    // This is more efficient than fetching all shops
+    // If we have valid coordinates, try to use $near (requires geospatial index)
     if (hasValidCoords) {
       mongoQuery.location = {
         $near: {
@@ -102,12 +119,29 @@ export async function GET(req: NextRequest) {
       mongoQuery.category = { $regex: category, $options: 'i' };
     }
 
-    // Fetch shops - increased limit to get more shops within 500km
-    const mongoShops = await Shop.find(mongoQuery)
-      .populate('planId')
-      .populate('shopperId', 'name email phone')
-      .limit(500) // Increased limit to get more shops within 500km radius
-      .lean();
+    // Fetch shops with reasonable limit
+    let mongoShops;
+    try {
+      mongoShops = await Shop.find(mongoQuery)
+        .populate('planId')
+        .populate('shopperId', 'name email phone')
+        .limit(hasValidCoords ? 500 : 100) // Limit to 100 if no location to prevent overload
+        .lean();
+    } catch (error: any) {
+      // If $near query fails (no geospatial index), try without it
+      if (error.message?.includes('index') || error.message?.includes('near')) {
+        console.warn('Geospatial query failed, using regular query:', error.message);
+        delete mongoQuery.location;
+        // Coordinate filter already in $and, no need to add again
+        mongoShops = await Shop.find(mongoQuery)
+          .populate('planId')
+          .populate('shopperId', 'name email phone')
+          .limit(100)
+          .lean();
+      } else {
+        throw error; // Re-throw if it's a different error
+      }
+    }
 
     // Process MongoDB shops
     for (const shop of mongoShops) {
@@ -149,9 +183,19 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      const planPriority = shop.planId ? await getPlanPriority(shop.planId._id) : 0;
+      // Get plan priority (cache to avoid multiple DB calls for same plan)
+      let planPriority = 0;
+      try {
+        if (shop.planId) {
+          const planId = shop.planId._id || shop.planId;
+          planPriority = await getPlanPriority(planId);
+        }
+      } catch (error) {
+        console.error('Error getting plan priority:', error);
+        planPriority = 0; // Default to 0 on error
+      }
+      
       const rankScore = calculateRankScore(shop, distance !== undefined ? distance : 0); // Use 0 for ranking if distance is undefined
-      shop.planPriority = planPriority;
 
       mergedShops.push({
         _id: shop._id.toString(),
@@ -290,6 +334,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Nearby shops error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error stack:', error.stack);
+    
+    // Return more detailed error in development
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message || 'Internal server error'
+      : 'Failed to load shops. Please try again.';
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      shops: [], // Return empty array so frontend doesn't break
+      page: 1,
+      limit: 20,
+      total: 0,
+      sources: { mongodb: 0, google: 0 }
+    }, { status: 500 });
   }
 }
