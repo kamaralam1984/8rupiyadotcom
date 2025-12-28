@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin, FiShoppingBag, FiMail, FiGlobe, FiClock } from 'react-icons/fi';
 import AdSlot from './AdSlot';
+import DisplayAd from './DisplayAd';
 
 interface Shop {
   _id?: string;
@@ -105,6 +106,9 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                       initial={{ scale: 1 }}
                       animate={{ scale: 1.1 }}
                       transition={{ duration: 8, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                      loading="eager"
+                      decoding="async"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -177,6 +181,11 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                         })()}
                       </div>
                     )}
+                  </div>
+
+                  {/* Display Ad - Shop Detail Page (Placement 2) - After Address, Before Photos */}
+                  <div className="mb-6">
+                    <DisplayAd />
                   </div>
 
                   {/* Rating */}

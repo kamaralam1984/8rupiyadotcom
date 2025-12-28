@@ -91,6 +91,19 @@ header,
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
 }
 
+/* Force golden color for All Shops title in dark mode */
+html.dark h2,
+html[data-theme="dark"] h2,
+.dark h2 {
+  color: #FCD34D !important;
+}
+
+html.dark .nearby-title,
+html[data-theme="dark"] .nearby-title,
+.dark .nearby-title {
+  color: #FCD34D !important;
+}
+
 /* System preference (only when no explicit class is set) */
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {

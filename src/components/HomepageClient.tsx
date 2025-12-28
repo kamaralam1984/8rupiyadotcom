@@ -13,6 +13,8 @@ import ShopCard from './ShopCard';
 import ShopPopup from './ShopPopup';
 import AdSlot from './AdSlot';
 import AdvertisementBanner from './AdvertisementBanner';
+import InFeedAd from './InFeedAd';
+import DisplayAd from './DisplayAd';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -464,19 +466,6 @@ export default function HomepageClient() {
       </a>
       
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-        {/* Animated Background */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-300 dark:bg-blue-900 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10"
-          animate={{ x: [0, 100, 0], y: [0, -50, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute top-40 right-10 w-72 h-72 bg-purple-300 dark:bg-purple-900 rounded-full mix-blend-multiply filter blur-xl opacity-20 dark:opacity-10"
-          animate={{ x: [0, -100, 0], y: [0, 50, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
 
       {/* Header */}
       <motion.header
@@ -500,6 +489,10 @@ export default function HomepageClient() {
                         src="/uploads/logo.png"
                         alt="8rupiya.com Logo"
                         className="h-full w-auto object-contain"
+                        loading="eager"
+                        decoding="async"
+                        width="150"
+                        height="60"
                         onError={() => setLogoError(true)}
                         onLoad={() => setLogoError(false)}
                       />
@@ -595,8 +588,12 @@ export default function HomepageClient() {
                 </div>
               ) : (
                 <>
-                  <Link href="/login" className="text-white hover:text-blue-400 font-medium transition-colors text-sm sm:text-base px-2 sm:px-0">
-                    {t('nav.login')}
+                  <Link
+                    href="/login"
+                    className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base flex items-center gap-1 sm:gap-2"
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                  >
+                    <span>{t('nav.login')}</span>
                   </Link>
                   <Link
                     href="/register"
@@ -622,8 +619,17 @@ export default function HomepageClient() {
         />
       )}
 
+      {/* Display Ad - Below Hero Section (Placement 1) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <DisplayAd />
+      </div>
+
       {/* Main Content with Sidebars */}
       <main id="main-content" className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8" role="main">
+        {/* Main Page Heading - h1 for SEO */}
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6 px-4 sm:px-6">
+          {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
+        </h1>
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Rail */}
           {homepageLayout?.sections.leftRail.enabled !== false && (
@@ -646,13 +652,27 @@ export default function HomepageClient() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+                  aria-label="Featured Shops"
                 >
                   {homepageLayout?.sections.featuredShops.title || t('shop.featured')}
                 </motion.h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-                  {featuredShops.map((shop, index) => (
-                    <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
-                  ))}
+                  {featuredShops.flatMap((shop, index) => {
+                    const items: React.ReactNode[] = [
+                      <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                    ];
+                    
+                    // Add in-feed ad after every 2 shop cards
+                    if ((index + 1) % 2 === 0 && (index + 1) < featuredShops.length) {
+                      items.push(
+                        <div key={`ad-featured-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                          <InFeedAd />
+                        </div>
+                      );
+                    }
+                    
+                    return items;
+                  })}
                 </div>
               </section>
             )}
@@ -668,13 +688,27 @@ export default function HomepageClient() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+                  aria-label="Premium Shops"
                 >
                   {homepageLayout?.sections.paidShops.title || t('shop.premium')}
                 </motion.h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-                  {paidShops.map((shop, index) => (
-                    <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
-                  ))}
+                  {paidShops.flatMap((shop, index) => {
+                    const items: React.ReactNode[] = [
+                      <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                    ];
+                    
+                    // Add in-feed ad after every 2 shop cards
+                    if ((index + 1) % 2 === 0 && (index + 1) < paidShops.length) {
+                      items.push(
+                        <div key={`ad-paid-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                          <InFeedAd />
+                        </div>
+                      );
+                    }
+                    
+                    return items;
+                  })}
                 </div>
               </section>
             )}
@@ -695,27 +729,27 @@ export default function HomepageClient() {
             </aside>
           )}
         </div>
+
+        {/* Top Rated Shops Section - Full Width from 10px left */}
+        {homepageLayout?.sections.topRated.enabled !== false && (
+          <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
+        )}
+
+        {/* Homepage Ad - Between sections */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <AdSlot slot="homepage" />
+        </div>
+
+        {/* All Shops Section - Full Width from 10px left */}
+        {homepageLayout?.sections.nearbyShops.enabled !== false && (
+          <Nearby 
+            shops={filteredShops} 
+            title={homepageLayout?.sections.nearbyShops.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : t('shop.allShops'))} 
+            onShopClick={handleShopClick} 
+            userLocation={location} 
+          />
+        )}
       </main>
-
-      {/* Top Rated Shops Section - Full Width from 10px left */}
-      {homepageLayout?.sections.topRated.enabled !== false && (
-        <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
-      )}
-
-      {/* Homepage Ad - Between sections */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        <AdSlot slot="homepage" />
-      </div>
-
-      {/* All Shops Section - Full Width from 10px left */}
-      {homepageLayout?.sections.nearbyShops.enabled !== false && (
-        <Nearby 
-          shops={filteredShops} 
-          title={homepageLayout?.sections.nearbyShops.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : t('shop.allShops'))} 
-          onShopClick={handleShopClick} 
-          userLocation={location} 
-        />
-      )}
 
       {/* Error Message */}
       {error && (
@@ -754,6 +788,11 @@ export default function HomepageClient() {
         </motion.div>
       </section>
       )}
+
+      {/* Display Ad - Before Footer (Placement 3) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <DisplayAd />
+      </div>
 
       {/* Footer */}
       {homepageLayout?.sections.footer.enabled !== false && (

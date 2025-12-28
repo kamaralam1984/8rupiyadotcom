@@ -145,6 +145,9 @@ function SliderComponent({ component }: { component: PageComponent }) {
             src={slide.image}
             alt={slide.title || `Slide ${index + 1}`}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+            sizes="100vw"
           />
           {(slide.title || slide.description) && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">

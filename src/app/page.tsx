@@ -1,5 +1,5 @@
 import HomepageClient from '@/components/HomepageClient';
-import { generateMetadata as generateSEOMetadata, generateWebSiteSchema } from '@/lib/seo';
+import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = generateSEOMetadata({
@@ -11,15 +11,6 @@ export const metadata: Metadata = generateSEOMetadata({
 });
 
 export default function HomePage() {
-  const websiteSchema = generateWebSiteSchema();
-  
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
-      <HomepageClient />
-    </>
-  );
+  // Schema is already included in layout.tsx to avoid duplication
+  return <HomepageClient />;
 }

@@ -145,6 +145,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
             } as any}
             loading="eager"
             decoding="async"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">
@@ -249,6 +250,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
             } as any}
             loading="eager"
             decoding="async"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400/50 via-purple-400/50 to-pink-400/50 flex items-center justify-center">
@@ -295,6 +297,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
             } as any}
             loading="eager"
             decoding="async"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">
@@ -342,6 +345,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
             } as any}
             loading="eager"
             decoding="async"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">

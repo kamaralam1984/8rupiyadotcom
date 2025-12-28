@@ -1,8 +1,10 @@
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
 import ShopCard from './ShopCard';
 import AdSlot from './AdSlot';
+import InFeedAd from './InFeedAd';
 import { FiStar } from 'react-icons/fi';
 
 interface TopRatedProps {
@@ -30,13 +32,26 @@ export default function TopRated({ shops, onShopClick, userLocation }: TopRatedP
         className="flex items-center gap-3 mb-8 px-4 sm:px-6"
       >
         <FiStar className="text-3xl text-yellow-500" />
-        <h2 className="text-3xl font-bold text-gray-900">Top Rated Shops</h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Top Rated Shops</h2>
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6">
-        {topRated.map((shop, index) => (
-          <ShopCard key={shop._id || shop.place_id || index} shop={shop} index={index} onClick={() => onShopClick?.(shop)} userLocation={userLocation} />
-        ))}
+        {topRated.flatMap((shop, index) => {
+          const items: React.ReactNode[] = [
+            <ShopCard key={shop._id || shop.place_id || index} shop={shop} index={index} onClick={() => onShopClick?.(shop)} userLocation={userLocation} />
+          ];
+          
+          // Add in-feed ad after every 2 shop cards
+          if ((index + 1) % 2 === 0 && (index + 1) < topRated.length) {
+            items.push(
+              <div key={`ad-toprated-${index}`} className="col-span-1 md:col-span-2 lg:col-span-3 my-4">
+                <InFeedAd />
+              </div>
+            );
+          }
+          
+          return items;
+        })}
       </div>
 
       {/* Ad Space - Homepage Ads */}

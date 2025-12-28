@@ -2,31 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 
-declare global {
-  interface Window {
-    adsbygoogle: any[] | { loaded?: boolean; push?: (ad: any) => void };
-  }
+interface InFeedAdProps {
+  className?: string;
 }
 
-interface GoogleAdSenseProps {
-  slot?: string;
-  style?: React.CSSProperties;
-  format?: string;
-  responsive?: string;
-  adsenseId?: string;
-}
-
-export default function GoogleAdSense({
-  slot,
-  style = { display: 'block' },
-  format = 'auto',
-  responsive = 'true',
-  adsenseId: propAdsenseId,
-}: GoogleAdSenseProps) {
-  const envAdsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
-  const adsenseId = propAdsenseId || envAdsenseId;
+export default function InFeedAd({ className = '' }: InFeedAdProps) {
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
+  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || 'ca-pub-4472734290958984';
+  const adSlot = '4723091404';
 
   useEffect(() => {
     // Wait for AdSense script to load
@@ -40,12 +24,6 @@ export default function GoogleAdSense({
       
       // Check if this specific element already has ads initialized
       if (element.hasAttribute('data-ads-initialized')) {
-        initializedRef.current = true;
-        return;
-      }
-
-      // Check if element already has the adsbygoogle property (from previous initialization)
-      if ((element as any).adsbygoogle) {
         initializedRef.current = true;
         return;
       }
@@ -66,12 +44,11 @@ export default function GoogleAdSense({
           // Mark as initialized before pushing
           initializedRef.current = true;
           element.setAttribute('data-ads-initialized', 'true');
-          (element as any).adsbygoogle = true;
           
           (window as any).adsbygoogle.push({});
         }
       } catch (err) {
-        console.error('AdSense error:', err);
+        console.error('InFeed AdSense error:', err);
         initializedRef.current = false;
       }
     };
@@ -91,15 +68,17 @@ export default function GoogleAdSense({
   }
 
   return (
-    <ins
-      ref={adRef}
-      className="adsbygoogle"
-      style={style}
-      data-ad-client={adsenseId}
-      data-ad-slot={slot}
-      data-ad-format={format}
-      data-full-width-responsive={responsive}
-    />
+    <div className={`in-feed-ad ${className}`}>
+      <ins
+        ref={adRef}
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-format="fluid"
+        data-ad-layout-key="-fb+5w+4e-db+86"
+        data-ad-client={adsenseId}
+        data-ad-slot={adSlot}
+      />
+    </div>
   );
 }
 

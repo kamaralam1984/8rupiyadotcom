@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiMapPin, FiUpload, FiCheck, FiAlertCircle } from 'react-icons/fi';
 
 interface Plan {
@@ -242,7 +242,7 @@ export default function ShopperShopCreatePage() {
       </div>
 
       {/* Progress Steps */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
         <div className="flex items-center justify-between mb-6">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center flex-1">
@@ -250,22 +250,26 @@ export default function ShopperShopCreatePage() {
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg transition-all ${
                     currentStep >= step.number
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                      ? 'bg-green-600 dark:bg-green-500 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   }`}
                 >
                   {currentStep > step.number ? <FiCheck /> : step.number}
                 </div>
-                <span className={`text-xs mt-2 font-medium ${
-                  currentStep >= step.number ? 'text-green-600' : 'text-gray-500'
+                <span className={`text-xs mt-2 font-medium transition-colors ${
+                  currentStep >= step.number 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   {step.label}
                 </span>
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`w-full h-1 mx-2 ${
-                    currentStep > step.number ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'
+                  className={`w-full h-1 mx-2 transition-colors ${
+                    currentStep > step.number 
+                      ? 'bg-green-600 dark:bg-green-500' 
+                      : 'bg-gray-200 dark:bg-gray-700'
                   }`}
                 />
               )}
@@ -273,11 +277,19 @@ export default function ShopperShopCreatePage() {
           ))}
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-start gap-2"
+            >
+              <FiAlertCircle className="text-xl flex-shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Step 1: Plan Selection */}
         {currentStep === 1 && (
@@ -290,21 +302,23 @@ export default function ShopperShopCreatePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {plans.map((plan) => (
-                  <button
+                  <motion.button
                     key={plan._id}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, planId: plan._id, selectedPlan: plan }))}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     className={`p-6 rounded-xl border-2 text-left transition-all ${
                       formData.planId === plan._id
-                        ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+                        ? 'border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30 shadow-md'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-300 dark:hover:border-green-600'
                     }`}
                   >
                     <h4 className="font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h4>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">₹{plan.price}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Duration: {plan.duration} days</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Photos: {plan.maxPhotos}</p>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -325,7 +339,7 @@ export default function ShopperShopCreatePage() {
                   required
                   value={formData.shopName}
                   onChange={(e) => setFormData(prev => ({ ...prev, shopName: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter shop name"
                 />
               </div>
@@ -341,7 +355,7 @@ export default function ShopperShopCreatePage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                     required
                   >
                     <option value="">-- Select Category --</option>
@@ -361,7 +375,7 @@ export default function ShopperShopCreatePage() {
                   value={formData.address}
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter full address"
                   required
                 />
@@ -375,7 +389,7 @@ export default function ShopperShopCreatePage() {
                   required
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter phone number"
                   maxLength={10}
                 />
@@ -388,7 +402,7 @@ export default function ShopperShopCreatePage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter email (optional)"
                 />
               </div>
@@ -401,7 +415,7 @@ export default function ShopperShopCreatePage() {
                   required
                   value={formData.pincode}
                   onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter pincode"
                   maxLength={6}
                 />
@@ -414,7 +428,7 @@ export default function ShopperShopCreatePage() {
                   type="text"
                   value={formData.city}
                   onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter city"
                 />
               </div>
@@ -428,7 +442,7 @@ export default function ShopperShopCreatePage() {
                   required
                   value={formData.latitude}
                   onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="e.g., 25.5941"
                 />
               </div>
@@ -442,20 +456,22 @@ export default function ShopperShopCreatePage() {
                   required
                   value={formData.longitude}
                   onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="e.g., 85.1376"
                 />
               </div>
               <div className="md:col-span-2">
-                <button
+                <motion.button
                   type="button"
                   onClick={getCurrentLocation}
                   disabled={loadingLocation}
-                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  whileHover={{ scale: loadingLocation ? 1 : 1.02 }}
+                  whileTap={{ scale: loadingLocation ? 1 : 0.98 }}
+                  className="w-full px-6 py-3 bg-green-600 dark:bg-green-500 text-white rounded-lg font-semibold hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
                 >
                   <FiMapPin />
                   {loadingLocation ? 'Getting Location...' : 'Get Current Location'}
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -477,7 +493,7 @@ export default function ShopperShopCreatePage() {
                   const files = Array.from(e.target.files || []);
                   files.forEach(file => handleImageUpload(file));
                 }}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 dark:file:bg-green-900/30 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-900/40 transition-colors"
               />
               {uploadingImages && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Uploading...</p>
@@ -499,7 +515,7 @@ export default function ShopperShopCreatePage() {
         {currentStep === 4 && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Review & Submit</h3>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 space-y-4">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4 border border-gray-200 dark:border-gray-600">
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Plan Selected</h4>
                 <p className="text-gray-700 dark:text-gray-300">
@@ -524,16 +540,18 @@ export default function ShopperShopCreatePage() {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <button
+          <motion.button
             type="button"
             onClick={() => setCurrentStep(currentStep > 1 ? currentStep - 1 : 1)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             {currentStep === 1 ? 'Cancel' : 'Back'}
-          </button>
+          </motion.button>
           <div className="flex gap-2">
             {currentStep < 4 ? (
-              <button
+              <motion.button
                 type="button"
                 onClick={() => {
                   if (currentStep === 1 && !formData.planId) {
@@ -547,19 +565,23 @@ export default function ShopperShopCreatePage() {
                   setCurrentStep(currentStep + 1);
                   setError('');
                 }}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-6 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors shadow-md"
               >
                 Next
-              </button>
+              </motion.button>
             ) : (
-              <button
+              <motion.button
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: submitting ? 1 : 1.02 }}
+                whileTap={{ scale: submitting ? 1 : 0.98 }}
+                className="px-6 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
                 {submitting ? 'Creating...' : 'Create Shop & Pay Online'}
-              </button>
+              </motion.button>
             )}
           </div>
         </div>

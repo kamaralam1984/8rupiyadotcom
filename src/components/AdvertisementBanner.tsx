@@ -168,6 +168,9 @@ export default function AdvertisementBanner({ slot, className = '', style, limit
                       : { height: 'auto' }
                     ),
                   }}
+                  loading="lazy"
+                  decoding="async"
+                  sizes={slot === 'sidebar-left' || slot === 'sidebar-right' ? '264px' : '(max-width: 768px) 100vw, 1200px'}
                   onError={(e) => {
                     console.error(`[AdvertisementBanner] Image load error for ad ${ad._id}:`, ad.image);
                     (e.target as HTMLImageElement).style.display = 'none';
