@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { verifyTokenEdge } from '@/lib/auth-edge';
 import { UserRole } from '@/types/user';
 
 export async function middleware(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.ADMIN && payload.role !== UserRole.ACCOUNTANT)) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -31,7 +31,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.AGENT && payload.role !== UserRole.ADMIN)) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -47,7 +47,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.OPERATOR && payload.role !== UserRole.ADMIN)) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -63,7 +63,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.ACCOUNTANT && payload.role !== UserRole.ADMIN)) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -79,7 +79,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || payload.role !== UserRole.SHOPPER) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -95,7 +95,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (!payload || payload.role !== UserRole.SHOPPER) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -108,7 +108,7 @@ export async function middleware(req: NextRequest) {
     // Block users with role 'user' from accessing any panel routes
     if (token) {
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyTokenEdge(token);
         if (payload && payload.role === UserRole.USER) {
           // If user tries to access any panel, redirect to home
           if (req.nextUrl.pathname.startsWith('/admin') || 
