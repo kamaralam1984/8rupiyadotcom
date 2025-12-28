@@ -23,6 +23,9 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
+    // Ensure Plan model is registered for populate operations
+    Plan.modelName; // This ensures Plan model is loaded
+
     // Verify user exists and is admin in database
     const dbUser = await User.findById(payload.userId);
     if (!dbUser) {
