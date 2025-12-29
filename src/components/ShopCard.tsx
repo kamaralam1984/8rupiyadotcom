@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMapPin, FiStar, FiShoppingBag, FiClock } from 'react-icons/fi';
+import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation } from 'react-icons/fi';
+import { calculateDistanceAndTime } from '@/utils/distanceCalculation';
 
 interface ShopCardProps {
   shop: {
@@ -41,89 +42,55 @@ interface ShopCardProps {
 interface DistanceTime {
   distance?: string;
   time?: string;
-}
-
-// Haversine formula to calculate distance between two points
-function calculateHaversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-// Convert degrees to radians
-function toRad(degrees: number): number {
-  return (degrees * Math.PI) / 180;
-}
-
-// Calculate estimated time from distance (assuming average speed of 40 km/h)
-function calculateTimeFromDistance(distance: number): string {
-  const avgSpeed = 40; // km/h
-  const timeInHours = distance / avgSpeed;
-  const timeInMinutes = Math.round(timeInHours * 60);
-  
-  if (timeInMinutes < 60) {
-    return `${timeInMinutes} min`;
-  } else {
-    const hours = Math.floor(timeInMinutes / 60);
-    const minutes = timeInMinutes % 60;
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
+  distanceValue?: number;
 }
 
 export default function ShopCard({ shop, index = 0, onClick, userLocation }: ShopCardProps) {
   const [distanceTime, setDistanceTime] = useState<DistanceTime>({});
 
-  // Calculate distance and time locally without API
+  // Calculate distance and time using enhanced utility
   useEffect(() => {
-    let calculatedDistance: number | undefined = shop.distance;
-
-    // If API didn't provide distance, try to calculate locally if we have user location and shop coordinates
-    if ((calculatedDistance === undefined || calculatedDistance === null) && 
-        userLocation && 
-        shop.location?.coordinates && 
-        Array.isArray(shop.location.coordinates) &&
-        shop.location.coordinates.length === 2) {
-      const shopLng = shop.location.coordinates[0];
-      const shopLat = shop.location.coordinates[1];
-      
-      // Validate shop coordinates
-      if (!isNaN(shopLng) && !isNaN(shopLat) &&
-          shopLng >= -180 && shopLng <= 180 &&
-          shopLat >= -90 && shopLat <= 90 &&
-          shopLng !== 0 && shopLat !== 0) { // Exclude 0,0 as likely invalid
-        calculatedDistance = calculateHaversineDistance(
-          userLocation.lat,
-          userLocation.lng,
-          shopLat, // latitude
-          shopLng  // longitude
-        );
+    if (userLocation && shop.location?.coordinates) {
+      const result = calculateDistanceAndTime(userLocation, shop.location);
+      if (result) {
+        setDistanceTime({
+          distance: result.distance,
+          time: result.time,
+          distanceValue: result.distanceValue
+        });
+      } else {
+        setDistanceTime({});
       }
-    }
-
-    // Set distance and time if we have a valid distance (including 0)
-    if (calculatedDistance !== undefined && calculatedDistance !== null && calculatedDistance >= 0) {
-      const distanceText = `${calculatedDistance.toFixed(1)} km`;
-      const timeText = calculateTimeFromDistance(calculatedDistance);
+    } else if (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0) {
+      // Fallback to shop's pre-calculated distance
+      const distanceKm = Number(shop.distance);
+      const distanceText = distanceKm < 1 
+        ? `${Math.round(distanceKm * 1000)} m` 
+        : distanceKm < 10 
+        ? `${distanceKm.toFixed(1)} km` 
+        : `${Math.round(distanceKm)} km`;
+      
+      let timeInMinutes: number;
+      if (distanceKm < 5) {
+        timeInMinutes = Math.round((distanceKm / 20) * 60);
+      } else if (distanceKm < 20) {
+        timeInMinutes = Math.round((distanceKm / 35) * 60);
+      } else {
+        timeInMinutes = Math.round((distanceKm / 50) * 60);
+      }
+      
+      const timeText = timeInMinutes < 1 
+        ? '< 1 min'
+        : timeInMinutes < 60 
+        ? `${timeInMinutes} min` 
+        : `${Math.floor(timeInMinutes / 60)}h ${timeInMinutes % 60}m`;
       
       setDistanceTime({
         distance: distanceText,
         time: timeText,
+        distanceValue: distanceKm
       });
     } else {
-      // Reset if no distance available
       setDistanceTime({});
     }
   }, [userLocation, shop.location, shop.distance]);
@@ -171,6 +138,21 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 <FiShoppingBag className="text-6xl text-white opacity-50" />
               </div>
             )}
+            {/* Distance Quick View on Image */}
+            {distanceTime.distance && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5"
+              >
+                <FiNavigation className="text-red-400 text-sm" />
+                <span>{distanceTime.distance}</span>
+                <span className="text-blue-300">• {distanceTime.time}</span>
+              </motion.div>
+            )}
+
+            {/* Featured Badge */}
             {shop.isFeatured && (
               <motion.div
                 initial={{ scale: 0 }}
@@ -199,18 +181,30 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
               <span>{shop.address}, {shop.city}</span>
             </p>
             
-            {/* Distance and Time - Always show both together when distance is available */}
-            {((distanceTime.distance && distanceTime.time) || 
-              (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0)) && (
-              <div className="flex items-center gap-2 sm:gap-4 mb-3 text-xs sm:text-sm flex-wrap">
-                <span className="text-red-700 dark:text-red-600 font-semibold flex items-center gap-1">
-                  <FiMapPin className="text-xs flex-shrink-0" />
-                  <span>{distanceTime.distance || (shop.distance !== undefined && shop.distance !== null ? `${Number(shop.distance).toFixed(1)} km` : '')}</span>
-                </span>
-                <span className="text-blue-700 dark:text-blue-600 font-semibold flex items-center gap-1">
-                  <FiClock className="text-xs" />
-                  {distanceTime.time || (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0 ? calculateTimeFromDistance(Number(shop.distance)) : '')}
-                </span>
+            {/* Distance and Time - Enhanced Display */}
+            {(distanceTime.distance && distanceTime.time) && (
+              <div className="flex items-center gap-2 mb-3">
+                {/* Distance Badge */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-700/50 px-3 py-1.5 rounded-full"
+                >
+                  <FiNavigation className="text-red-600 dark:text-red-400 text-sm" />
+                  <span className="text-red-700 dark:text-red-300 font-bold text-xs sm:text-sm">
+                    {distanceTime.distance}
+                  </span>
+                </motion.div>
+
+                {/* Time Badge */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-700/50 px-3 py-1.5 rounded-full"
+                >
+                  <FiClock className="text-blue-600 dark:text-blue-400 text-sm" />
+                  <span className="text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm">
+                    {distanceTime.time}
+                  </span>
+                </motion.div>
               </div>
             )}
             <div className="flex items-center justify-between pt-3 border-t border-gray-200">
