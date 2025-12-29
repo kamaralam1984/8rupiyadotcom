@@ -119,7 +119,7 @@ export default function OperatorDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-xl p-8 text-white"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-green-100 text-sm mb-2">Total Operator Commission</p>
             <p className="text-4xl font-bold mb-1">
@@ -129,6 +129,25 @@ export default function OperatorDashboard() {
           </div>
           <div className="p-6 bg-white/20 rounded-xl backdrop-blur-sm">
             <FiDollarSign className="text-white text-4xl" />
+          </div>
+        </div>
+        
+        {/* Commission Formula Explanation */}
+        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 text-sm space-y-2">
+          <p className="font-semibold text-white">📊 Commission Calculation Formula:</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-green-50">
+            <div className="space-y-1">
+              <p>1️⃣ Agent gets: <span className="font-bold">20% of Payment</span></p>
+              <p>2️⃣ Remaining: <span className="font-bold">Payment - Agent</span></p>
+              <p>3️⃣ Operator gets: <span className="font-bold">10% of Remaining</span></p>
+            </div>
+            <div className="bg-white/10 rounded p-2 space-y-1">
+              <p className="font-semibold text-white">Example: ₹100 Payment</p>
+              <p>→ Agent: ₹20 (20% of 100)</p>
+              <p>→ Remaining: ₹80 (100 - 20)</p>
+              <p>→ <span className="font-bold text-white">Operator: ₹8 (10% of 80)</span></p>
+              <p>→ Company: ₹72</p>
+            </div>
           </div>
         </div>
       </motion.div>
