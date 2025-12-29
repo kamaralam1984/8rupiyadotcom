@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -23,10 +24,22 @@ export default function GoogleAdSense({
   responsive = 'true',
   adsenseId: propAdsenseId,
 }: GoogleAdSenseProps) {
+  const pathname = usePathname();
   const envAdsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
   const adsenseId = propAdsenseId || envAdsenseId;
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
+
+  // Block ads on admin, agent, operator, accountant, and shopper panels
+  const isAdminPanel = pathname?.startsWith('/admin') || 
+                       pathname?.startsWith('/agent') || 
+                       pathname?.startsWith('/operator') ||
+                       pathname?.startsWith('/accountant') ||
+                       pathname?.startsWith('/shopper');
+
+  if (isAdminPanel) {
+    return null;
+  }
 
   useEffect(() => {
     // Wait for AdSense script to load

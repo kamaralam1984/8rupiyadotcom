@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import GoogleAdSense from './GoogleAdSense';
 
 interface CustomAd {
@@ -17,11 +18,24 @@ interface AdSlotProps {
 }
 
 export default function AdSlot({ slot, className = '', style }: AdSlotProps) {
+  const pathname = usePathname();
   const [enabled, setEnabled] = useState(false);
   const [adsenseId, setAdsenseId] = useState('');
   const [customAds, setCustomAds] = useState<CustomAd[]>([]);
   const [loading, setLoading] = useState(true);
   const adContainerRef = useRef<HTMLDivElement>(null);
+
+  // Block ads on admin, agent, operator, accountant, and shopper panels
+  const isAdminPanel = pathname?.startsWith('/admin') || 
+                       pathname?.startsWith('/agent') || 
+                       pathname?.startsWith('/operator') ||
+                       pathname?.startsWith('/accountant') ||
+                       pathname?.startsWith('/shopper');
+
+  // Don't show ads on admin panels
+  if (isAdminPanel) {
+    return null;
+  }
 
   useEffect(() => {
     fetchAdSettings();

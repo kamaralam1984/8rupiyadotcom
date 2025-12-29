@@ -1,16 +1,29 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface DisplayAdProps {
   className?: string;
 }
 
 export default function DisplayAd({ className = '' }: DisplayAdProps) {
+  const pathname = usePathname();
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || 'ca-pub-4472734290958984';
   const adSlot = '3350299981';
+
+  // Block ads on admin, agent, operator, accountant, and shopper panels
+  const isAdminPanel = pathname?.startsWith('/admin') || 
+                       pathname?.startsWith('/agent') || 
+                       pathname?.startsWith('/operator') ||
+                       pathname?.startsWith('/accountant') ||
+                       pathname?.startsWith('/shopper');
+
+  if (isAdminPanel) {
+    return null;
+  }
 
   useEffect(() => {
     // Wait for AdSense script to load
