@@ -185,8 +185,8 @@ function extractCategory(query: string, language: 'hi' | 'en' | 'hinglish'): str
     for (const keyword of keywords) {
       // Check both lowercase and original query for Hindi characters
       if (lowerQuery.includes(keyword.toLowerCase()) || originalQuery.includes(keyword)) {
-        return category;
-      }
+      return category;
+    }
     }
   }
   
@@ -531,7 +531,7 @@ export async function POST(req: NextRequest) {
 
     // Normalize category to match database (capitalize first letter)
     const normalizedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-    
+
     // Build query for shops - MUST have category
     // Try both exact match and regex for better matching
     let mongoQuery: any = { 
@@ -768,55 +768,55 @@ export async function POST(req: NextRequest) {
         responseText = aiResponse;
       } else {
         // Fallback to template responses with detailed shop info
-        const responses = {
-          hi: {
-            cheap: [
-              `Ji bilkul 🙂 aapke paas ${topShop.name} hai, jo sasta bhi hai aur reliable bhi.`,
-              `Haan ji, ${topShop.name} aapke area me sasta option hai.`,
-            ],
-            best: [
-              `Ji, aapke paas ${topShop.name} sabse best hai.`,
-              `Haan, main recommend karti hoon ${topShop.name} - yeh bahut achha hai.`,
-            ],
-            default: [
-              `Ji bilkul 🙂 aapke paas ${topShop.name} hai.`,
-              `Haan ji, main aapko ${topShop.name} suggest karti hoon.`,
-            ],
-          },
-          en: {
-            cheap: [
-              `Yes, ${topShop.name} is affordable and reliable near you.`,
-              `I found ${topShop.name} which is a good budget option.`,
-            ],
-            best: [
-              `${topShop.name} is the best option near you.`,
-              `I recommend ${topShop.name} - it's excellent.`,
-            ],
-            default: [
-              `Yes, I found ${topShop.name} near you.`,
-              `I can suggest ${topShop.name} for you.`,
-            ],
-          },
-          hinglish: {
-            cheap: [
-              `Ji bilkul 🙂 aapke paas ${topShop.name} hai, jo sasta bhi hai aur fast bhi.`,
-              `Haan, ${topShop.name} aapke area me sasta option hai.`,
-            ],
-            best: [
-              `Ji, aapke paas ${topShop.name} sabse best hai.`,
-              `Haan, main recommend karti hoon ${topShop.name} - yeh bahut achha hai.`,
-            ],
-            default: [
-              `Ji bilkul 🙂 aapke paas ${topShop.name} hai.`,
-              `Haan ji, main aapko ${topShop.name} suggest karti hoon.`,
-            ],
-          },
-        };
+      const responses = {
+        hi: {
+          cheap: [
+            `Ji bilkul 🙂 aapke paas ${topShop.name} hai, jo sasta bhi hai aur reliable bhi.`,
+            `Haan ji, ${topShop.name} aapke area me sasta option hai.`,
+          ],
+          best: [
+            `Ji, aapke paas ${topShop.name} sabse best hai.`,
+            `Haan, main recommend karti hoon ${topShop.name} - yeh bahut achha hai.`,
+          ],
+          default: [
+            `Ji bilkul 🙂 aapke paas ${topShop.name} hai.`,
+            `Haan ji, main aapko ${topShop.name} suggest karti hoon.`,
+          ],
+        },
+        en: {
+          cheap: [
+            `Yes, ${topShop.name} is affordable and reliable near you.`,
+            `I found ${topShop.name} which is a good budget option.`,
+          ],
+          best: [
+            `${topShop.name} is the best option near you.`,
+            `I recommend ${topShop.name} - it's excellent.`,
+          ],
+          default: [
+            `Yes, I found ${topShop.name} near you.`,
+            `I can suggest ${topShop.name} for you.`,
+          ],
+        },
+        hinglish: {
+          cheap: [
+            `Ji bilkul 🙂 aapke paas ${topShop.name} hai, jo sasta bhi hai aur fast bhi.`,
+            `Haan, ${topShop.name} aapke area me sasta option hai.`,
+          ],
+          best: [
+            `Ji, aapke paas ${topShop.name} sabse best hai.`,
+            `Haan, main recommend karti hoon ${topShop.name} - yeh bahut achha hai.`,
+          ],
+          default: [
+            `Ji bilkul 🙂 aapke paas ${topShop.name} hai.`,
+            `Haan ji, main aapko ${topShop.name} suggest karti hoon.`,
+          ],
+        },
+      };
 
         const intentKey = (priceIntent === 'nearby' ? 'default' : priceIntent) || 'default';
-        const langResponses = responses[language] || responses.hinglish;
-        const responseOptions = langResponses[intentKey] || langResponses.default;
-        responseText = responseOptions[Math.floor(Math.random() * responseOptions.length)];
+      const langResponses = responses[language] || responses.hinglish;
+      const responseOptions = langResponses[intentKey] || langResponses.default;
+      responseText = responseOptions[Math.floor(Math.random() * responseOptions.length)];
 
         // Add shop description if available
         if (topShop.description && topShop.description.trim()) {
@@ -843,16 +843,16 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Always add distance and time
-        if (topShop.distanceText && topShop.timeText) {
-          if (language === 'hi') {
-            responseText += ` Yeh ${topShop.distanceText} door hai, ${topShop.timeText} lagenge.`;
-          } else if (language === 'en') {
-            responseText += ` It's ${topShop.distanceText} away, ${topShop.timeText} travel time.`;
-          } else {
-            responseText += ` Yeh ${topShop.distanceText} door hai, ${topShop.timeText} lagenge.`;
-          }
+      // Always add distance and time
+      if (topShop.distanceText && topShop.timeText) {
+        if (language === 'hi') {
+          responseText += ` Yeh ${topShop.distanceText} door hai, ${topShop.timeText} lagenge.`;
+        } else if (language === 'en') {
+          responseText += ` It's ${topShop.distanceText} away, ${topShop.timeText} travel time.`;
+        } else {
+          responseText += ` Yeh ${topShop.distanceText} door hai, ${topShop.timeText} lagenge.`;
         }
+      }
 
         // Add address
         if (topShop.address) {
@@ -876,24 +876,24 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Add verification status
-        if (topShop.isPaid) {
-          if (language === 'hi') {
-            responseText += ' Yeh 8rupiya verified partner hai.';
-          } else if (language === 'en') {
-            responseText += ' This is an 8rupiya verified partner.';
-          } else {
-            responseText += ' Yeh 8rupiya verified partner hai.';
-          }
-        }
-
-        // Add call to action
+      // Add verification status
+      if (topShop.isPaid) {
         if (language === 'hi') {
-          responseText += ' Kya main call connect kar du?';
+          responseText += ' Yeh 8rupiya verified partner hai.';
         } else if (language === 'en') {
-          responseText += ' Should I connect the call?';
+          responseText += ' This is an 8rupiya verified partner.';
         } else {
-          responseText += ' Kya main call connect kar du?';
+          responseText += ' Yeh 8rupiya verified partner hai.';
+        }
+      }
+
+      // Add call to action
+      if (language === 'hi') {
+        responseText += ' Kya main call connect kar du?';
+      } else if (language === 'en') {
+        responseText += ' Should I connect the call?';
+      } else {
+        responseText += ' Kya main call connect kar du?';
         }
       }
     } else {
@@ -907,12 +907,12 @@ export async function POST(req: NextRequest) {
           responseText = `Mujhe ${category} category ki shops is area me nahi mili. Kya aap kisi aur category ki shop chahiye? Ya aap thodi der baad try kar sakte hain. 😊`;
         }
       } else {
-        if (language === 'hi') {
-          responseText = 'Is area ka data abhi update ho raha hai, thodi der me available ho jayega. Kripya thodi der baad try karein ya koi aur service puchhein.';
-        } else if (language === 'en') {
-          responseText = 'Data for this area is being updated, it will be available shortly. Please try again in a few moments or ask for another service.';
-        } else {
-          responseText = 'Is area ka data abhi update ho raha hai, thodi der me available ho jayega. Kripya thodi der baad try karein ya koi aur service puchhein.';
+      if (language === 'hi') {
+        responseText = 'Is area ka data abhi update ho raha hai, thodi der me available ho jayega. Kripya thodi der baad try karein ya koi aur service puchhein.';
+      } else if (language === 'en') {
+        responseText = 'Data for this area is being updated, it will be available shortly. Please try again in a few moments or ask for another service.';
+      } else {
+        responseText = 'Is area ka data abhi update ho raha hai, thodi der me available ho jayega. Kripya thodi der baad try karein ya koi aur service puchhein.';
         }
       }
     }

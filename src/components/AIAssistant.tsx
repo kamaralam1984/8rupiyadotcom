@@ -128,10 +128,10 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
         y: e.clientY - initialPos.y
       });
     } else if (position !== null) {
-      setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
     }
     e.preventDefault();
   };
@@ -160,10 +160,10 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
         y: e.touches[0].clientY - initialPos.y
       });
     } else if (position !== null) {
-      setDragStart({
-        x: e.touches[0].clientX - position.x,
-        y: e.touches[0].clientY - position.y
-      });
+    setDragStart({
+      x: e.touches[0].clientX - position.x,
+      y: e.touches[0].clientY - position.y
+    });
     }
     e.preventDefault();
   };
@@ -446,7 +446,7 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
       
       if (textToSend) {
         setInputText(textToSend);
-        setListeningText('');
+      setListeningText('');
         setFinalTranscript('');
         capturedTranscriptRef.current = '';
         // Small delay to ensure state is updated, then send
@@ -600,9 +600,9 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
               bottom: '20px',
             } : {
               // After dragging, use absolute positioning with transform
-              left: `${position.x}px`,
-              top: `${position.y}px`,
-              transform: 'translate(-50%, -50%)',
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            transform: 'translate(-50%, -50%)',
             }),
             zIndex: 50,
             cursor: isDragging ? 'grabbing' : 'grab',
@@ -664,11 +664,11 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
                 transform: 'none',
               } : {
                 // Use dragged position
-                left: `${position.x}px`,
-                top: isMinimized 
-                  ? `${position.y}px` 
-                  : `${Math.min(position.y, typeof window !== 'undefined' ? window.innerHeight - 320 : position.y)}px`,
-                transform: 'translate(-50%, -50%)',
+              left: `${position.x}px`,
+              top: isMinimized 
+                ? `${position.y}px` 
+                : `${Math.min(position.y, typeof window !== 'undefined' ? window.innerHeight - 320 : position.y)}px`,
+              transform: 'translate(-50%, -50%)',
               }),
               zIndex: 50,
               width: isMinimized ? '320px' : '384px',
@@ -870,7 +870,7 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
                         e.preventDefault();
                         e.stopPropagation();
                         if (!isListening && !isRecording) {
-                          startListening();
+                        startListening();
                         }
                       }}
                       onMouseUp={(e) => {
