@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { FaDownload, FaStar, FaMoon, FaSun, FaHome } from 'react-icons/fa';
+import { calculateKundli, generateInsights, type CalculatedKundli } from '@/utils/kundliCalculations';
 
 interface KundliForm {
   name: string;
@@ -24,6 +25,8 @@ export default function KundliPage() {
   const [showKundli, setShowKundli] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [calculatedKundli, setCalculatedKundli] = useState<CalculatedKundli | null>(null);
+  const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -55,8 +58,13 @@ export default function KundliPage() {
     
     setIsGenerating(true);
     
-    // Simulate kundli generation
+    // Calculate Kundli
     setTimeout(() => {
+      const kundliData = calculateKundli(formData);
+      const generatedInsights = generateInsights(kundliData);
+      
+      setCalculatedKundli(kundliData);
+      setInsights(generatedInsights);
       setIsGenerating(false);
       setShowKundli(true);
     }, 2000);
@@ -82,17 +90,9 @@ export default function KundliPage() {
     { sign: '♓', name: 'Pisces', hindi: 'मीन' }
   ];
 
-  const planets = [
-    { name: 'Sun', hindi: 'सूर्य', icon: '☀️', position: 'Aries', degree: '15°23\'', house: 1, color: 'text-orange-400' },
-    { name: 'Moon', hindi: 'चंद्र', icon: '🌙', position: 'Taurus', degree: '23°45\'', house: 2, color: 'text-blue-300' },
-    { name: 'Mars', hindi: 'मंगल', icon: '♂️', position: 'Leo', degree: '8°12\'', house: 5, color: 'text-red-400' },
-    { name: 'Mercury', hindi: 'बुध', icon: '☿', position: 'Gemini', degree: '19°56\'', house: 3, color: 'text-green-400' },
-    { name: 'Jupiter', hindi: 'गुरु', icon: '♃', position: 'Sagittarius', degree: '27°34\'', house: 9, color: 'text-yellow-400' },
-    { name: 'Venus', hindi: 'शुक्र', icon: '♀', position: 'Libra', degree: '14°28\'', house: 7, color: 'text-pink-400' },
-    { name: 'Saturn', hindi: 'शनि', icon: '♄', position: 'Capricorn', degree: '5°18\'', house: 10, color: 'text-purple-400' },
-    { name: 'Rahu', hindi: 'राहु', icon: '☊', position: 'Gemini', degree: '12°45\'', house: 3, color: 'text-gray-400' },
-    { name: 'Ketu', hindi: 'केतु', icon: '☋', position: 'Sagittarius', degree: '12°45\'', house: 9, color: 'text-indigo-400' }
-  ];
+  // Use calculated data or fallback to default
+  const planets = calculatedKundli?.planets || [];
+  const houses = calculatedKundli?.houses || [];
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -502,8 +502,8 @@ export default function KundliPage() {
                           <div className="text-center">
                             <div className="text-5xl mb-3">🌅</div>
                             <h4 className="text-green-400 font-bold mb-3 text-sm">Ascendant / लग्न</h4>
-                            <p className="text-white text-2xl font-bold mb-1">{zodiacSigns[0].name}</p>
-                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[0].hindi}</p>
+                            <p className="text-white text-2xl font-bold mb-1">{calculatedKundli?.ascendant.name}</p>
+                            <p className="text-gray-300 text-base font-semibold">{calculatedKundli?.ascendant.hindi}</p>
                           </div>
                         </motion.div>
 
@@ -517,8 +517,8 @@ export default function KundliPage() {
                           <div className="text-center">
                             <div className="text-5xl mb-3">🌙</div>
                             <h4 className="text-blue-400 font-bold mb-3 text-sm">Moon Sign / चंद्र राशि</h4>
-                            <p className="text-white text-2xl font-bold mb-1">{planets.find(p => p.name === 'Moon')?.position}</p>
-                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[1].hindi}</p>
+                            <p className="text-white text-2xl font-bold mb-1">{calculatedKundli?.moonSign.name}</p>
+                            <p className="text-gray-300 text-base font-semibold">{calculatedKundli?.moonSign.hindi}</p>
                           </div>
                         </motion.div>
 
@@ -532,8 +532,8 @@ export default function KundliPage() {
                           <div className="text-center">
                             <div className="text-5xl mb-3">☀️</div>
                             <h4 className="text-orange-400 font-bold mb-3 text-sm">Sun Sign / सूर्य राशि</h4>
-                            <p className="text-white text-2xl font-bold mb-1">{planets.find(p => p.name === 'Sun')?.position}</p>
-                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[0].hindi}</p>
+                            <p className="text-white text-2xl font-bold mb-1">{calculatedKundli?.sunSign.name}</p>
+                            <p className="text-gray-300 text-base font-semibold">{calculatedKundli?.sunSign.hindi}</p>
                           </div>
                         </motion.div>
 
@@ -547,8 +547,8 @@ export default function KundliPage() {
                           <div className="text-center">
                             <div className="text-5xl mb-3">⭐</div>
                             <h4 className="text-purple-400 font-bold mb-3 text-sm">Nakshatra / नक्षत्र</h4>
-                            <p className="text-white text-2xl font-bold mb-1">Ashwini</p>
-                            <p className="text-gray-300 text-base font-semibold">अश्विनी</p>
+                            <p className="text-white text-2xl font-bold mb-1">{calculatedKundli?.nakshatra.name}</p>
+                            <p className="text-gray-300 text-base font-semibold">{calculatedKundli?.nakshatra.hindi}</p>
                           </div>
                         </motion.div>
                       </div>
@@ -566,18 +566,12 @@ export default function KundliPage() {
                             Strengths / शक्तियां
                           </h4>
                           <ul className="text-gray-200 space-y-3">
-                            <li className="flex items-start">
-                              <span className="text-yellow-400 mr-2 mt-1">•</span>
-                              <span>Strong Jupiter position indicates wisdom and prosperity</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-yellow-400 mr-2 mt-1">•</span>
-                              <span>Venus in 7th house supports harmonious relationships</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-yellow-400 mr-2 mt-1">•</span>
-                              <span>Sun in ascendant brings leadership qualities</span>
-                            </li>
+                            {insights?.strengths.map((strength: string, index: number) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-yellow-400 mr-2 mt-1">•</span>
+                                <span>{strength}</span>
+                              </li>
+                            ))}
                           </ul>
                         </motion.div>
 
@@ -592,18 +586,12 @@ export default function KundliPage() {
                             Remedies / उपाय
                           </h4>
                           <ul className="text-gray-200 space-y-3">
-                            <li className="flex items-start">
-                              <span className="text-blue-400 mr-2 mt-1">•</span>
-                              <span>Chant Gayatri Mantra daily / गायत्री मंत्र का जाप करें</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-blue-400 mr-2 mt-1">•</span>
-                              <span>Wear Yellow Sapphire for Jupiter / पुखराज धारण करें</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-blue-400 mr-2 mt-1">•</span>
-                              <span>Donate on Thursdays / गुरुवार को दान करें</span>
-                            </li>
+                            {insights?.remedies.map((remedy: string, index: number) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-400 mr-2 mt-1">•</span>
+                                <span>{remedy}</span>
+                              </li>
+                            ))}
                           </ul>
                         </motion.div>
                       </div>
