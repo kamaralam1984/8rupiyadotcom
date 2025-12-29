@@ -16,7 +16,16 @@ export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'नमस्ते! मैं वेब पंडित हूं। मैं आपकी कैरियर, शादी, स्वास्थ्य, वित्त से जुड़े सवालों का जवाब दे सकता हूं। कृपया अपना सवाल पूछें।',
+      text: `नमस्ते! 🙏 मैं सपना हूं, 24 साल की B.Tech graduate। मैं India से हूं और ज्योतिष में रुचि रखती हूं। 
+
+मैं आपकी मदद कर सकती हूं:
+🌟 करियर और नौकरी की सलाह
+💑 शादी और रिश्तों के बारे में
+💰 पैसे और व्यापार के सवाल
+🏥 स्वास्थ्य से जुड़ी बातें
+📊 कुंडली और राशिफल
+
+कृपया अपना सवाल पूछें! 😊`,
       sender: 'bot',
       timestamp: new Date()
     }
@@ -311,151 +320,226 @@ export default function ChatbotPage() {
   const getBotResponse = (userInput: string): string => {
     const input = userInput.toLowerCase();
     
+    // Greetings
+    if (input.includes('hello') || input.includes('hi') || input.includes('hey') || input.includes('नमस्ते') || input.includes('हेलो') || input.includes('हाय')) {
+      const responses = [
+        `हेलो! 😊 मैं सपना हूं। मैं आपकी कैसे मदद कर सकती हूं?`,
+        `नमस्ते! 🙏 कैसे हैं आप? मुझे बताइए आपका क्या सवाल है।`,
+        `हाय! 👋 मैं सपना, आपकी ज्योतिष सलाहकार। पूछिए अपना सवाल।`
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    // About Sapna
+    if (input.includes('तुम') || input.includes('आप') || input.includes('you') || input.includes('sapna') || input.includes('सपना') || input.includes('कौन')) {
+      return `मेरे बारे में:
+      
+👧 नाम: सपना
+📚 शिक्षा: B.Tech Graduate
+🎂 उम्र: 24 साल
+🇮🇳 देश: India
+💍 वैवाहिक स्थिति: Unmarried
+✨ रुचि: ज्योतिष, Technology
+
+मैं एक अच्छे लड़के की तलाश में हूं जो समझदार और caring हो। 😊 
+और मुझे ज्योतिष में बहुत रुचि है, इसलिए लोगों की मदद करना अच्छा लगता है!
+
+आप भी अपने बारे में बताइए! 💕`;
+    }
+
     // Career/Job related queries
-    if (input.includes('career') || input.includes('नौकरी') || input.includes('job') || input.includes('करियर')) {
-      return `🌟 **करियर विश्लेषण / Career Analysis**
+    if (input.includes('career') || input.includes('नौकरी') || input.includes('job') || input.includes('करियर') || input.includes('placement')) {
+      const responses = [
+        `🌟 करियर के बारे में मेरी सलाह:
 
-आपकी कुंडली के अनुसार:
+Being a B.Tech graduate myself, मैं समझती हूं career कितनी important है!
 
-📈 **वर्तमान स्थिति:**
-• सूर्य और बुध की युति से करियर में प्रगति के योग
-• अगले 3 महीनों में नई संभावनाएं बनेंगी
-• नौकरी बदलने का शुभ समय आने वाला है
+📈 आपकी कुंडली में:
+• शुक्रवार को interview attend करें - शुभ results मिलेंगे
+• नीले या काले कपड़े पहनें
+• सूर्य देव को रोज जल चढ़ाएं
 
-💫 **शुभ योग:**
-• शुक्रवार को पीले कपड़े पहनें
-• सूर्य देव को जल चढ़ाएं
-• प्रतिदिन गायत्री मंत्र का जाप करें
+💼 मेरा personal experience:
+Tech field में opportunities बहुत हैं! मेहनत करते रहो, सफलता जरूर मिलेगी। 😊
 
-🎯 **सलाह:**
-• आत्मविश्वास बनाए रखें
-• नए अवसरों के लिए तैयार रहें
-• कठिन परिश्रम जारी रखें`;
+क्या आप किसी particular field में interested हैं?`,
+        `💼 Career की बात करें तो...
+
+मैं खुद B.Tech से हूं! Tech sector में अच्छे opportunities हैं।
+
+आपके stars बता रहे हैं:
+• अगले 3 महीने बहुत important हैं
+• Network बनाओ, LinkedIn update करो
+• Skills upgrade करते रहो
+
+मेरी सलाह: कभी हार मत मानो! मैं भी struggle कर रही हूं अपने career में। Together we can grow! 💪`
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
     
     // Marriage related queries
-    if (input.includes('marriage') || input.includes('शादी') || input.includes('vivah') || input.includes('विवाह')) {
-      return `💑 **विवाह विश्लेषण / Marriage Analysis**
+    if (input.includes('marriage') || input.includes('शादी') || input.includes('vivah') || input.includes('विवाह') || input.includes('girlfriend') || input.includes('boyfriend') || input.includes('love') || input.includes('प्यार')) {
+      const responses = [
+        `💑 शादी की बात! यह तो मेरा भी सवाल है! 😊
 
-आपकी कुंडली में:
+मैं खुद 24 साल की हूं और अभी unmarried हूं। Family pressure तो है लेकिन मैं एक समझदार और caring लड़के की तलाश में हूं।
 
-💕 **शुभ योग:**
-• सप्तम भाव में शुक्र की स्थिति अनुकूल
-• अगले 6-12 महीनों में विवाह के योग
-• परिवार का सहयोग मिलेगा
+आपकी कुंडली के अनुसार:
+• अगले 6-8 महीनों में अच्छा proposal मिल सकता है
+• शुक्रवार को माता पार्वती की पूजा करें
+• Yellow या Pink कपड़े पहनें - शुभ होगा!
 
-✨ **उपाय:**
-• गुरुवार को पीले वस्त्र धारण करें
-• शुक्र ग्रह की पूजा करें
-• माता पार्वती का आशीर्वाद लें
+💕 क्या आप भी शादी के लिए सोच रहे हैं? Tell me about your preferences! 😊`,
+        `💍 Marriage एक beautiful journey है!
 
-🌸 **सलाह:**
-• धैर्य बनाए रखें
-• परिवार की राय लें
-• सही समय का इंतजार करें`;
+मेरी माँ कहती हैं - अच्छा जीवनसाथी मिलना भगवान का आशीर्वाद है। मैं भी wait कर रही हूं किसी अच्छे इंसान का।
+
+आपके stars कहते हैं:
+• आपकी सातवीं house में Venus strong है
+• जल्दी ही कोई special मिलेगा
+• धैर्य रखें, right person right time पर मिलेगा
+
+मुझे लगता है आप एक अच्छे इंसान हो! 🌸 क्या आपकी कोई girlfriend है?`,
+        `💝 Love और Marriage...
+
+मैं भी सोचती हूं कि कब मिलेगा कोई अच्छा life partner! As a B.Tech girl, मैं चाहती हूं कोई educated और understanding partner।
+
+Astrologically:
+• Venus transit आपके favor में है
+• Next year बहुत शुभ है marriage के लिए
+• Family support भी मिलेगा
+
+आपको किस type की लड़की पसंद है? Just curious! 😊`
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
 
     // Health related queries
-    if (input.includes('health') || input.includes('स्वास्थ्य') || input.includes('बीमारी')) {
-      return `🏥 **स्वास्थ्य विश्लेषण / Health Analysis**
+    if (input.includes('health') || input.includes('स्वास्थ्य') || input.includes('बीमारी') || input.includes('fitness')) {
+      return `🏥 Health is wealth! मैं भी daily yoga करती हूं।
 
-आपकी कुंडली में:
+💪 आपके लिए tips:
+• Morning में गुनगुना पानी पिएं
+• 30 minutes walk/exercise जरूर करें
+• Turmeric milk रात को - immunity बढ़ती है
 
-💪 **स्वास्थ्य स्थिति:**
-• समग्र स्वास्थ्य अच्छा है
-• छोटी-मोटी परेशानियां हो सकती हैं
-• नियमित दिनचर्या आवश्यक
+आपकी stars कहती हैं health overall अच्छी रहेगी। बस regular routine maintain करें!
 
-🌿 **उपाय:**
-• प्रतिदिन सूर्य नमस्कार करें
-• तुलसी का पानी पिएं
-• योग और ध्यान करें
-
-⚕️ **सलाह:**
-• नियमित व्यायाम करें
-• पौष्टिक भोजन लें
-• पर्याप्त नींद लें`;
+मैं personally Green tea और yoga recommend करूंगी। Works for me! 😊`;
     }
 
     // Finance/Money related queries
-    if (input.includes('finance') || input.includes('पैसा') || input.includes('money') || input.includes('धन') || input.includes('व्यापार') || input.includes('business')) {
-      return `💰 **वित्तीय विश्लेषण / Finance Analysis**
+    if (input.includes('finance') || input.includes('पैसा') || input.includes('money') || input.includes('धन') || input.includes('व्यापार') || input.includes('business') || input.includes('salary')) {
+      return `💰 Paisa ki baat! Important topic hai!
 
-आपकी कुंडली में:
+Being from tech background, मैं जानती हूं financial planning कितनी जरूरी है।
 
-📊 **वित्तीय स्थिति:**
-• गुरु की दृष्टि से धन लाभ के योग
-• निवेश के लिए शुभ समय
-• व्यापार में वृद्धि की संभावना
+आपके लिए:
+• Jupiter आपके second house में strong है
+• Next 3-4 months में income increase possible है
+• गुरुवार को donation करें - wealth बढ़ती है
 
-💎 **उपाय:**
-• गुरुवार को दान करें
-• पीले चने की दाल का दान करें
-• लक्ष्मी जी की पूजा करें
+💡 My personal advice:
+Save करते रहो, invest wisely, और multiple income sources explore करो। Tech skills सीखो - बहुत scope है!
 
-💡 **सलाह:**
-• बुद्धिमानी से निवेश करें
-• विशेषज्ञ की सलाह लें
-• बचत करते रहें`;
+Aap kya karte हो? Job या business? 🤔`;
     }
 
     // Lucky number query
     if (input.includes('lucky') || input.includes('लकी') || input.includes('भाग्यशाली') || input.includes('number')) {
-      return `🎲 **भाग्यशाली संख्या / Lucky Numbers**
+      const luckyNum1 = Math.floor(Math.random() * 9) + 1;
+      const luckyNum2 = Math.floor(Math.random() * 99) + 1;
+      const luckyNum3 = Math.floor(Math.random() * 50) + 1;
+      
+      return `🎲 आपके Lucky Numbers आज के लिए:
 
-आपके लिए आज के लकी नंबर:
+✨ ${luckyNum1}, ${luckyNum2}, ${luckyNum3}
+💫 Color: ${['Yellow', 'Red', 'Green', 'Blue', 'White'][Math.floor(Math.random() * 5)]}
 
-🌟 मुख्य नंबर: 7, 14, 21
-💫 सहायक नंबर: 3, 9, 18
-🎯 रंग: पीला, सफेद, लाल
-
-शुभकामनाएं! 🍀`;
+मेरा lucky number है 7! Yours? 😊
+Best of luck! 🍀`;
     }
 
     // Kundli generation
     if (input.includes('kundli') || input.includes('कुंडली') || input.includes('horoscope') || input.includes('राशिफल')) {
-      return `📊 **कुंडली सेवा / Kundli Service**
+      return `📊 Kundli बनवानी है? Great!
 
-हमारी कुंडली सेवा:
+मैं तो manually नहीं बना सकती इतनी detailed, लेकिन हमारी website पर automatic Kundli Generator है! 😊
 
-✅ संपूर्ण कुंडली विश्लेषण
-✅ नवग्रहों की स्थिति
-✅ 12 भावों का विवेचन
-✅ दशा और अंतर्दशा
-✅ PDF डाउनलोड
+✅ Name, DOB, Time, Place enter करो
+✅ Instant detailed Kundli मिलेगी
+✅ PDF download भी कर सकते हो
 
-कृपया Kundli Generator पेज पर जाएं:
-👉 /jyotish/kundli`;
+यहाँ जाओ: /jyotish/kundli
+
+Btw, आपकी राशि क्या है? Meri Libra है! ⚖️`;
     }
 
     // Expert consultation
-    if (input.includes('expert') || input.includes('pandit') || input.includes('पंडित') || input.includes('ज्योतिषी') || input.includes('consultation')) {
-      return `👨‍🏫 **विशेषज्ञ परामर्श / Expert Consultation**
+    if (input.includes('expert') || input.includes('pandit') || input.includes('पंडित') || input.includes('ज्योतिषी') || input.includes('consultation') || input.includes('call') || input.includes('video')) {
+      return `👨‍🏫 Expert से बात करनी है?
 
-हमारे expert astrologers:
+मैं basic guidance तो दे सकती हूं, but detailed analysis के लिए experienced astrologers हैं!
 
-⭐ FREE: Basic guidance
-💎 SILVER: Detailed analysis (₹299)
-👑 GOLD: Personal consultation (₹599)
-💫 PREMIUM: Complete package (₹999)
+💎 Plans available:
+• FREE: Basic chat (मेरे साथ 😊)
+• SILVER: ₹299 - Detailed analysis
+• GOLD: ₹599 - Personal consultation
+• PREMIUM: ₹999 - Complete package
 
-Marketplace पर जाएं:
-👉 /jyotish/marketplace`;
+Check out: /jyotish/marketplace
+
+Waise मुझसे पूछ लो, I'll try my best to help! 💕`;
     }
 
-    // Default welcome message
-    return `🙏 **नमस्ते! Welcome to AI Jyotish**
+    // Time and day queries
+    if (input.includes('today') || input.includes('आज') || input.includes('कल') || input.includes('tomorrow') || input.includes('date') || input.includes('day')) {
+      const days = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+      const today = new Date();
+      const dayName = days[today.getDay()];
+      
+      return `📅 आज ${dayName} है!
 
-मैं आपकी सहायता के लिए यहां हूं। आप पूछ सकते हैं:
+${dayName === 'गुरुवार' ? '🌟 गुरुवार बहुत शुभ day है! Donation करो, पीले कपड़े पहनो।' : ''}
+${dayName === 'शुक्रवार' ? '💕 शुक्रवार love और relationship के लिए best है!' : ''}
+${dayName === 'मंगलवार' ? '💪 मंगलवार courage और strength का day है!' : ''}
 
-💼 **करियर:** नौकरी, प्रमोशन, व्यवसाय
-💑 **विवाह:** शादी, रिश्ते, प्रेम
-🏥 **स्वास्थ्य:** तबीयत, उपचार
-💰 **वित्त:** पैसा, निवेश, धन
-🎲 **भाग्य:** लकी नंबर, शुभ मुहूर्त
-📊 **कुंडली:** जन्म कुंडली, राशिफल
+आपका दिन शुभ हो! 😊`;
+    }
 
-कृपया अपना सवाल पूछें! 🌟`;
+    // Default conversational response
+    const defaultResponses = [
+      `मुझे समझ नहीं आया आपका सवाल। 🤔 
+      
+कृपया फिर से पूछें या इनमें से choose करें:
+💼 Career की बात करें?
+💑 Marriage/Relationship discuss करें?
+💰 Finance के बारे में?
+🔮 Lucky numbers चाहिए?
+
+मैं यहाँ हूं आपकी help के लिए! 😊`,
+      `Sorry, मैं यह नहीं समझ पाई! 😅
+
+आप मुझसे पूछ सकते हो:
+• Job और career के बारे में
+• Shadi और love life
+• Paise कमाने के tips
+• Health और fitness
+• Kundli और horoscope
+
+Kya पूछना चाहते हो? ✨`,
+      `Hmm... मुझे clarification चाहिए! 🤷‍♀️
+
+आप specifically बताओ:
+✨ Career/Job?
+💕 Marriage/Love?
+💰 Money/Business?
+🎲 Lucky numbers?
+
+मैं personally हर topic पर बात कर सकती हूं! Being 24 and B.Tech graduate, मैं relate कर पाती हूं। 😊`
+    ];
+    
+    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
   };
 
   return (
@@ -497,8 +581,8 @@ Marketplace पर जाएं:
                 className="h-10 md:h-12 w-auto drop-shadow-lg" 
               />
               <div className="ml-3">
-                <h1 className="text-lg md:text-xl font-bold text-yellow-400">AI Chatbot</h1>
-                <p className="text-xs text-gray-400">24/7 Available</p>
+                <h1 className="text-lg md:text-xl font-bold text-yellow-400">Sapna - AI Jyotish Assistant</h1>
+                <p className="text-xs text-gray-400">24 yrs • B.Tech Graduate • India 🇮🇳</p>
               </div>
             </Link>
             <div className="flex items-center space-x-2">
@@ -565,12 +649,12 @@ Marketplace पर जाएं:
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                     message.sender === 'user' 
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600' 
-                      : 'bg-gradient-to-r from-amber-400 to-orange-600'
+                      : 'bg-gradient-to-r from-pink-400 to-rose-500'
                   }`}>
                     {message.sender === 'user' ? (
                       <FaUser className="text-white" />
                     ) : (
-                      <FaRobot className="text-black" />
+                      <span className="text-2xl">👧</span>
                     )}
                   </div>
 
@@ -624,14 +708,17 @@ Marketplace पर जाएं:
                 animate={{ opacity: 1 }}
                 className="flex items-start space-x-3"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-orange-600 flex items-center justify-center">
-                  <FaRobot className="text-black" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-rose-500 flex items-center justify-center">
+                  <span className="text-2xl">👧</span>
                 </div>
                 <div className="bg-gray-800/90 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-4">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce delay-200" />
+                  <div className="flex flex-col">
+                    <div className="flex space-x-2 mb-1">
+                      <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce delay-100" />
+                      <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce delay-200" />
+                    </div>
+                    <span className="text-xs text-gray-400">Sapna is typing...</span>
                   </div>
                 </div>
               </motion.div>
@@ -641,13 +728,13 @@ Marketplace पर जाएं:
           </div>
         </div>
 
-        {/* AI Wazm Corncepts */}
+        {/* Status Bar */}
         <div className="bg-gray-900/80 backdrop-blur-xl border-t border-yellow-500/30 p-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-400 mb-3">
               <span className="flex items-center">
-                <span className="w-2 h-2 bg-green-400 rounded-full mr-2" />
-                AI Published 24 checkering - Offline
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
+                Sapna is Online • Ready to help 24/7
               </span>
             </div>
           </div>
