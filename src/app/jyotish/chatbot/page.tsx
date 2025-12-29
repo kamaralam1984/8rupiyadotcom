@@ -48,14 +48,14 @@ export default function ChatbotPage() {
   }, []);
 
   useEffect(() => {
-    // Initialize speech synthesis
+    // Initialize speech synthesis and recognition only once
     if (typeof window !== 'undefined') {
       speechSynthesisRef.current = window.speechSynthesis;
       
       // Initialize speech recognition
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
-      if (SpeechRecognition) {
+      if (SpeechRecognition && !recognitionRef.current) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
@@ -82,23 +82,31 @@ export default function ChatbotPage() {
         };
         
         recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
+          const errorType = event.error;
+          
+          // Only log significant errors (not aborted, no-speech, etc.)
+          if (!['aborted', 'no-speech'].includes(errorType)) {
+            console.warn('Speech recognition error:', errorType);
+          }
+          
           setIsListening(false);
           setListeningText('');
+          setIsRecording(false);
           
-          if (event.error === 'not-allowed') {
+          // Show user-friendly messages for specific errors
+          if (errorType === 'not-allowed' || errorType === 'permission-denied') {
             alert('कृपया माइक्रोफ़ोन की अनुमति दें / Please allow microphone access');
+          } else if (errorType === 'network') {
+            alert('नेटवर्क error। कृपया अपना connection check करें / Network error. Please check your connection');
+          } else if (errorType === 'audio-capture') {
+            alert('माइक्रोफ़ोन access नहीं मिला / Microphone not accessible');
           }
+          // Silently handle common non-critical errors like 'aborted', 'no-speech'
         };
         
         recognition.onend = () => {
           setIsListening(false);
-          // Auto-send message if we have text and voice mode is on
-          if (inputText.trim() && voiceMode) {
-            setTimeout(() => {
-              handleSendMessage();
-            }, 500);
-          }
+          setIsRecording(false);
         };
         
         recognitionRef.current = recognition;
@@ -106,15 +114,29 @@ export default function ChatbotPage() {
     }
 
     return () => {
-      // Cleanup: stop any ongoing speech
+      // Cleanup: stop any ongoing speech and recognition
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
       }
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {
+          // Ignore abort errors on cleanup
+        }
       }
     };
-  }, [inputText, voiceMode]);
+  }, []); // Only run once on mount
+
+  // Handle auto-send in voice mode
+  useEffect(() => {
+    if (!isListening && inputText.trim() && voiceMode) {
+      const timer = setTimeout(() => {
+        handleSendMessage();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isListening, inputText, voiceMode]);
 
   // Speak text using Web Speech API
   const speakText = (text: string, messageId: string) => {
@@ -205,16 +227,29 @@ export default function ChatbotPage() {
     try {
       recognitionRef.current.start();
       setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting recognition:', error);
+    } catch (error: any) {
+      // Handle "already started" error silently
+      if (error?.message?.includes('already started')) {
+        console.log('Recognition already running');
+      } else {
+        console.warn('Error starting recognition:', error);
+        setIsRecording(false);
+        setIsListening(false);
+      }
     }
   };
 
   // Stop listening
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        // Ignore errors when stopping (e.g., if already stopped)
+      }
       setIsRecording(false);
+      setIsListening(false);
+      setListeningText('');
     }
   };
 
