@@ -37,52 +37,43 @@ export default function AdvertisementBanner({ slot, className = '', style, limit
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`[AdvertisementBanner] Slot: ${slot}, UniqueId: ${uniqueId}, Response:`, data);
         
         if (data.success && data.advertisements && Array.isArray(data.advertisements) && data.advertisements.length > 0) {
           // Sort by position first, then by creation date
           const sortedAds = [...data.advertisements].sort((a, b) => {
             const posDiff = (a.position || 0) - (b.position || 0);
             if (posDiff !== 0) return posDiff;
-            // If positions are same, use creation date (newer first)
             return 0;
           });
           
-          // Simple approach: Use uniqueId to rotate through ads
-          // This ensures different positions get different ads if available
+          // Use uniqueId to rotate through ads
           let adsToShow: Advertisement[] = [];
           
           if (uniqueId && sortedAds.length > 0) {
-            // Use uniqueId to determine which ad to show (for rotation)
-            // This ensures leftrail-1, leftrail-2, etc. get different ads if available
             const uniqueIdNum = parseInt(uniqueId.replace(/\D/g, '')) || 0;
             const startIndex = uniqueIdNum % sortedAds.length;
             
-            // Rotate through ads starting from startIndex
             for (let i = 0; i < limit && i < sortedAds.length; i++) {
               const adIndex = (startIndex + i) % sortedAds.length;
               adsToShow.push(sortedAds[adIndex]);
             }
           } else {
-            // No uniqueId, just take first ads up to limit
             adsToShow = sortedAds.slice(0, limit);
           }
           
-          console.log(`[AdvertisementBanner] Slot: ${slot}, Total ads: ${data.advertisements.length}, Showing: ${adsToShow.length} for ${uniqueId || 'no-uniqueId'}`);
-          console.log(`[AdvertisementBanner] Ads to show:`, adsToShow.map(a => `${a.title} (${a._id})`));
-          
           setAdvertisements(adsToShow);
         } else {
-          console.log(`[AdvertisementBanner] No ads found for slot: ${slot}`);
           setAdvertisements([]);
         }
       } else {
-        const errorText = await response.text();
-        console.error(`[AdvertisementBanner] Failed to fetch advertisements:`, response.status, errorText);
+        // Only log actual errors
+        if (response.status >= 500) {
+          console.error(`[AdvertisementBanner] Server error:`, response.status);
+        }
         setAdvertisements([]);
       }
     } catch (error) {
-      console.error('[AdvertisementBanner] Error fetching advertisements:', error);
+      console.error('[AdvertisementBanner] Error:', error);
       setAdvertisements([]);
     } finally {
       setLoading(false);
@@ -109,21 +100,12 @@ export default function AdvertisementBanner({ slot, className = '', style, limit
   }
 
   if (!advertisements || advertisements.length === 0) {
-    // Don't render anything if no ads
-    console.log(`[AdvertisementBanner] No ads to display for slot: ${slot}, uniqueId: ${uniqueId}, advertisements array length:`, advertisements?.length || 0);
     return null;
   }
 
-  console.log(`[AdvertisementBanner] Rendering ${advertisements.length} ads for slot: ${slot}, uniqueId: ${uniqueId}`);
-
-  // Debug: Log what we're about to render
-  console.log(`[AdvertisementBanner] About to render. Slot: ${slot}, UniqueId: ${uniqueId}, Ads count: ${advertisements.length}`);
-
   return (
     <div className={`advertisement-banner advertisement-${slot} ${className}`} style={style}>
-      {advertisements.map((ad, index) => {
-        console.log(`[AdvertisementBanner] Rendering ad ${index + 1}/${advertisements.length}: ${ad.title} (${ad._id})`);
-        return (
+      {advertisements.map((ad, index) => (
         <motion.div
           key={`${ad._id}-${uniqueId || index}`}
           initial={{ opacity: 0, y: 20 }}
@@ -172,11 +154,7 @@ export default function AdvertisementBanner({ slot, className = '', style, limit
                   decoding="async"
                   sizes={slot === 'sidebar-left' || slot === 'sidebar-right' ? '264px' : '(max-width: 768px) 100vw, 1200px'}
                   onError={(e) => {
-                    console.error(`[AdvertisementBanner] Image load error for ad ${ad._id}:`, ad.image);
                     (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log(`[AdvertisementBanner] Image loaded successfully for ad ${ad._id}`);
                   }}
                 />
                 {ad.description && (
@@ -207,8 +185,7 @@ export default function AdvertisementBanner({ slot, className = '', style, limit
             )}
           </a>
         </motion.div>
-        );
-      })}
+      ))}
     </div>
   );
 }
