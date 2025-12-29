@@ -1,6 +1,11 @@
-import PaymentsPage from '@/components/admin/PaymentsPage';
+import AdminLayout from '@/components/admin/AdminLayout';
+import PaymentManagementPage from '@/components/admin/PaymentManagementPage';
 
-export default function Page() {
-  return <PaymentsPage />;
+export default function AdminPaymentsPage() {
+  return (
+    <AdminLayout>
+      <PaymentManagementPage />
+    </AdminLayout>
+  );
 }
 

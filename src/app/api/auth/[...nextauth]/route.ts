@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { comparePassword } from '@/lib/auth';
+import { syncUserCommissions } from '@/lib/commission-sync';
 
 export const authOptions = {
   providers: [
@@ -36,6 +37,13 @@ export const authOptions = {
         if (!user.isActive) {
           throw new Error('Account is inactive');
         }
+
+        // Sync commissions in background (don't wait for it to complete)
+        // This ensures all commissions are calculated and linked properly
+        syncUserCommissions(user._id.toString(), user.role).catch(err => {
+          console.error('Error syncing commissions on login:', err);
+          // Don't fail login if commission sync fails
+        });
 
         return {
           id: user._id.toString(),

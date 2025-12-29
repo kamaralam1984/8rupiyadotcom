@@ -108,9 +108,38 @@ export async function GET(req: NextRequest) {
     });
     const todaySales = todayPayments.reduce((sum, p) => sum + p.amount, 0);
 
-    // Calculate operator's total commission (10% of remaining after agent's 20%)
-    const operatorCommissions = await Commission.find({ operatorId: operator._id });
-    const totalOperatorCommission = operatorCommissions.reduce((sum, c) => sum + c.operatorAmount, 0);
+    // Calculate operator's total commission
+    // First, get commissions where operatorId matches
+    const operatorCommissionsDirect = await Commission.find({ operatorId: operator._id });
+    let totalOperatorCommission = operatorCommissionsDirect.reduce((sum, c) => sum + (c.operatorAmount || 0), 0);
+    
+    // Also check commissions for shops under this operator but without operatorId set
+    // This handles cases where commissions were created before operatorId was properly set
+    const operatorShopIds = operatorShops.map(s => s._id);
+    if (operatorShopIds.length > 0) {
+      const commissionsForOperatorShops = await Commission.find({
+        shopId: { $in: operatorShopIds },
+        $or: [
+          { operatorId: { $exists: false } },
+          { operatorId: null },
+          { operatorAmount: 0 }
+        ],
+        agentId: { $exists: true, $ne: null }
+      });
+      
+      // Calculate operator commission for these commissions
+      for (const comm of commissionsForOperatorShops) {
+        const Payment = (await import('@/models/Payment')).default;
+        const payment = await Payment.findById(comm.paymentId);
+        if (payment) {
+          // Operator gets 10% of remaining after agent's 20%
+          const agentAmount = payment.amount * 0.20;
+          const remaining = payment.amount - agentAmount;
+          const operatorAmount = remaining * 0.10;
+          totalOperatorCommission += operatorAmount;
+        }
+      }
+    }
 
     // Get agents data with their stats
     const agentsData = await Promise.all(agents.map(async (agent) => {

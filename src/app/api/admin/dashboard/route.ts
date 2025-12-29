@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Shop, { ShopStatus } from '@/models/Shop';
 import Payment from '@/models/Payment';
 import Plan from '@/models/Plan';
+import Commission from '@/models/Commission';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/types/user';
 
@@ -55,52 +56,38 @@ export async function GET(req: NextRequest) {
       status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] }
     });
 
-    // Get total revenue from successful payments linked to existing shops only
-    const allPayments = await Payment.find({ 
-      status: 'success'
-    }).populate('shopId');
-    
-    // Get all existing shop IDs
-    const existingShopIds = await Shop.find().distinct('_id');
-    const existingShopIdSet = new Set(existingShopIds.map(id => id.toString()));
-    
-    // Only count revenue from payments linked to existing shops
-    // If no shops exist, revenue is 0
-    const totalRevenue = existingShopIds.length === 0 
-      ? 0 
-      : allPayments
-          .filter(p => p.shopId && existingShopIdSet.has(p.shopId.toString()))
-          .reduce((sum, p) => sum + p.amount, 0);
+    // Get total revenue from successful payments - directly from database
+    // Use aggregation for better performance and accuracy
+    const totalRevenueResult = await Payment.aggregate([
+      { $match: { status: 'success' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalRevenue = totalRevenueResult.length > 0 ? totalRevenueResult[0].total : 0;
 
-    // Get today's sales (check both paidAt and createdAt for today) - only from existing shops
-    // If no shops exist, todaySales is 0
-    let todaySales = 0;
-    if (existingShopIds.length > 0) {
-      const todayPaymentsByPaidAt = await Payment.find({
-        status: 'success',
-        paidAt: { $gte: today, $lt: tomorrow },
-        shopId: { $in: existingShopIds }
-      });
-      
-      const todayPaymentsByCreatedAt = await Payment.find({
-        status: 'success',
-        $or: [{ paidAt: { $exists: false } }, { paidAt: null }],
-        createdAt: { $gte: today, $lt: tomorrow },
-        shopId: { $in: existingShopIds }
-      });
-    
-      // Combine and deduplicate by _id
-      const paymentIds = new Set();
-      const allTodayPayments = [...todayPaymentsByPaidAt, ...todayPaymentsByCreatedAt].filter(p => {
-        if (paymentIds.has(p._id.toString())) {
-          return false;
+    // Get today's sales - use aggregation for better accuracy
+    // Check both paidAt and createdAt for today
+    const todaySalesByPaidAt = await Payment.aggregate([
+      {
+        $match: {
+          status: 'success',
+          paidAt: { $gte: today, $lt: tomorrow }
         }
-        paymentIds.add(p._id.toString());
-        return true;
-      });
-      
-      todaySales = allTodayPayments.reduce((sum, p) => sum + p.amount, 0);
-    }
+      },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    
+    const todaySalesByCreatedAt = await Payment.aggregate([
+      {
+        $match: {
+          status: 'success',
+          $or: [{ paidAt: { $exists: false } }, { paidAt: null }],
+          createdAt: { $gte: today, $lt: tomorrow }
+        }
+      },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    
+    const todaySales = (todaySalesByPaidAt[0]?.total || 0) + (todaySalesByCreatedAt[0]?.total || 0);
 
     // Get agents count
     const agents = await User.countDocuments({ 
@@ -111,6 +98,36 @@ export async function GET(req: NextRequest) {
     const operators = await User.countDocuments({ 
       role: UserRole.OPERATOR 
     });
+
+    // Get total commissions from database using aggregation for better performance
+    const totalAgentCommissionResult = await Commission.aggregate([
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$agentAmount', 0] } } } }
+    ]);
+    const totalAgentCommission = totalAgentCommissionResult.length > 0 ? totalAgentCommissionResult[0].total : 0;
+    
+    // Get total operator commission - sum all operatorAmount (even if operatorId is null, amount should be calculated)
+    const totalOperatorCommissionResult = await Commission.aggregate([
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$operatorAmount', 0] } } } }
+    ]);
+    const totalOperatorCommission = totalOperatorCommissionResult.length > 0 ? totalOperatorCommissionResult[0].total : 0;
+    
+    const totalCompanyRevenueResult = await Commission.aggregate([
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$companyAmount', 0] } } } }
+    ]);
+    const totalCompanyRevenue = totalCompanyRevenueResult.length > 0 ? totalCompanyRevenueResult[0].total : 0;
+    
+    // Get today's commissions using aggregation
+    const todayAgentCommissionResult = await Commission.aggregate([
+      { $match: { createdAt: { $gte: today, $lt: tomorrow } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$agentAmount', 0] } } } }
+    ]);
+    const todayAgentCommission = todayAgentCommissionResult.length > 0 ? todayAgentCommissionResult[0].total : 0;
+    
+    const todayOperatorCommissionResult = await Commission.aggregate([
+      { $match: { createdAt: { $gte: today, $lt: tomorrow } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$operatorAmount', 0] } } } }
+    ]);
+    const todayOperatorCommission = todayOperatorCommissionResult.length > 0 ? todayOperatorCommissionResult[0].total : 0;
 
     // Get pending shops with agent and plan info
     const pendingShops = await Shop.find({ status: ShopStatus.PENDING })
@@ -141,31 +158,29 @@ export async function GET(req: NextRequest) {
       const monthEnd = new Date(monthStart);
       monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-      // Check both paidAt and createdAt for monthly revenue
-      const monthPaymentsByPaidAt = await Payment.find({
-        status: 'success',
-        paidAt: { $gte: monthStart, $lt: monthEnd },
-        shopId: { $in: existingShopIds }
-      });
+      // Check both paidAt and createdAt for monthly revenue - use aggregation
+      const monthRevenueByPaidAt = await Payment.aggregate([
+        {
+          $match: {
+            status: 'success',
+            paidAt: { $gte: monthStart, $lt: monthEnd }
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
 
-      const monthPaymentsByCreatedAt = await Payment.find({
-        status: 'success',
-        $or: [{ paidAt: { $exists: false } }, { paidAt: null }],
-        createdAt: { $gte: monthStart, $lt: monthEnd },
-        shopId: { $in: existingShopIds }
-      });
+      const monthRevenueByCreatedAt = await Payment.aggregate([
+        {
+          $match: {
+            status: 'success',
+            $or: [{ paidAt: { $exists: false } }, { paidAt: null }],
+            createdAt: { $gte: monthStart, $lt: monthEnd }
+          }
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
 
-      // Combine and deduplicate
-      const paymentIds = new Set();
-      const allMonthPayments = [...monthPaymentsByPaidAt, ...monthPaymentsByCreatedAt].filter(p => {
-        if (paymentIds.has(p._id.toString())) {
-          return false;
-        }
-        paymentIds.add(p._id.toString());
-        return true;
-      });
-
-      const monthRevenue = allMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+      const monthRevenue = (monthRevenueByPaidAt[0]?.total || 0) + (monthRevenueByCreatedAt[0]?.total || 0);
 
       monthlyRevenue.push({
         name: monthNames[monthStart.getMonth()],
@@ -230,6 +245,12 @@ export async function GET(req: NextRequest) {
         agents,
         operators,
         todaySales,
+        // Commission data from database
+        totalAgentCommission,
+        totalOperatorCommission,
+        totalCompanyRevenue,
+        todayAgentCommission,
+        todayOperatorCommission,
       },
       pendingShops: formattedPendingShops,
       charts: {

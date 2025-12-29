@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import AdStatusIndicator from './AdStatusIndicator';
+import AIAssistant from './AIAssistant';
 
 interface Shop {
   _id?: string;
@@ -878,6 +879,9 @@ export default function HomepageClient() {
 
       {/* Shop Popup */}
       <ShopPopup shop={selectedShop} isOpen={isPopupOpen} onClose={handleClosePopup} userLocation={location} />
+      
+      {/* AI Assistant */}
+      <AIAssistant userLocation={location} userId={user?.id} />
       </div>
     </>
   );

@@ -15,6 +15,7 @@ A comprehensive location-based business directory platform with online shop onbo
 - **Google AdSense**: Integrated ad slots
 - **Redis Caching**: <1 second load times
 - **MongoDB**: Optimized indexes for performance
+- **AI Assistant (Golu)**: Intelligent shop recommendations with natural language processing
 
 ## 🛠 Tech Stack
 
@@ -44,6 +45,7 @@ RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 NEXT_PUBLIC_GOOGLE_ADSENSE_ID=your_google_adsense_id
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+OPENAI_API_KEY=your_openai_api_key  # Optional: For AI-powered conversations
 ```
 
 3. **Start MongoDB and Redis:**

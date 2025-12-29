@@ -91,7 +91,6 @@ export default function OperatorDashboard() {
     { icon: FiDollarSign, label: 'Total Revenue', value: `₹${(stats?.totalRevenue || 0).toLocaleString()}`, color: 'from-purple-500 to-pink-600' },
     { icon: FiTrendingUp, label: 'Today Sales', value: `₹${(stats?.todaySales || 0).toLocaleString()}`, color: 'from-teal-500 to-cyan-600' },
     { icon: FiUsers, label: 'Total Agents', value: stats?.totalAgents || 0, color: 'from-orange-500 to-red-600' },
-    { icon: FiDollarSign, label: 'My Commission', value: `₹${(stats?.totalOperatorCommission || 0).toLocaleString()}`, color: 'from-indigo-500 to-blue-600' },
   ];
 
   if (loading) {
@@ -113,6 +112,26 @@ export default function OperatorDashboard() {
         <h1 className="text-2xl font-bold mb-1">Welcome, {operator?.name || 'Operator'}</h1>
         <p className="text-green-100">Operator ID: {operator?.operatorId || 'N/A'}</p>
       </div>
+
+      {/* Commission Highlight Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-xl p-8 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-green-100 text-sm mb-2">Total Operator Commission</p>
+            <p className="text-4xl font-bold mb-1">
+              ₹{(stats?.totalOperatorCommission || 0).toLocaleString()}
+            </p>
+            <p className="text-green-100 text-sm">10% of remaining after agent commission</p>
+          </div>
+          <div className="p-6 bg-white/20 rounded-xl backdrop-blur-sm">
+            <FiDollarSign className="text-white text-4xl" />
+          </div>
+        </div>
+      </motion.div>
 
       {/* Key Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

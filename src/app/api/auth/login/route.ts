@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { comparePassword, generateToken } from '@/lib/auth';
+import { syncUserCommissions } from '@/lib/commission-sync';
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +50,13 @@ export async function POST(req: NextRequest) {
       userId: user._id.toString(),
       role: user.role,
       email: user.email,
+    });
+
+    // Sync commissions in background (don't wait for it to complete)
+    // This ensures all commissions are calculated and linked properly
+    syncUserCommissions(user._id.toString(), user.role).catch(err => {
+      console.error('Error syncing commissions on login:', err);
+      // Don't fail login if commission sync fails
     });
 
     const response = NextResponse.json({
