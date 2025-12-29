@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAdStatus } from '@/contexts/AdStatusContext';
 
 declare global {
   interface Window {
@@ -25,6 +26,7 @@ export default function GoogleAdSense({
   adsenseId: propAdsenseId,
 }: GoogleAdSenseProps) {
   const pathname = usePathname();
+  const { incrementAdsCount } = useAdStatus();
   const envAdsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
   const adsenseId = propAdsenseId || envAdsenseId;
   const adRef = useRef<HTMLModElement>(null);
@@ -82,6 +84,9 @@ export default function GoogleAdSense({
           (element as any).adsbygoogle = true;
           
           (window as any).adsbygoogle.push({});
+          
+          // Notify ad status context
+          incrementAdsCount();
         }
       } catch (err) {
         console.error('AdSense error:', err);

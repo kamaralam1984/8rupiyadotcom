@@ -19,6 +19,7 @@ import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLog
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
+import AdStatusIndicator from './AdStatusIndicator';
 
 interface Shop {
   _id?: string;
@@ -529,6 +530,9 @@ export default function HomepageClient() {
 
             {/* Login/Register or User Profile */}
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
+              {/* Ad Status Indicator */}
+              <AdStatusIndicator />
+              
               {/* Theme Toggle */}
               <ThemeToggle />
               
