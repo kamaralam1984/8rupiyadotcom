@@ -23,12 +23,16 @@ export default function ChatbotPage() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+  const [voiceMode, setVoiceMode] = useState(false);
   const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(null);
+  const [listeningText, setListeningText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +46,58 @@ export default function ChatbotPage() {
     // Initialize speech synthesis
     if (typeof window !== 'undefined') {
       speechSynthesisRef.current = window.speechSynthesis;
+      
+      // Initialize speech recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'hi-IN'; // Hindi language support
+        
+        recognition.onstart = () => {
+          setIsListening(true);
+          setListeningText('');
+        };
+        
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('');
+          
+          setListeningText(transcript);
+          
+          // If final result
+          if (event.results[0].isFinal) {
+            setInputText(transcript);
+            setListeningText('');
+          }
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          setListeningText('');
+          
+          if (event.error === 'not-allowed') {
+            alert('कृपया माइक्रोफ़ोन की अनुमति दें / Please allow microphone access');
+          }
+        };
+        
+        recognition.onend = () => {
+          setIsListening(false);
+          // Auto-send message if we have text and voice mode is on
+          if (inputText.trim() && voiceMode) {
+            setTimeout(() => {
+              handleSendMessage();
+            }, 500);
+          }
+        };
+        
+        recognitionRef.current = recognition;
+      }
     }
 
     return () => {
@@ -49,8 +105,11 @@ export default function ChatbotPage() {
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
       }
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     };
-  }, []);
+  }, [inputText, voiceMode]);
 
   // Speak text using Web Speech API
   const speakText = (text: string, messageId: string) => {
@@ -97,6 +156,13 @@ export default function ChatbotPage() {
     utterance.onend = () => {
       setIsSpeaking(false);
       setCurrentSpeakingId(null);
+      
+      // If voice mode is on, start listening again for next question
+      if (voiceMode && messageId && messageId !== '1') {
+        setTimeout(() => {
+          startListening();
+        }, 1000);
+      }
     };
 
     utterance.onerror = () => {
@@ -113,6 +179,54 @@ export default function ChatbotPage() {
       speechSynthesisRef.current.cancel();
       setIsSpeaking(false);
       setCurrentSpeakingId(null);
+    }
+  };
+
+  // Start listening
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition not supported in your browser. कृपया Chrome या Edge browser का उपयोग करें।');
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      return;
+    }
+    
+    // Stop any ongoing speech
+    stopSpeaking();
+    
+    try {
+      recognitionRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+    }
+  };
+
+  // Stop listening
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  // Toggle voice mode (Alexa-like continuous conversation)
+  const toggleVoiceMode = () => {
+    const newVoiceMode = !voiceMode;
+    setVoiceMode(newVoiceMode);
+    
+    if (newVoiceMode) {
+      setAutoPlayVoice(true); // Enable auto-play when voice mode is on
+      // Start listening immediately
+      setTimeout(() => {
+        startListening();
+      }, 500);
+    } else {
+      stopListening();
+      stopSpeaking();
     }
   };
 
@@ -300,17 +414,6 @@ Marketplace पर जाएं:
 कृपया अपना सवाल पूछें! 🌟`;
   };
 
-  const handleVoiceInput = () => {
-    setIsRecording(!isRecording);
-    // Voice recording logic would go here
-    if (!isRecording) {
-      setTimeout(() => {
-        setInputText('मेरी कुंडली में शादी के योग कब बन रहे हैं?');
-        setIsRecording(false);
-      }, 2000);
-    }
-  };
-
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Mystical Background */}
@@ -353,29 +456,47 @@ Marketplace पर जाएं:
               </div>
             </Link>
             <div className="flex items-center space-x-2">
-              {/* Auto-play Voice Toggle */}
+              {/* Voice Mode Toggle (Alexa Mode) */}
               <button
-                onClick={() => {
-                  setAutoPlayVoice(!autoPlayVoice);
-                  if (isSpeaking) stopSpeaking();
-                }}
-                className={`px-3 py-1 rounded-full border transition-all flex items-center space-x-2 ${
-                  autoPlayVoice
-                    ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
-                    : 'bg-gray-700/20 border-gray-500/50 text-gray-400'
+                onClick={toggleVoiceMode}
+                className={`px-3 py-2 rounded-full border-2 transition-all flex items-center space-x-2 ${
+                  voiceMode
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-purple-400 text-white shadow-lg shadow-purple-500/50 animate-pulse'
+                    : 'bg-gray-700/20 border-gray-500/50 text-gray-400 hover:border-purple-400 hover:text-purple-400'
                 }`}
-                title={autoPlayVoice ? 'Auto-play Voice: ON' : 'Auto-play Voice: OFF'}
+                title={voiceMode ? 'Voice Mode: ON (Alexa-like)' : 'Voice Mode: OFF'}
               >
-                {autoPlayVoice ? <FaVolumeUp className="text-sm" /> : <FaVolumeMute className="text-sm" />}
-                <span className="text-xs hidden md:inline">
-                  {autoPlayVoice ? 'Voice ON' : 'Voice OFF'}
+                <FaMicrophone className="text-lg" />
+                <span className="text-xs font-bold hidden md:inline">
+                  {voiceMode ? 'ALEXA MODE' : 'Voice Mode'}
                 </span>
               </button>
+              
+              {/* Auto-play Voice Toggle */}
+              {!voiceMode && (
+                <button
+                  onClick={() => {
+                    setAutoPlayVoice(!autoPlayVoice);
+                    if (isSpeaking) stopSpeaking();
+                  }}
+                  className={`px-3 py-1 rounded-full border transition-all flex items-center space-x-2 ${
+                    autoPlayVoice
+                      ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
+                      : 'bg-gray-700/20 border-gray-500/50 text-gray-400'
+                  }`}
+                  title={autoPlayVoice ? 'Auto-play Voice: ON' : 'Auto-play Voice: OFF'}
+                >
+                  {autoPlayVoice ? <FaVolumeUp className="text-sm" /> : <FaVolumeMute className="text-sm" />}
+                  <span className="text-xs hidden lg:inline">
+                    {autoPlayVoice ? 'Voice' : 'Mute'}
+                  </span>
+                </button>
+              )}
               
               <div className="px-3 py-1 bg-green-500/20 rounded-full border border-green-500/50">
                 <span className="text-green-400 text-sm flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
-                  Online
+                  <span className="hidden sm:inline">Online</span>
                 </span>
               </div>
             </div>
@@ -489,15 +610,47 @@ Marketplace पर जाएं:
         {/* Input Area */}
         <div className="bg-gray-900/90 backdrop-blur-xl border-t border-yellow-500/50 p-4">
           <div className="max-w-4xl mx-auto">
+            {/* Listening Indicator */}
+            {isListening && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-3 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/50 rounded-xl"
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="flex items-center space-x-2"
+                  >
+                    <div className="w-3 h-8 bg-purple-500 rounded-full animate-pulse" />
+                    <div className="w-3 h-12 bg-pink-500 rounded-full animate-pulse delay-100" />
+                    <div className="w-3 h-6 bg-purple-500 rounded-full animate-pulse delay-200" />
+                    <div className="w-3 h-10 bg-pink-500 rounded-full animate-pulse" />
+                  </motion.div>
+                  <div className="text-center">
+                    <p className="text-purple-300 font-bold">🎤 सुन रहा हूं... / Listening...</p>
+                    {listeningText && (
+                      <p className="text-white text-sm mt-1">{listeningText}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div className="flex items-center space-x-3">
               {/* Voice Button */}
               <button
-                onClick={handleVoiceInput}
+                onClick={startListening}
+                disabled={voiceMode}
                 className={`p-4 rounded-full transition-all ${
-                  isRecording
-                    ? 'bg-red-500 animate-pulse'
+                  isListening
+                    ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/50'
+                    : voiceMode
+                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
                     : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:shadow-green-500/50'
                 }`}
+                title={voiceMode ? 'Voice Mode Active' : isListening ? 'Stop Listening' : 'Start Voice Input'}
               >
                 <FaMicrophone className="text-white text-xl" />
               </button>
@@ -508,9 +661,10 @@ Marketplace पर जाएं:
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="कृपया अपना प्रश्न पूछें..."
-                  className="w-full px-6 py-4 bg-gray-800/90 border border-yellow-500/30 rounded-full text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50"
+                  onKeyPress={(e) => e.key === 'Enter' && !isListening && handleSendMessage()}
+                  placeholder={voiceMode ? 'Voice Mode Active - Speak your question...' : 'कृपया अपना प्रश्न पूछें...'}
+                  disabled={voiceMode}
+                  className="w-full px-6 py-4 bg-gray-800/90 border border-yellow-500/30 rounded-full text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-yellow-400 transition-colors">
                   <FaKeyboard className="text-xl" />
@@ -520,25 +674,44 @@ Marketplace पर जाएं:
               {/* Send Button */}
               <button
                 onClick={handleSendMessage}
-                disabled={!inputText.trim()}
+                disabled={!inputText.trim() || isListening || voiceMode}
                 className="p-4 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-lg hover:shadow-amber-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <FaPaperPlane className="text-white text-xl" />
               </button>
             </div>
 
+            {/* Voice Mode Help Text */}
+            {voiceMode && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-3 text-center"
+              >
+                <p className="text-purple-300 text-sm">
+                  🎤 <strong>Alexa Mode Active!</strong> बोलें, मैं सुन रहा हूं और जवाब दूंगा। 
+                  <br />
+                  <span className="text-xs text-gray-400">
+                    (Speak your question, I will listen and respond with voice)
+                  </span>
+                </p>
+              </motion.div>
+            )}
+
             {/* Quick Suggestions */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {['करियर सलाह', 'शादी योग', 'आज का राशिफल', 'लकी नंबर'].map((suggestion) => (
-                <button
-                  key={suggestion}
+            {!voiceMode && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {['करियर सलाह', 'शादी योग', 'आज का राशिफल', 'लकी नंबर'].map((suggestion) => (
+                  <button
+                    key={suggestion}
                   onClick={() => setInputText(suggestion)}
                   className="px-4 py-2 bg-gray-800/70 border border-yellow-500/30 rounded-full text-sm text-gray-300 hover:bg-gray-700/70 hover:text-yellow-400 transition-all"
                 >
                   {suggestion}
                 </button>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
