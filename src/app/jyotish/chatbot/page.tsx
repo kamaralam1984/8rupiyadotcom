@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { FaMicrophone, FaKeyboard, FaPaperPlane, FaUser, FaRobot } from 'react-icons/fa';
+import { FaMicrophone, FaKeyboard, FaPaperPlane, FaUser, FaRobot, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
 
 interface Message {
   id: string;
@@ -24,7 +24,11 @@ export default function ChatbotPage() {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+  const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,6 +37,84 @@ export default function ChatbotPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Initialize speech synthesis
+    if (typeof window !== 'undefined') {
+      speechSynthesisRef.current = window.speechSynthesis;
+    }
+
+    return () => {
+      // Cleanup: stop any ongoing speech
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+    };
+  }, []);
+
+  // Speak text using Web Speech API
+  const speakText = (text: string, messageId: string) => {
+    if (!speechSynthesisRef.current) return;
+
+    // Stop any ongoing speech
+    speechSynthesisRef.current.cancel();
+
+    // Remove markdown formatting and emojis for cleaner speech
+    const cleanText = text
+      .replace(/\*\*/g, '') // Remove bold markdown
+      .replace(/\*/g, '') // Remove italic markdown
+      .replace(/#+\s/g, '') // Remove headers
+      .replace(/•/g, '') // Remove bullets
+      .replace(/[📈💫🎯💑✨🌸💰💵🏥🌿👨‍👩‍👧‍👦🙏🌟⭐]/g, '') // Remove emojis
+      .replace(/\n+/g, '. ') // Replace newlines with pauses
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // Set voice properties
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    // Try to use Hindi voice if available
+    const voices = speechSynthesisRef.current.getVoices();
+    const hindiVoice = voices.find(voice => 
+      voice.lang.includes('hi') || voice.name.includes('Hindi')
+    );
+    
+    if (hindiVoice) {
+      utterance.voice = hindiVoice;
+      utterance.lang = 'hi-IN';
+    } else {
+      utterance.lang = 'en-IN'; // Fallback to Indian English
+    }
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setCurrentSpeakingId(messageId);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    };
+
+    speechSynthesisRef.current.speak(utterance);
+  };
+
+  // Stop speaking
+  const stopSpeaking = () => {
+    if (speechSynthesisRef.current) {
+      speechSynthesisRef.current.cancel();
+      setIsSpeaking(false);
+      setCurrentSpeakingId(null);
+    }
+  };
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
@@ -58,6 +140,13 @@ export default function ChatbotPage() {
       };
       setMessages(prev => [...prev, botResponse]);
       setIsTyping(false);
+      
+      // Auto-play voice if enabled
+      if (autoPlayVoice) {
+        setTimeout(() => {
+          speakText(botResponse.text, botResponse.id);
+        }, 500);
+      }
     }, 2000);
   };
 
@@ -264,6 +353,25 @@ Marketplace पर जाएं:
               </div>
             </Link>
             <div className="flex items-center space-x-2">
+              {/* Auto-play Voice Toggle */}
+              <button
+                onClick={() => {
+                  setAutoPlayVoice(!autoPlayVoice);
+                  if (isSpeaking) stopSpeaking();
+                }}
+                className={`px-3 py-1 rounded-full border transition-all flex items-center space-x-2 ${
+                  autoPlayVoice
+                    ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
+                    : 'bg-gray-700/20 border-gray-500/50 text-gray-400'
+                }`}
+                title={autoPlayVoice ? 'Auto-play Voice: ON' : 'Auto-play Voice: OFF'}
+              >
+                {autoPlayVoice ? <FaVolumeUp className="text-sm" /> : <FaVolumeMute className="text-sm" />}
+                <span className="text-xs hidden md:inline">
+                  {autoPlayVoice ? 'Voice ON' : 'Voice OFF'}
+                </span>
+              </button>
+              
               <div className="px-3 py-1 bg-green-500/20 rounded-full border border-green-500/50">
                 <span className="text-green-400 text-sm flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse" />
@@ -300,15 +408,44 @@ Marketplace पर जाएं:
                   </div>
 
                   {/* Message Bubble */}
-                  <div className={`rounded-2xl p-4 ${
-                    message.sender === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : 'bg-gray-800/90 backdrop-blur-xl border border-yellow-500/30 text-gray-200'
-                  }`}>
-                    <p className="whitespace-pre-wrap">{message.text}</p>
-                    <span className="text-xs opacity-70 mt-2 block">
-                      {message.timestamp.toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                  <div className="relative">
+                    <div className={`rounded-2xl p-4 ${
+                      message.sender === 'user'
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                        : 'bg-gray-800/90 backdrop-blur-xl border border-yellow-500/30 text-gray-200'
+                    }`}>
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs opacity-70">
+                          {message.timestamp.toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        
+                        {/* Voice Button for Bot Messages */}
+                        {message.sender === 'bot' && (
+                          <button
+                            onClick={() => {
+                              if (currentSpeakingId === message.id) {
+                                stopSpeaking();
+                              } else {
+                                speakText(message.text, message.id);
+                              }
+                            }}
+                            className={`ml-3 p-2 rounded-full transition-all ${
+                              currentSpeakingId === message.id
+                                ? 'bg-yellow-500 text-black animate-pulse'
+                                : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/40'
+                            }`}
+                            title={currentSpeakingId === message.id ? 'Stop Voice' : 'Play Voice'}
+                          >
+                            {currentSpeakingId === message.id ? (
+                              <FaVolumeMute className="text-sm" />
+                            ) : (
+                              <FaVolumeUp className="text-sm" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
