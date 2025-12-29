@@ -328,7 +328,7 @@ export default function ToolsetPage() {
                       </div>
 
                       <div className="grid md:grid-cols-3 gap-4">
-                        {['Vivat guna milan', 'Lucky numbers', 'Auto onsiore ieen', 'Plasameer sanew'].map((feature, i) => (
+                        {['Birth Number', 'Life Path Number', 'Destiny Number', 'Soul Number'].map((feature, i) => (
                           <div key={i} className="p-4 bg-gray-800/50 rounded-xl text-center">
                             <div className="text-3xl mb-2">✨</div>
                             <p className="text-gray-300 text-sm">{feature}</p>

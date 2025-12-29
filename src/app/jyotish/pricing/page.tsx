@@ -85,18 +85,18 @@ export default function PricingPage() {
       category: 'Jyotish Memberships',
       gradient: 'from-blue-500 to-indigo-600',
       options: [
-        'AI hired As Jyotish chart',
-        'NotReal Kundli insight',
-        'High Tellum Business'
+        'AI-powered Jyotish predictions',
+        'Personalized Kundli insights',
+        'Premium astrology services'
       ]
     },
     {
-      category: 'Premint Preclaslive',
+      category: 'Premium Features',
       gradient: 'from-green-500 to-emerald-600',
       options: [
-        'Tuuu Boii umii',
-        'Google Aderess',
-        'Opehi main'
+        'Expert consultations',
+        'Google AdSense integration',
+        'Advanced analytics dashboard'
       ]
     }
   ];
