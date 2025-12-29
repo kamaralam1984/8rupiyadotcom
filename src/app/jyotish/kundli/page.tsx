@@ -491,73 +491,121 @@ export default function KundliPage() {
                         कुंडली विश्लेषण / Kundli Analysis
                       </h3>
                       
-                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         {/* Ascendant */}
-                        <div className="p-4 bg-gray-800/70 rounded-xl border border-green-500/30">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.1 }}
+                          className="p-6 bg-gradient-to-br from-green-900/40 to-gray-800/70 rounded-xl border-2 border-green-500/50 hover:border-green-400 hover:shadow-lg hover:shadow-green-500/20 transition-all"
+                        >
                           <div className="text-center">
-                            <div className="text-3xl mb-2">🌅</div>
-                            <h4 className="text-green-400 font-semibold mb-2">Ascendant / लग्न</h4>
-                            <p className="text-white text-xl font-bold">{zodiacSigns[0].name}</p>
-                            <p className="text-gray-400 text-sm">{zodiacSigns[0].hindi}</p>
+                            <div className="text-5xl mb-3">🌅</div>
+                            <h4 className="text-green-400 font-bold mb-3 text-sm">Ascendant / लग्न</h4>
+                            <p className="text-white text-2xl font-bold mb-1">{zodiacSigns[0].name}</p>
+                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[0].hindi}</p>
                           </div>
-                        </div>
+                        </motion.div>
 
                         {/* Moon Sign */}
-                        <div className="p-4 bg-gray-800/70 rounded-xl border border-blue-500/30">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.2 }}
+                          className="p-6 bg-gradient-to-br from-blue-900/40 to-gray-800/70 rounded-xl border-2 border-blue-500/50 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/20 transition-all"
+                        >
                           <div className="text-center">
-                            <div className="text-3xl mb-2">🌙</div>
-                            <h4 className="text-blue-400 font-semibold mb-2">Moon Sign / चंद्र राशि</h4>
-                            <p className="text-white text-xl font-bold">{planets.find(p => p.name === 'Moon')?.position}</p>
-                            <p className="text-gray-400 text-sm">{zodiacSigns[1].hindi}</p>
+                            <div className="text-5xl mb-3">🌙</div>
+                            <h4 className="text-blue-400 font-bold mb-3 text-sm">Moon Sign / चंद्र राशि</h4>
+                            <p className="text-white text-2xl font-bold mb-1">{planets.find(p => p.name === 'Moon')?.position}</p>
+                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[1].hindi}</p>
                           </div>
-                        </div>
+                        </motion.div>
 
                         {/* Sun Sign */}
-                        <div className="p-4 bg-gray-800/70 rounded-xl border border-orange-500/30">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="p-6 bg-gradient-to-br from-orange-900/40 to-gray-800/70 rounded-xl border-2 border-orange-500/50 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/20 transition-all"
+                        >
                           <div className="text-center">
-                            <div className="text-3xl mb-2">☀️</div>
-                            <h4 className="text-orange-400 font-semibold mb-2">Sun Sign / सूर्य राशि</h4>
-                            <p className="text-white text-xl font-bold">{planets.find(p => p.name === 'Sun')?.position}</p>
-                            <p className="text-gray-400 text-sm">{zodiacSigns[0].hindi}</p>
+                            <div className="text-5xl mb-3">☀️</div>
+                            <h4 className="text-orange-400 font-bold mb-3 text-sm">Sun Sign / सूर्य राशि</h4>
+                            <p className="text-white text-2xl font-bold mb-1">{planets.find(p => p.name === 'Sun')?.position}</p>
+                            <p className="text-gray-300 text-base font-semibold">{zodiacSigns[0].hindi}</p>
                           </div>
-                        </div>
+                        </motion.div>
 
                         {/* Nakshatra */}
-                        <div className="p-4 bg-gray-800/70 rounded-xl border border-purple-500/30">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 }}
+                          className="p-6 bg-gradient-to-br from-purple-900/40 to-gray-800/70 rounded-xl border-2 border-purple-500/50 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                        >
                           <div className="text-center">
-                            <div className="text-3xl mb-2">⭐</div>
-                            <h4 className="text-purple-400 font-semibold mb-2">Nakshatra / नक्षत्र</h4>
-                            <p className="text-white text-xl font-bold">Ashwini</p>
-                            <p className="text-gray-400 text-sm">अश्विनी</p>
+                            <div className="text-5xl mb-3">⭐</div>
+                            <h4 className="text-purple-400 font-bold mb-3 text-sm">Nakshatra / नक्षत्र</h4>
+                            <p className="text-white text-2xl font-bold mb-1">Ashwini</p>
+                            <p className="text-gray-300 text-base font-semibold">अश्विनी</p>
                           </div>
-                        </div>
+                        </motion.div>
                       </div>
 
                       {/* Key Insights */}
-                      <div className="mt-6 grid md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-gradient-to-br from-yellow-900/30 to-amber-900/30 rounded-xl border border-yellow-500/30">
-                          <h4 className="text-yellow-400 font-semibold mb-3 flex items-center">
-                            <span className="mr-2">💫</span>
+                      <div className="mt-2 grid md:grid-cols-2 gap-6">
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.5 }}
+                          className="p-6 bg-gradient-to-br from-yellow-900/40 to-amber-900/40 rounded-xl border-2 border-yellow-500/50 hover:border-yellow-400 hover:shadow-lg hover:shadow-yellow-500/20 transition-all"
+                        >
+                          <h4 className="text-yellow-400 font-bold mb-4 flex items-center text-lg">
+                            <span className="mr-2 text-2xl">💫</span>
                             Strengths / शक्तियां
                           </h4>
-                          <ul className="text-gray-300 text-sm space-y-2">
-                            <li>• Strong Jupiter position indicates wisdom and prosperity</li>
-                            <li>• Venus in 7th house supports harmonious relationships</li>
-                            <li>• Sun in ascendant brings leadership qualities</li>
+                          <ul className="text-gray-200 space-y-3">
+                            <li className="flex items-start">
+                              <span className="text-yellow-400 mr-2 mt-1">•</span>
+                              <span>Strong Jupiter position indicates wisdom and prosperity</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="text-yellow-400 mr-2 mt-1">•</span>
+                              <span>Venus in 7th house supports harmonious relationships</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="text-yellow-400 mr-2 mt-1">•</span>
+                              <span>Sun in ascendant brings leadership qualities</span>
+                            </li>
                           </ul>
-                        </div>
+                        </motion.div>
 
-                        <div className="p-4 bg-gradient-to-br from-blue-900/30 to-indigo-900/30 rounded-xl border border-blue-500/30">
-                          <h4 className="text-blue-400 font-semibold mb-3 flex items-center">
-                            <span className="mr-2">🔮</span>
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 }}
+                          className="p-6 bg-gradient-to-br from-blue-900/40 to-indigo-900/40 rounded-xl border-2 border-blue-500/50 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/20 transition-all"
+                        >
+                          <h4 className="text-blue-400 font-bold mb-4 flex items-center text-lg">
+                            <span className="mr-2 text-2xl">🔮</span>
                             Remedies / उपाय
                           </h4>
-                          <ul className="text-gray-300 text-sm space-y-2">
-                            <li>• Chant Gayatri Mantra daily / गायत्री मंत्र का जाप करें</li>
-                            <li>• Wear Yellow Sapphire for Jupiter / पुखराज धारण करें</li>
-                            <li>• Donate on Thursdays / गुरुवार को दान करें</li>
+                          <ul className="text-gray-200 space-y-3">
+                            <li className="flex items-start">
+                              <span className="text-blue-400 mr-2 mt-1">•</span>
+                              <span>Chant Gayatri Mantra daily / गायत्री मंत्र का जाप करें</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="text-blue-400 mr-2 mt-1">•</span>
+                              <span>Wear Yellow Sapphire for Jupiter / पुखराज धारण करें</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="text-blue-400 mr-2 mt-1">•</span>
+                              <span>Donate on Thursdays / गुरुवार को दान करें</span>
+                            </li>
                           </ul>
-                        </div>
+                        </motion.div>
                       </div>
                     </div>
                   </div>
