@@ -273,9 +273,12 @@ export default function ChatbotPage() {
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
 
+    // Save input text before clearing
+    const userInputText = inputText.trim();
+
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: userInputText,
       sender: 'user',
       timestamp: new Date()
     };
@@ -284,11 +287,12 @@ export default function ChatbotPage() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate bot response
+    // Get bot response
     setTimeout(() => {
+      const botResponseText = getBotResponse(userInputText);
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: getBotResponse(inputText),
+        text: botResponseText,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -746,12 +750,46 @@ Marketplace पर जाएं:
                 {['करियर सलाह', 'शादी योग', 'आज का राशिफल', 'लकी नंबर'].map((suggestion) => (
                   <button
                     key={suggestion}
-                  onClick={() => setInputText(suggestion)}
-                  className="px-4 py-2 bg-gray-800/70 border border-yellow-500/30 rounded-full text-sm text-gray-300 hover:bg-gray-700/70 hover:text-yellow-400 transition-all"
-                >
-                  {suggestion}
-                </button>
-              ))}
+                    onClick={() => {
+                      setInputText(suggestion);
+                      // Send message after a brief delay to ensure state updates
+                      setTimeout(() => {
+                        const userMessage: Message = {
+                          id: Date.now().toString(),
+                          text: suggestion,
+                          sender: 'user',
+                          timestamp: new Date()
+                        };
+                        setMessages(prev => [...prev, userMessage]);
+                        setInputText('');
+                        setIsTyping(true);
+
+                        // Get bot response
+                        setTimeout(() => {
+                          const botResponseText = getBotResponse(suggestion);
+                          const botResponse: Message = {
+                            id: (Date.now() + 1).toString(),
+                            text: botResponseText,
+                            sender: 'bot',
+                            timestamp: new Date()
+                          };
+                          setMessages(prev => [...prev, botResponse]);
+                          setIsTyping(false);
+                          
+                          // Auto-play voice if enabled
+                          if (autoPlayVoice) {
+                            setTimeout(() => {
+                              speakText(botResponse.text, botResponse.id);
+                            }, 500);
+                          }
+                        }, 2000);
+                      }, 100);
+                    }}
+                    className="px-4 py-2 bg-gray-800/70 border border-yellow-500/30 rounded-full text-sm text-gray-300 hover:bg-gray-700/70 hover:text-yellow-400 transition-all"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             )}
           </div>
