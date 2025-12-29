@@ -72,7 +72,8 @@ export default function KundliPage() {
 
   const handleDownloadPDF = () => {
     // PDF download logic would go here
-    alert('कुंडली PDF डाउनलोड हो रही है...');
+    const name = formData.name || 'Kundli';
+    alert(`${name} की कुंडली PDF डाउनलोड हो रही है... / Downloading ${name}'s Kundli PDF...`);
   };
 
   const zodiacSigns = [
