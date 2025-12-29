@@ -19,13 +19,11 @@ export default function JyotishNav() {
     <header className="p-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
         <Link href="/jyotish" className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-orange-600 flex items-center justify-center shadow-lg">
-            <img src="/logo.png" alt="8rupiya" className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-yellow-400">8rupiya</h1>
-            <p className="text-xs text-gray-400">Jyotish</p>
-          </div>
+          <img 
+            src="/uploads/jyotish-logo.png" 
+            alt="8rupiya AI Jyotish Platform" 
+            className="h-12 md:h-14 w-auto drop-shadow-lg hover:drop-shadow-2xl transition-all" 
+          />
         </Link>
         
         <nav className="hidden md:flex space-x-6 text-gray-300">

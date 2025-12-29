@@ -92,23 +92,21 @@ export default function JyotishPage() {
               transition={{ duration: 0.8 }}
               className="mb-8"
             >
-              <div className="flex items-center justify-center mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-600 rounded-full blur-xl opacity-50 animate-pulse" />
+              <div className="flex items-center justify-center mb-8">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.8 }}
+                  className="relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-green-400 to-amber-600 rounded-3xl blur-2xl opacity-60 animate-pulse" />
                   <img
-                    src="/logo.png"
-                    alt="8rupiya Logo"
-                    className="relative h-16 w-auto"
+                    src="/uploads/jyotish-logo.png"
+                    alt="8rupiya AI Jyotish Platform"
+                    className="relative h-32 md:h-40 w-auto drop-shadow-2xl"
                   />
-                </div>
+                </motion.div>
               </div>
-
-              <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent">
-                WEB PANDIT
-              </h1>
-              <p className="text-2xl md:text-3xl text-gray-300 mb-4">
-                AI Jyotish Seva Platform
-              </p>
             </motion.div>
 
             {/* Feature Cards */}

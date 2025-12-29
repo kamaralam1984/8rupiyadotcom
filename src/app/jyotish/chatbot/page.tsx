@@ -125,12 +125,14 @@ export default function ChatbotPage() {
         <header className="bg-gray-900/80 backdrop-blur-xl border-b border-yellow-500/30 p-4">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <Link href="/jyotish" className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-orange-600 flex items-center justify-center">
-                <FaRobot className="text-2xl text-black" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-yellow-400">Web Pandit</h1>
-                <p className="text-sm text-gray-400">Wazered aabjoy</p>
+              <img 
+                src="/uploads/jyotish-logo.png" 
+                alt="8rupiya AI Jyotish Platform" 
+                className="h-10 md:h-12 w-auto drop-shadow-lg" 
+              />
+              <div className="ml-3">
+                <h1 className="text-lg md:text-xl font-bold text-yellow-400">AI Chatbot</h1>
+                <p className="text-xs text-gray-400">24/7 Available</p>
               </div>
             </Link>
             <div className="flex items-center space-x-2">
