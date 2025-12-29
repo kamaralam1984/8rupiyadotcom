@@ -39,14 +39,31 @@ export default function KundliPage() {
     alert('कुंडली PDF डाउनलोड हो रही है...');
   };
 
+  const zodiacSigns = [
+    { sign: '♈', name: 'Aries', hindi: 'मेष' },
+    { sign: '♉', name: 'Taurus', hindi: 'वृषभ' },
+    { sign: '♊', name: 'Gemini', hindi: 'मिथुन' },
+    { sign: '♋', name: 'Cancer', hindi: 'कर्क' },
+    { sign: '♌', name: 'Leo', hindi: 'सिंह' },
+    { sign: '♍', name: 'Virgo', hindi: 'कन्या' },
+    { sign: '♎', name: 'Libra', hindi: 'तुला' },
+    { sign: '♏', name: 'Scorpio', hindi: 'वृश्चिक' },
+    { sign: '♐', name: 'Sagittarius', hindi: 'धनु' },
+    { sign: '♑', name: 'Capricorn', hindi: 'मकर' },
+    { sign: '♒', name: 'Aquarius', hindi: 'कुंभ' },
+    { sign: '♓', name: 'Pisces', hindi: 'मीन' }
+  ];
+
   const planets = [
-    { name: 'Sun', icon: '☀️', position: 'Aries', degree: '15°23\'', house: 1 },
-    { name: 'Moon', icon: '🌙', position: 'Taurus', degree: '23°45\'', house: 2 },
-    { name: 'Mars', icon: '♂️', position: 'Leo', degree: '8°12\'', house: 5 },
-    { name: 'Mercury', icon: '☿', position: 'Gemini', degree: '19°56\'', house: 3 },
-    { name: 'Jupiter', icon: '♃', position: 'Sagittarius', degree: '27°34\'', house: 9 },
-    { name: 'Venus', icon: '♀', position: 'Libra', degree: '14°28\'', house: 7 },
-    { name: 'Saturn', icon: '♄', position: 'Capricorn', degree: '5°18\'', house: 10 }
+    { name: 'Sun', hindi: 'सूर्य', icon: '☀️', position: 'Aries', degree: '15°23\'', house: 1, color: 'text-orange-400' },
+    { name: 'Moon', hindi: 'चंद्र', icon: '🌙', position: 'Taurus', degree: '23°45\'', house: 2, color: 'text-blue-300' },
+    { name: 'Mars', hindi: 'मंगल', icon: '♂️', position: 'Leo', degree: '8°12\'', house: 5, color: 'text-red-400' },
+    { name: 'Mercury', hindi: 'बुध', icon: '☿', position: 'Gemini', degree: '19°56\'', house: 3, color: 'text-green-400' },
+    { name: 'Jupiter', hindi: 'गुरु', icon: '♃', position: 'Sagittarius', degree: '27°34\'', house: 9, color: 'text-yellow-400' },
+    { name: 'Venus', hindi: 'शुक्र', icon: '♀', position: 'Libra', degree: '14°28\'', house: 7, color: 'text-pink-400' },
+    { name: 'Saturn', hindi: 'शनि', icon: '♄', position: 'Capricorn', degree: '5°18\'', house: 10, color: 'text-purple-400' },
+    { name: 'Rahu', hindi: 'राहु', icon: '☊', position: 'Gemini', degree: '12°45\'', house: 3, color: 'text-gray-400' },
+    { name: 'Ketu', hindi: 'केतु', icon: '☋', position: 'Sagittarius', degree: '12°45\'', house: 9, color: 'text-indigo-400' }
   ];
 
   return (
@@ -261,62 +278,130 @@ export default function KundliPage() {
                         Kundli Chart
                       </h3>
                       
-                      {/* Diamond Chart */}
+                      {/* Diamond Chart - North Indian Style */}
                       <div className="relative w-full aspect-square max-w-md mx-auto">
-                        {/* Center Diamond */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="relative w-3/4 h-3/4 rotate-45">
-                            <div className="absolute inset-0 border-4 border-yellow-500 bg-gradient-to-br from-amber-900/50 to-purple-900/50">
-                              {/* Grid Lines */}
-                              <div className="absolute top-1/2 left-0 right-0 border-t-2 border-yellow-500/50" />
-                              <div className="absolute top-0 bottom-0 left-1/2 border-l-2 border-yellow-500/50" />
+                          <div className="relative w-[85%] h-[85%] rotate-45">
+                            {/* Main Diamond Border */}
+                            <div className="absolute inset-0 border-4 border-yellow-500 bg-gradient-to-br from-amber-900/40 to-purple-900/40">
                               
-                              {/* Houses */}
-                              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45">
-                                <div className="text-center">
-                                  <div className="text-2xl">♈</div>
-                                  <div className="text-xs text-yellow-400">1st</div>
-                                </div>
+                              {/* Inner Grid Lines - Creating 12 Houses */}
+                              <div className="absolute top-0 left-0 right-0 bottom-0">
+                                {/* Horizontal Lines */}
+                                <div className="absolute top-1/4 left-0 right-0 border-t-2 border-yellow-500/40" />
+                                <div className="absolute top-1/2 left-0 right-0 border-t-2 border-yellow-500/50" />
+                                <div className="absolute top-3/4 left-0 right-0 border-t-2 border-yellow-500/40" />
+                                
+                                {/* Vertical Lines */}
+                                <div className="absolute left-1/4 top-0 bottom-0 border-l-2 border-yellow-500/40" />
+                                <div className="absolute left-1/2 top-0 bottom-0 border-l-2 border-yellow-500/50" />
+                                <div className="absolute left-3/4 top-0 bottom-0 border-l-2 border-yellow-500/40" />
                               </div>
-                              
-                              <div className="absolute top-1/4 right-0 translate-x-1/2 -rotate-45">
+
+                              {/* 12 Houses with Zodiac Signs */}
+                              {/* House 1 - Top */}
+                              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-900/80 px-3 py-2 rounded-lg border border-yellow-500/50">
                                 <div className="text-center">
-                                  <div className="text-2xl">♉</div>
-                                  <div className="text-xs text-yellow-400">2nd</div>
-                                </div>
-                              </div>
-                              
-                              <div className="absolute bottom-1/4 right-0 translate-x-1/2 -rotate-45">
-                                <div className="text-center">
-                                  <div className="text-2xl">♊</div>
-                                  <div className="text-xs text-yellow-400">3rd</div>
-                                </div>
-                              </div>
-                              
-                              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 -rotate-45">
-                                <div className="text-center">
-                                  <div className="text-2xl">♋</div>
-                                  <div className="text-xs text-yellow-400">4th</div>
+                                  <div className="text-xl">{zodiacSigns[0].sign}</div>
+                                  <div className="text-[10px] text-yellow-400">1st</div>
+                                  <div className="text-[10px] text-gray-400">{zodiacSigns[0].hindi}</div>
                                 </div>
                               </div>
 
-                              <div className="absolute bottom-1/4 left-0 -translate-x-1/2 -rotate-45">
+                              {/* House 2 - Top Right */}
+                              <div className="absolute top-[12.5%] right-[12.5%] translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
                                 <div className="text-center">
-                                  <div className="text-2xl">♌</div>
-                                  <div className="text-xs text-yellow-400">5th</div>
+                                  <div className="text-lg">{zodiacSigns[1].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">2nd</div>
                                 </div>
                               </div>
 
-                              <div className="absolute top-1/4 left-0 -translate-x-1/2 -rotate-45">
+                              {/* House 3 - Right Upper */}
+                              <div className="absolute top-[37.5%] right-0 translate-x-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
                                 <div className="text-center">
-                                  <div className="text-2xl">♍</div>
-                                  <div className="text-xs text-yellow-400">6th</div>
+                                  <div className="text-lg">{zodiacSigns[2].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">3rd</div>
                                 </div>
                               </div>
 
-                              {/* Center */}
+                              {/* House 4 - Right */}
+                              <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-900/80 px-3 py-2 rounded-lg border border-yellow-500/50">
+                                <div className="text-center">
+                                  <div className="text-xl">{zodiacSigns[3].sign}</div>
+                                  <div className="text-[10px] text-yellow-400">4th</div>
+                                  <div className="text-[10px] text-gray-400">{zodiacSigns[3].hindi}</div>
+                                </div>
+                              </div>
+
+                              {/* House 5 - Right Lower */}
+                              <div className="absolute bottom-[37.5%] right-0 translate-x-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[4].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">5th</div>
+                                </div>
+                              </div>
+
+                              {/* House 6 - Bottom Right */}
+                              <div className="absolute bottom-[12.5%] right-[12.5%] translate-x-1/2 translate-y-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[5].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">6th</div>
+                                </div>
+                              </div>
+
+                              {/* House 7 - Bottom */}
+                              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 -rotate-45 bg-gray-900/80 px-3 py-2 rounded-lg border border-yellow-500/50">
+                                <div className="text-center">
+                                  <div className="text-xl">{zodiacSigns[6].sign}</div>
+                                  <div className="text-[10px] text-yellow-400">7th</div>
+                                  <div className="text-[10px] text-gray-400">{zodiacSigns[6].hindi}</div>
+                                </div>
+                              </div>
+
+                              {/* House 8 - Bottom Left */}
+                              <div className="absolute bottom-[12.5%] left-[12.5%] -translate-x-1/2 translate-y-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[7].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">8th</div>
+                                </div>
+                              </div>
+
+                              {/* House 9 - Left Lower */}
+                              <div className="absolute bottom-[37.5%] left-0 -translate-x-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[8].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">9th</div>
+                                </div>
+                              </div>
+
+                              {/* House 10 - Left */}
+                              <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-900/80 px-3 py-2 rounded-lg border border-yellow-500/50">
+                                <div className="text-center">
+                                  <div className="text-xl">{zodiacSigns[9].sign}</div>
+                                  <div className="text-[10px] text-yellow-400">10th</div>
+                                  <div className="text-[10px] text-gray-400">{zodiacSigns[9].hindi}</div>
+                                </div>
+                              </div>
+
+                              {/* House 11 - Left Upper */}
+                              <div className="absolute top-[37.5%] left-0 -translate-x-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[10].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">11th</div>
+                                </div>
+                              </div>
+
+                              {/* House 12 - Top Left */}
+                              <div className="absolute top-[12.5%] left-[12.5%] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-900/80 px-2 py-1 rounded-lg border border-yellow-500/30">
+                                <div className="text-center">
+                                  <div className="text-lg">{zodiacSigns[11].sign}</div>
+                                  <div className="text-[9px] text-yellow-400">12th</div>
+                                </div>
+                              </div>
+
+                              {/* Center OM Symbol */}
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45">
-                                <div className="text-3xl">🕉️</div>
+                                <div className="text-4xl text-yellow-400 drop-shadow-lg">🕉️</div>
                               </div>
                             </div>
                           </div>
@@ -333,25 +418,27 @@ export default function KundliPage() {
                         Planet Positions
                       </h3>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                         {planets.map((planet, index) => (
                           <motion.div
                             key={index}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="flex items-center justify-between p-3 bg-gray-800/50 rounded-xl border border-yellow-500/20"
+                            className="flex items-center justify-between p-4 bg-gray-800/70 rounded-xl border border-yellow-500/30 hover:border-yellow-500/60 hover:bg-gray-800/90 transition-all"
                           >
-                            <div className="flex items-center space-x-3">
-                              <span className="text-3xl">{planet.icon}</span>
+                            <div className="flex items-center space-x-4">
+                              <span className="text-4xl">{planet.icon}</span>
                               <div>
-                                <div className="text-white font-semibold">{planet.name}</div>
-                                <div className="text-gray-400 text-sm">{planet.position}</div>
+                                <div className={`font-bold text-lg ${planet.color}`}>{planet.name}</div>
+                                <div className="text-gray-300 text-xs">{planet.hindi}</div>
+                                <div className="text-gray-400 text-sm mt-1">{planet.position}</div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-yellow-400 font-mono">{planet.degree}</div>
-                              <div className="text-gray-400 text-sm">House {planet.house}</div>
+                              <div className="text-yellow-400 font-mono text-lg font-bold">{planet.degree}</div>
+                              <div className="text-gray-400 text-sm mt-1">House {planet.house}</div>
+                              <div className="text-xs text-gray-500 mt-1">{zodiacSigns[planet.house - 1]?.hindi}</div>
                             </div>
                           </motion.div>
                         ))}
@@ -360,8 +447,94 @@ export default function KundliPage() {
                   </div>
                 </div>
 
+                {/* Kundli Analysis Summary */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                  className="mt-8"
+                >
+                  <div className="relative overflow-hidden rounded-3xl p-1">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-teal-600 opacity-75" />
+                    <div className="relative bg-gray-900/90 backdrop-blur-xl rounded-3xl p-8">
+                      <h3 className="text-2xl font-bold text-yellow-400 mb-6 text-center">
+                        कुंडली विश्लेषण / Kundli Analysis
+                      </h3>
+                      
+                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Ascendant */}
+                        <div className="p-4 bg-gray-800/70 rounded-xl border border-green-500/30">
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">🌅</div>
+                            <h4 className="text-green-400 font-semibold mb-2">Ascendant / लग्न</h4>
+                            <p className="text-white text-xl font-bold">{zodiacSigns[0].name}</p>
+                            <p className="text-gray-400 text-sm">{zodiacSigns[0].hindi}</p>
+                          </div>
+                        </div>
+
+                        {/* Moon Sign */}
+                        <div className="p-4 bg-gray-800/70 rounded-xl border border-blue-500/30">
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">🌙</div>
+                            <h4 className="text-blue-400 font-semibold mb-2">Moon Sign / चंद्र राशि</h4>
+                            <p className="text-white text-xl font-bold">{planets.find(p => p.name === 'Moon')?.position}</p>
+                            <p className="text-gray-400 text-sm">{zodiacSigns[1].hindi}</p>
+                          </div>
+                        </div>
+
+                        {/* Sun Sign */}
+                        <div className="p-4 bg-gray-800/70 rounded-xl border border-orange-500/30">
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">☀️</div>
+                            <h4 className="text-orange-400 font-semibold mb-2">Sun Sign / सूर्य राशि</h4>
+                            <p className="text-white text-xl font-bold">{planets.find(p => p.name === 'Sun')?.position}</p>
+                            <p className="text-gray-400 text-sm">{zodiacSigns[0].hindi}</p>
+                          </div>
+                        </div>
+
+                        {/* Nakshatra */}
+                        <div className="p-4 bg-gray-800/70 rounded-xl border border-purple-500/30">
+                          <div className="text-center">
+                            <div className="text-3xl mb-2">⭐</div>
+                            <h4 className="text-purple-400 font-semibold mb-2">Nakshatra / नक्षत्र</h4>
+                            <p className="text-white text-xl font-bold">Ashwini</p>
+                            <p className="text-gray-400 text-sm">अश्विनी</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Key Insights */}
+                      <div className="mt-6 grid md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-gradient-to-br from-yellow-900/30 to-amber-900/30 rounded-xl border border-yellow-500/30">
+                          <h4 className="text-yellow-400 font-semibold mb-3 flex items-center">
+                            <span className="mr-2">💫</span>
+                            Strengths / शक्तियां
+                          </h4>
+                          <ul className="text-gray-300 text-sm space-y-2">
+                            <li>• Strong Jupiter position indicates wisdom and prosperity</li>
+                            <li>• Venus in 7th house supports harmonious relationships</li>
+                            <li>• Sun in ascendant brings leadership qualities</li>
+                          </ul>
+                        </div>
+
+                        <div className="p-4 bg-gradient-to-br from-blue-900/30 to-indigo-900/30 rounded-xl border border-blue-500/30">
+                          <h4 className="text-blue-400 font-semibold mb-3 flex items-center">
+                            <span className="mr-2">🔮</span>
+                            Remedies / उपाय
+                          </h4>
+                          <ul className="text-gray-300 text-sm space-y-2">
+                            <li>• Chant Gayatri Mantra daily / गायत्री मंत्र का जाप करें</li>
+                            <li>• Wear Yellow Sapphire for Jupiter / पुखराज धारण करें</li>
+                            <li>• Donate on Thursdays / गुरुवार को दान करें</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
                 {/* Action Buttons */}
-                <div className="flex flex-wrap justify-center gap-4">
+                <div className="flex flex-wrap justify-center gap-4 mt-8">
                   <button
                     onClick={handleDownloadPDF}
                     className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full hover:shadow-2xl hover:shadow-green-500/50 transition-all flex items-center space-x-2"
