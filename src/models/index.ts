@@ -20,6 +20,8 @@ import Category from './Category';
 import HomepageBlock from './HomepageBlock';
 import Review from './Review';
 import Withdrawal from './Withdrawal';
+import JyotishBooking from './JyotishBooking';
+import JyotishPandit from './JyotishPandit';
 
 // Export all models for easy importing
 export {
@@ -39,6 +41,8 @@ export {
   HomepageBlock,
   Review,
   Withdrawal,
+  JyotishBooking,
+  JyotishPandit,
 };
 
 /**
@@ -63,6 +67,8 @@ export function registerAllModels() {
   HomepageBlock.modelName;
   Review.modelName;
   Withdrawal.modelName;
+  JyotishBooking.modelName;
+  JyotishPandit.modelName;
   
   return {
     User,
@@ -81,6 +87,8 @@ export function registerAllModels() {
     HomepageBlock,
     Review,
     Withdrawal,
+    JyotishBooking,
+    JyotishPandit,
   };
 }
 
@@ -101,6 +109,8 @@ export default {
   HomepageBlock,
   Review,
   Withdrawal,
+  JyotishBooking,
+  JyotishPandit,
   registerAllModels,
 };
 

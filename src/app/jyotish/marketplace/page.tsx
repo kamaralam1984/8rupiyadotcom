@@ -22,6 +22,11 @@ interface Pandit {
 
 export default function MarketplacePage() {
   const [selectedPlan, setSelectedPlan] = useState<'all' | 'free' | 'silver' | 'gold' | 'premium'>('all');
+  const [bookingModal, setBookingModal] = useState<{show: boolean, pandit: Pandit | null, type: 'call' | 'video'}>({
+    show: false,
+    pandit: null,
+    type: 'call'
+  });
 
   const pandits: Pandit[] = [
     {
@@ -32,7 +37,7 @@ export default function MarketplacePage() {
       experience: '15+ years',
       rating: 4.8,
       reviews: 892,
-      price: 0,
+      price: 599,
       plan: 'gold',
       languages: ['Hindi', 'English'],
       available: true,
@@ -46,7 +51,7 @@ export default function MarketplacePage() {
       experience: '20+ years',
       rating: 4.9,
       reviews: 1243,
-      price: 0,
+      price: 999,
       plan: 'premium',
       languages: ['Hindi', 'Sanskrit'],
       available: true,
@@ -60,7 +65,7 @@ export default function MarketplacePage() {
       experience: '12+ years',
       rating: 4.7,
       reviews: 654,
-      price: 0,
+      price: 299,
       plan: 'silver',
       languages: ['Hindi', 'Marathi'],
       available: false,
@@ -265,9 +270,23 @@ export default function MarketplacePage() {
                         🗣️ {pandit.languages.join(', ')}
                       </div>
 
+                      {/* Pricing */}
+                      <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl border border-yellow-500/50">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300 text-sm">Consultation Fee:</span>
+                          <span className="text-yellow-400 text-2xl font-bold">
+                            {pandit.price === 0 ? 'FREE' : `₹${pandit.price}`}
+                          </span>
+                        </div>
+                        {pandit.price > 0 && (
+                          <p className="text-xs text-gray-400 mt-1">Per session (30 mins)</p>
+                        )}
+                      </div>
+
                       {/* Action Buttons */}
                       <div className="flex gap-3">
                         <button
+                          onClick={() => setBookingModal({show: true, pandit, type: 'call'})}
                           disabled={!pandit.available}
                           className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
@@ -275,6 +294,7 @@ export default function MarketplacePage() {
                           <span>Call</span>
                         </button>
                         <button
+                          onClick={() => setBookingModal({show: true, pandit, type: 'video'})}
                           disabled={!pandit.available}
                           className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
@@ -311,6 +331,115 @@ export default function MarketplacePage() {
             </motion.div>
           </div>
         </div>
+
+        {/* Booking Modal */}
+        {bookingModal.show && bookingModal.pandit && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setBookingModal({show: false, pandit: null, type: 'call'})} />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative bg-gray-900 border-2 border-yellow-500/50 rounded-3xl p-8 max-w-lg w-full"
+            >
+              <button
+                onClick={() => setBookingModal({show: false, pandit: null, type: 'call'})}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+
+              <h2 className="text-3xl font-bold text-yellow-400 mb-6 text-center">
+                Book Consultation
+              </h2>
+
+              <div className="space-y-6">
+                {/* Pandit Info */}
+                <div className="flex items-center space-x-4 p-4 bg-gray-800/50 rounded-xl">
+                  <img
+                    src={bookingModal.pandit.image}
+                    alt={bookingModal.pandit.name}
+                    className="w-20 h-20 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/logo.png';
+                    }}
+                  />
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{bookingModal.pandit.name}</h3>
+                    <p className="text-gray-400 text-sm">{bookingModal.pandit.expertise}</p>
+                    <div className="flex items-center mt-1">
+                      <FaStar className="text-yellow-400 mr-1" />
+                      <span className="text-white font-semibold">{bookingModal.pandit.rating}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Type */}
+                <div className="p-4 bg-gray-800/50 rounded-xl">
+                  <h4 className="text-yellow-400 font-semibold mb-2">Service Type:</h4>
+                  <div className="flex items-center space-x-2">
+                    {bookingModal.type === 'call' ? <FaPhone className="text-green-400" /> : <FaVideo className="text-blue-400" />}
+                    <span className="text-white capitalize">{bookingModal.type} Consultation</span>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-2">Duration: 30 minutes</p>
+                </div>
+
+                {/* Pricing */}
+                <div className="p-4 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl border border-yellow-500/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-300">Consultation Fee:</span>
+                    <span className="text-yellow-400 text-2xl font-bold">
+                      {bookingModal.pandit.price === 0 ? 'FREE' : `₹${bookingModal.pandit.price}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Plan:</span>
+                    <span className="text-white uppercase font-semibold">{bookingModal.pandit.plan}</span>
+                  </div>
+                </div>
+
+                {/* Contact Form */}
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Your Name / आपका नाम"
+                    className="w-full px-4 py-3 bg-gray-800/70 border border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number / फ़ोन नंबर"
+                    className="w-full px-4 py-3 bg-gray-800/70 border border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email (Optional)"
+                    className="w-full px-4 py-3 bg-gray-800/70 border border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                  />
+                  <textarea
+                    placeholder="Your Query / आपका प्रश्न"
+                    rows={3}
+                    className="w-full px-4 py-3 bg-gray-800/70 border border-yellow-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 resize-none"
+                  />
+                </div>
+
+                {/* Book Button */}
+                <button
+                  onClick={() => {
+                    alert('Booking confirmed! You will receive a call shortly.\n\nबुकिंग सफल! आपको जल्द ही कॉल आएगी।');
+                    setBookingModal({show: false, pandit: null, type: 'call'});
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-600 text-black font-bold text-lg rounded-full hover:shadow-2xl hover:shadow-yellow-500/50 transition-all"
+                >
+                  Confirm Booking / बुकिंग करें
+                </button>
+
+                <p className="text-center text-gray-400 text-xs">
+                  You will receive confirmation via call/SMS
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

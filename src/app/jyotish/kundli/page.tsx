@@ -31,8 +31,31 @@ export default function KundliPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.name.trim()) {
+      alert('कृपया नाम दर्ज करें / Please enter name');
+      return;
+    }
+    
+    if (!formData.dob) {
+      alert('कृपया जन्म तिथि चुनें / Please select date of birth');
+      return;
+    }
+    
+    if (!formData.time) {
+      alert('कृपया जन्म समय चुनें / Please select birth time');
+      return;
+    }
+    
+    if (!formData.place.trim()) {
+      alert('कृपया जन्म स्थान दर्ज करें / Please enter birth place');
+      return;
+    }
+    
     setIsGenerating(true);
     
+    // Simulate kundli generation
     setTimeout(() => {
       setIsGenerating(false);
       setShowKundli(true);
