@@ -20,6 +20,12 @@ import Category from './Category';
 import HomepageBlock from './HomepageBlock';
 import Review from './Review';
 import Withdrawal from './Withdrawal';
+import Kundli from './Kundli';
+import Chat from './Chat';
+import Astrologer from './Astrologer';
+import Horoscope from './Horoscope';
+import Booking from './Booking';
+import JyotishPlan from './JyotishPlan';
 
 // Export all models for easy importing
 export {
@@ -39,6 +45,12 @@ export {
   HomepageBlock,
   Review,
   Withdrawal,
+  Kundli,
+  Chat,
+  Astrologer,
+  Horoscope,
+  Booking,
+  JyotishPlan,
 };
 
 /**
@@ -63,6 +75,12 @@ export function registerAllModels() {
   HomepageBlock.modelName;
   Review.modelName;
   Withdrawal.modelName;
+  Kundli.modelName;
+  Chat.modelName;
+  Astrologer.modelName;
+  Horoscope.modelName;
+  Booking.modelName;
+  JyotishPlan.modelName;
   
   return {
     User,
@@ -81,6 +99,12 @@ export function registerAllModels() {
     HomepageBlock,
     Review,
     Withdrawal,
+    Kundli,
+    Chat,
+    Astrologer,
+    Horoscope,
+    Booking,
+    JyotishPlan,
   };
 }
 
