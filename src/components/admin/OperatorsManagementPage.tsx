@@ -64,6 +64,10 @@ export default function OperatorsManagementPage() {
   });
   const [activeTab, setActiveTab] = useState<'operators' | 'requests'>('operators');
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [showLinkAgentModal, setShowLinkAgentModal] = useState(false);
+  const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [availableAgents, setAvailableAgents] = useState<any[]>([]);
+  const [linkingAgent, setLinkingAgent] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOperators();
@@ -199,6 +203,65 @@ export default function OperatorsManagementPage() {
       alert('An error occurred while approving the request');
     } finally {
       setProcessingRequest(null);
+    }
+  };
+
+  const handleOpenLinkModal = async (operator: Operator) => {
+    setSelectedOperator(operator);
+    setShowLinkAgentModal(true);
+    
+    // Fetch available agents
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/find-operator-agents?operatorName=${operator.name}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableAgents(data.allAgents || []);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  };
+
+  const handleLinkAgent = async (agentId: string, agentName: string) => {
+    if (!selectedOperator) return;
+
+    try {
+      setLinkingAgent(agentId);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/operators/link-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          operatorId: selectedOperator._id,
+          agentId: agentId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        setShowLinkAgentModal(false);
+        setSelectedOperator(null);
+        await fetchOperators();
+        await fetchStats();
+      } else {
+        const data = await response.json();
+        alert(`❌ Error: ${data.error || 'Failed to link agent'}`);
+      }
+    } catch (error) {
+      console.error('Error linking agent:', error);
+      alert('An error occurred while linking agent');
+    } finally {
+      setLinkingAgent(null);
     }
   };
 
@@ -490,6 +553,13 @@ export default function OperatorsManagementPage() {
                           {operator.isActive ? <FiXCircle /> : <FiCheckCircle />}
                         </button>
                         <button
+                          onClick={() => handleOpenLinkModal(operator)}
+                          className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                          title="Link Agent"
+                        >
+                          <FiUser />
+                        </button>
+                        <button
                           className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                           title="View Details"
                         >
@@ -647,6 +717,83 @@ export default function OperatorsManagementPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Link Agent Modal */}
+      {showLinkAgentModal && selectedOperator && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Link Agent to Operator
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Link an agent to operator "{selectedOperator.name}"
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowLinkAgentModal(false);
+                    setSelectedOperator(null);
+                    setAvailableAgents([]);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <FiXCircle className="text-xl" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableAgents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 dark:text-gray-400">No agents available</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availableAgents.map((agent) => (
+                    <div
+                      key={agent._id}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                          {agent.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {agent.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {agent.email}
+                          </p>
+                          {agent.phone && (
+                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                              {agent.phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleLinkAgent(agent._id, agent.name)}
+                        disabled={linkingAgent === agent._id}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {linkingAgent === agent._id ? 'Linking...' : 'Link'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
