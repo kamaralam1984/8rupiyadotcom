@@ -59,6 +59,10 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
   const [sessionId, setSessionId] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   
+  // Reminder system states
+  const [dueReminders, setDueReminders] = useState<any[]>([]);
+  const [showReminders, setShowReminders] = useState(false);
+  
   // Dragging state - use null to indicate default position (bottom-right)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -78,6 +82,12 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
     const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setSessionId(id);
     // Position will be null initially, which means use default bottom-right positioning
+    
+    // Check for due reminders every minute
+    const reminderInterval = setInterval(checkDueReminders, 60000);
+    checkDueReminders(); // Check immediately
+    
+    return () => clearInterval(reminderInterval);
   }, []);
 
   // Handle window resize to keep bot in bounds
@@ -462,6 +472,47 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
     }
   };
 
+  // Check for due reminders
+  const checkDueReminders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/golu/reminders/check', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.reminders && data.reminders.length > 0) {
+          setDueReminders(data.reminders);
+          setShowReminders(true);
+
+          // Speak the first reminder
+          const reminder = data.reminders[0];
+          speakText(reminder.message);
+
+          // Mark as notified
+          await fetch('/api/golu/reminders/check', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              reminderId: reminder._id,
+              action: 'notified',
+            }),
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking reminders:', error);
+    }
+  };
+
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = (textOverride || inputText).trim();
     if (!textToSend) return;
@@ -480,7 +531,40 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
     setRecommendations([]);
 
     try {
-      // Call AI recommendation API
+      const token = localStorage.getItem('token');
+      
+      // First try GOLU chat API for advanced features (reminders, translation, etc.)
+      const goluResponse = await fetch('/api/golu/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({
+          query: userInputText,
+          sessionId,
+          type: 'TEXT',
+          userLocation: userLocation ? { latitude: userLocation.lat, longitude: userLocation.lng } : null,
+        }),
+      });
+
+      const goluData = await goluResponse.json();
+
+      // If GOLU handled it (reminders, alarms, translation, etc.), use that response
+      if (goluData.success && goluData.category && goluData.category !== 'SHOPPING') {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: goluData.response,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        speakText(goluData.response);
+        setIsTyping(false);
+        return;
+      }
+
+      // Otherwise, use shop recommendation API
       const response = await fetch('/api/ai/recommend', {
         method: 'POST',
         headers: {
