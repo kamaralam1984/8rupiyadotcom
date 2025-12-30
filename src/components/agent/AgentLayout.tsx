@@ -123,10 +123,20 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Agent Panel</p>
             </div>
 
-            {/* User Info */}
+            {/* User Profile */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <p className="font-semibold text-gray-900 dark:text-white">{agentName}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{agentEmail}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {agentName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">{agentName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{agentEmail}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                    Agent
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Navigation */}

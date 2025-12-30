@@ -124,10 +124,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Admin Panel</p>
             </div>
 
-            {/* User Info */}
+            {/* User Profile */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <p className="font-semibold text-gray-900 dark:text-white">{admin.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{admin.email}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {admin.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">{admin.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{admin.email}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+                    {userRole === 'admin' ? 'Admin' : 'Accountant'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Navigation */}
