@@ -41,6 +41,7 @@ interface Pandit {
   certifications?: string[];
   isVerified: boolean;
   isActive: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'blocked';
   createdAt: string;
   updatedAt: string;
 }
@@ -108,21 +109,12 @@ export default function JyotishAdminPage() {
       }
 
       if (panditsData.success) {
-        // Map database pandit structure to component structure
+        // Map database pandit structure and derive status
         const mappedPandits = panditsData.pandits.map((p: any) => ({
-          _id: p._id,
-          name: p.name,
-          email: p.email,
-          phone: p.phone,
-          specialization: p.specialties || p.expertise || [],
-          experience: parseInt(p.experience) || 0,
-          rating: p.rating || 0,
-          totalBookings: p.totalBookings || 0,
-          earnings: p.totalBookings * (p.price || 0),
-          status: p.isActive && p.isVerified ? 'approved' : p.isActive && !p.isVerified ? 'pending' : 'blocked',
-          joinedDate: new Date(p.createdAt).toISOString().split('T')[0],
-          language: p.languages || ['Hindi'],
-          city: 'India',
+          ...p,
+          status: p.isActive && p.isVerified ? 'approved' as const : 
+                  p.isActive && !p.isVerified ? 'pending' as const : 
+                  'blocked' as const,
         }));
         setPandits(mappedPandits);
       }
@@ -354,14 +346,14 @@ export default function JyotishAdminPage() {
                   </div>
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <FiMapPin className="text-xs" />
-                    {pandit.city}
+                    Plan: {pandit.plan}
                   </div>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Specialization:</p>
                   <div className="flex flex-wrap gap-2">
-                    {pandit.specialization.map((spec, idx) => (
+                    {(pandit.specialties || pandit.expertise || []).slice(0, 3).map((spec, idx) => (
                       <span
                         key={idx}
                         className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
@@ -375,15 +367,15 @@ export default function JyotishAdminPage() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Experience</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{pandit.experience} yrs</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{pandit.experience}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Bookings</p>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white">{pandit.totalBookings}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Earnings</p>
-                    <p className="text-lg font-semibold text-green-600">₹{(pandit.earnings / 1000).toFixed(0)}K</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
+                    <p className="text-lg font-semibold text-green-600">₹{pandit.price}</p>
                   </div>
                 </div>
 
@@ -451,10 +443,14 @@ export default function JyotishAdminPage() {
                 {bookings.map((booking) => (
                   <tr key={booking._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{booking.panditName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{booking.userName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{booking.service}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{new Date(booking.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{booking.amount}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{booking.customerName}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                      {booking.serviceType === 'call' ? 'Phone Call' : 'Video Call'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(booking.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{booking.price}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(booking.status)}`}>
                         {booking.status}
