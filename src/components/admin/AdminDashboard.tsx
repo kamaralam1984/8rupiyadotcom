@@ -72,6 +72,8 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -110,6 +112,44 @@ export default function AdminDashboard() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchDashboardData();
+  };
+
+  const handleSyncCommissions = async () => {
+    try {
+      setSyncing(true);
+      setSyncMessage(null);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSyncMessage({ type: 'error', text: 'Please login again' });
+        return;
+      }
+
+      const response = await fetch('/api/admin/sync-all-commissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSyncMessage({ 
+          type: 'success', 
+          text: `Synced! Created: ${data.created}, Updated: ${data.updated}` 
+        });
+        // Refresh dashboard data after sync
+        await fetchDashboardData();
+      } else {
+        setSyncMessage({ type: 'error', text: 'Failed to sync commissions' });
+      }
+    } catch (error) {
+      console.error('Error syncing commissions:', error);
+      setSyncMessage({ type: 'error', text: 'An error occurred while syncing' });
+    } finally {
+      setSyncing(false);
+      // Auto-hide message after 5 seconds
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
   };
 
   const statCards = [
@@ -260,15 +300,41 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's your business overview.</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          <FiRefreshCw className={refreshing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSyncCommissions}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            <FiZap className={syncing ? 'animate-pulse' : ''} />
+            {syncing ? 'Syncing...' : 'Sync Commissions'}
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            <FiRefreshCw className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {/* Sync Message */}
+      {syncMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className={`p-4 rounded-lg ${
+            syncMessage.type === 'success'
+              ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 border border-green-400'
+              : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-400'
+          }`}
+        >
+          {syncMessage.text}
+        </motion.div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -302,12 +368,43 @@ export default function AdminDashboard() {
 
       {/* Commission Overview */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <FiDollarSign className="text-green-600 text-xl" />
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            $ Commission Overview (From Database)
-          </h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FiDollarSign className="text-green-600 text-xl" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              $ Commission Overview (From Database)
+            </h2>
+          </div>
+          <Link
+            href="/admin/operators"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+          >
+            View Operator Details
+            <FiClock className="text-sm" />
+          </Link>
         </div>
+
+        {/* Warning if operator commission is 0 */}
+        {stats && stats.totalOperatorCommission === 0 && stats.operators > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 rounded-lg"
+          >
+            <div className="flex items-start gap-3">
+              <FiClock className="text-yellow-600 dark:text-yellow-400 text-xl flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400">
+                  Operator Commission Not Calculated
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
+                  You have {stats.operators} operator(s) but commission is ₹0. Click "Sync Commissions" button above to calculate operator commissions from existing payments.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {commissionCards.map((card, index) => (
             <motion.div
@@ -315,15 +412,25 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 + index * 0.1 }}
-              className={`${card.bgColor} rounded-xl p-6 border border-gray-200 dark:border-gray-700`}
+              className={`${card.bgColor} rounded-xl p-6 border border-gray-200 dark:border-gray-700 ${
+                card.label === 'Total Operator Commission' ? 'ring-2 ring-blue-400 dark:ring-blue-600' : ''
+              }`}
             >
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{card.label}</p>
                   <p className={`text-3xl font-bold bg-gradient-to-r ${card.color} bg-clip-text text-transparent`}>
                     {card.value}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{card.change}</p>
+                  {card.label === 'Total Operator Commission' && (
+                    <Link 
+                      href="/admin/operators"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2 inline-block"
+                    >
+                      View breakdown →
+                    </Link>
+                  )}
                 </div>
                 <div className={`p-4 rounded-xl bg-gradient-to-r ${card.color}`}>
                   <card.icon className="text-white text-2xl" />
