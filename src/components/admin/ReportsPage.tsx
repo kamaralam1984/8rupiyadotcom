@@ -14,6 +14,8 @@ import {
   FiRefreshCw,
   FiTrendingUp,
 } from 'react-icons/fi';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportType {
   id: string;
@@ -161,6 +163,96 @@ export default function ReportsPage() {
     document.body.removeChild(link);
   };
 
+  const exportToPDF = () => {
+    if (reportData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+    
+    // Add title
+    const reportTitle = reportTypes.find(r => r.id === selectedReport)?.name || 'Report';
+    doc.setFontSize(18);
+    doc.setTextColor(88, 28, 135); // Purple color
+    doc.text(reportTitle, 14, 15);
+    
+    // Add metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    if (startDate || endDate) {
+      const dateRange = `Date Range: ${startDate || 'All'} to ${endDate || 'All'}`;
+      doc.text(dateRange, 14, 28);
+    }
+    doc.text(`Total Records: ${reportData.length}`, 14, startDate || endDate ? 34 : 28);
+    
+    // Add 8Rupiya branding
+    doc.setFontSize(12);
+    doc.setTextColor(147, 51, 234); // Purple
+    doc.text('8Rupiya.com', doc.internal.pageSize.width - 40, 15);
+    
+    // Prepare table data
+    const headers = Object.keys(reportData[0]);
+    const rows = reportData.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        return typeof value === 'number' && value > 1000
+          ? value.toLocaleString()
+          : value?.toString() || 'N/A';
+      })
+    );
+
+    // Add table
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: startDate || endDate ? 40 : 34,
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [147, 51, 234], // Purple
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 243, 255], // Light purple
+      },
+      columnStyles: headers.reduce((acc, header, index) => {
+        // Right align numeric columns
+        if (reportData.some(row => typeof row[header] === 'number')) {
+          acc[index] = { halign: 'right' };
+        }
+        return acc;
+      }, {} as any),
+      didDrawPage: (data) => {
+        // Footer
+        const pageCount = doc.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+          `Page ${data.pageNumber} of ${pageCount}`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+        doc.text(
+          '© 8Rupiya.com - Admin Reports',
+          doc.internal.pageSize.width - 14,
+          doc.internal.pageSize.height - 10,
+          { align: 'right' }
+        );
+      },
+    });
+
+    // Save PDF
+    doc.save(`${selectedReport}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -254,6 +346,14 @@ export default function ReportsPage() {
 
           {reportData.length > 0 && (
             <>
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                <FiDownload />
+                Export PDF
+              </button>
+
               <button
                 onClick={exportToCSV}
                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
