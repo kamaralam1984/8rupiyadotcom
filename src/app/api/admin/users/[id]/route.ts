@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
@@ -24,7 +24,8 @@ export async function PUT(
 
     await connectDB();
 
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
     const updates = await req.json();
 
     const user = await User.findById(userId);
@@ -68,7 +69,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
@@ -85,7 +86,8 @@ export async function DELETE(
 
     await connectDB();
 
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     // Prevent admin from deleting themselves
     if (userId === payload.userId) {

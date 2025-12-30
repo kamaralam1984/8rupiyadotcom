@@ -536,3 +536,5 @@ export async function DELETE(req: NextRequest) {
 
 **Note**: This is a comprehensive guide. Follow the patterns and replicate for all sections. Each page should be self-contained, reusable, and follow the same structure.
 
+
+

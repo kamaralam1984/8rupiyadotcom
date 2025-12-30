@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
     
     // Also check commissions for shops under this operator but without operatorId set
     // This handles cases where commissions were created before operatorId was properly set
-    const operatorShopIds = operatorShops.map(s => s._id);
+    // operatorShopIds already defined above
     if (operatorShopIds.length > 0) {
       const commissionsForOperatorShops = await Commission.find({
         shopId: { $in: operatorShopIds },

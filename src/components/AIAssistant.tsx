@@ -905,7 +905,7 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
                       <FaMicrophone />
                     </button>
                     <button
-                      onClick={handleSendMessage}
+                      onClick={() => handleSendMessage()}
                       disabled={!inputText.trim() || isTyping}
                       className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       aria-label="Send message"

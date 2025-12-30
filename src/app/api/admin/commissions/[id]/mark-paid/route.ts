@@ -6,7 +6,7 @@ import { UserRole } from '@/types/user';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
@@ -23,7 +23,8 @@ export async function POST(
 
     await connectDB();
 
-    const commissionId = params.id;
+    const { id } = await params;
+    const commissionId = id;
     const commission = await Commission.findById(commissionId);
 
     if (!commission) {
