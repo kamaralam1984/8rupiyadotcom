@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Advertisement from '@/models/Advertisement';
-import { verifyToken } from '@/lib/jwt';
-import { UserRole } from '@/models/User';
+import { verifyToken } from '@/lib/auth';
+import { UserRole } from '@/types/user';
 
 // GET /api/admin/advertisements/stats - Get advertisement statistics
 export async function GET(req: NextRequest) {
