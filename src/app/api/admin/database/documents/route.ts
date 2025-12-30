@@ -1,86 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import { verifyToken } from '@/lib/auth';
+import { UserRole } from '@/types/user';
 import mongoose from 'mongoose';
-import { withAuth, AuthRequest } from '@/middleware/auth';
-import User, { UserRole } from '@/models/User';
 
-// GET /api/admin/database/documents - Get documents from a collection (Admin only)
-export const GET = withAuth(async (req: AuthRequest) => {
+// GET /api/admin/database/documents - Get documents from a collection
+export async function GET(req: NextRequest) {
   try {
-    await connectDB();
+    const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
+                 req.cookies.get('token')?.value;
 
-    const user = req.user!;
-    
-    // Verify user exists and is admin in database
-    const dbUser = await User.findById(user.userId);
-    if (!dbUser || dbUser.role !== UserRole.ADMIN) {
-      return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const searchParams = req.nextUrl.searchParams;
-    const collectionName = searchParams.get('collection');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const search = searchParams.get('search') || '';
+    const payload = verifyToken(token);
+    if (!payload || payload.role !== UserRole.ADMIN) {
+      return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+    }
 
-    if (!collectionName) {
+    await connectDB();
+
+    const { searchParams } = new URL(req.url);
+    const collection = searchParams.get('collection');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search');
+
+    if (!collection) {
       return NextResponse.json({ error: 'Collection name is required' }, { status: 400 });
     }
 
     const db = mongoose.connection.db;
     if (!db) {
-      return NextResponse.json({ error: 'Database not connected' }, { status: 500 });
+      return NextResponse.json({ error: 'Database connection not established' }, { status: 500 });
     }
 
-    const collection = db.collection(collectionName);
-    
+    const coll = db.collection(collection);
+    const skip = (page - 1) * limit;
+
     // Build query for search
     let query: any = {};
     if (search) {
-      // Search in all string fields
-      query.$or = [
-        { _id: { $regex: search, $options: 'i' } },
-      ];
-      
-      // Try to parse search as ObjectId
-      if (mongoose.Types.ObjectId.isValid(search)) {
-        query.$or.push({ _id: new mongoose.Types.ObjectId(search) });
-      }
+      // Try to search in common fields
+      query = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { title: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+        ],
+      };
     }
 
-    const skip = (page - 1) * limit;
-    const total = await collection.countDocuments(query);
-    
-    const documents = await collection
-      .find(query)
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
-    // Convert ObjectId and Date to strings for JSON serialization
-    const serializedDocuments = documents.map(doc => {
-      const serialized: any = {};
-      for (const [key, value] of Object.entries(doc)) {
-        if (value instanceof mongoose.Types.ObjectId) {
-          serialized[key] = value.toString();
-        } else if (value instanceof Date) {
-          serialized[key] = value.toISOString();
-        } else if (value && typeof value === 'object' && value.constructor === Object) {
-          serialized[key] = JSON.parse(JSON.stringify(value, (k, v) => {
-            if (v instanceof mongoose.Types.ObjectId) return v.toString();
-            if (v instanceof Date) return v.toISOString();
-            return v;
-          }));
-        } else {
-          serialized[key] = value;
-        }
-      }
-      return serialized;
-    });
+    const [documents, total] = await Promise.all([
+      coll.find(query).skip(skip).limit(limit).toArray(),
+      coll.countDocuments(query),
+    ]);
 
     return NextResponse.json({
       success: true,
-      documents: serializedDocuments,
+      documents,
       pagination: {
         page,
         limit,
@@ -92,5 +72,4 @@ export const GET = withAuth(async (req: AuthRequest) => {
     console.error('Error fetching documents:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}, [UserRole.ADMIN]);
-
+}
