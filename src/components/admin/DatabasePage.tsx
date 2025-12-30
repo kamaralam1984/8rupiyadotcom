@@ -35,6 +35,9 @@ export default function DatabasePage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState<string>('');
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -108,6 +111,54 @@ export default function DatabasePage() {
   const handleViewDocument = (doc: Document) => {
     setSelectedDocument(doc);
     setShowDocumentModal(true);
+  };
+
+  const handleEditDocument = (doc: Document) => {
+    setSelectedDocument(doc);
+    setEditData(JSON.stringify(doc, null, 2));
+    setShowEditModal(true);
+  };
+
+  const handleSaveDocument = async () => {
+    if (!selectedDocument) return;
+
+    try {
+      setSaving(true);
+      const parsedData = JSON.parse(editData);
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(
+        `/api/admin/database/documents/${selectedDocument._id}?collection=${selectedCollection}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(parsedData),
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Document updated successfully!');
+        setShowEditModal(false);
+        setSelectedDocument(null);
+        setEditData('');
+        fetchDocuments();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      console.error('Error saving document:', error);
+      if (error instanceof SyntaxError) {
+        alert('Invalid JSON format. Please check your syntax.');
+      } else {
+        alert(error.message || 'Failed to save document');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteDocument = async (id: string) => {
@@ -349,6 +400,13 @@ export default function DatabasePage() {
                             <FiEye />
                           </button>
                           <button
+                            onClick={() => handleEditDocument(doc)}
+                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
                             onClick={() => handleDeleteDocument(doc._id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                             title="Delete"
@@ -401,6 +459,72 @@ export default function DatabasePage() {
           )}
         </div>
       </div>
+
+      {/* Edit Document Modal */}
+      <AnimatePresence>
+        {showEditModal && selectedDocument && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Document</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Edit the JSON below and click Save
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedDocument(null);
+                    setEditData('');
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <FiX className="text-xl" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <textarea
+                  value={editData}
+                  onChange={(e) => setEditData(e.target.value)}
+                  className="w-full h-[500px] p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Edit JSON here..."
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  ⚠️ Warning: Editing documents directly can affect your application. Make sure JSON is valid.
+                </p>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedDocument(null);
+                    setEditData('');
+                  }}
+                  className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveDocument}
+                  disabled={saving}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Document View Modal */}
       <AnimatePresence>
