@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Shop from '@/models/Shop';
 import Payment from '@/models/Payment';
+import Commission from '@/models/Commission';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/models/User';
 
@@ -59,8 +60,13 @@ export async function GET(req: NextRequest) {
           totalEarnings = payments.reduce((sum, p) => sum + p.amount, 0);
         }
 
-        // Calculate commission as 20% of total earnings
-        const commission = totalEarnings * 0.20;
+        // Get actual commission from Commission model (preferred source)
+        const commissions = await Commission.find({ agentId: agent._id });
+        const actualCommission = commissions.reduce((sum, c) => sum + (c.agentAmount || 0), 0);
+        
+        // Calculate commission as 20% of total earnings (fallback)
+        const calculatedCommission = totalEarnings * 0.20;
+        const commission = actualCommission > 0 ? actualCommission : calculatedCommission;
 
         // Get operators count (operators linked to this agent)
         const operatorsCount = await User.countDocuments({
@@ -73,10 +79,10 @@ export async function GET(req: NextRequest) {
           name: agent.name,
           email: agent.email,
           phone: agent.phone,
-          role: agent.role || 'agent', // Include role field
+          role: agent.role || 'agent',
           shops: totalShops,
-          earnings: commission, // Return commission (20% of earnings) instead of total earnings
-          totalEarnings: totalEarnings, // Keep total earnings for reference
+          earnings: commission, // Agent commission from Commission model or calculated
+          totalEarnings: totalEarnings,
           operators: operatorsCount,
           isActive: agent.isActive,
           createdAt: agent.createdAt,

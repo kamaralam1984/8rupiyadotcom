@@ -48,19 +48,14 @@ export default function AgentsManagementPage() {
 
   useEffect(() => {
     fetchAgents();
-    fetchStats();
-  }, [filter]);
+  }, [filter.search, filter.status]);
 
   const fetchAgents = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const queryParams = new URLSearchParams();
       
-      if (filter.search) queryParams.append('search', filter.search);
-      if (filter.status) queryParams.append('status', filter.status);
-
-      const response = await fetch(`/api/admin/users?role=agent&${queryParams}`, {
+      const response = await fetch('/api/admin/agents/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,7 +63,56 @@ export default function AgentsManagementPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setAgents(data.users || []);
+        let agentsList = data.agents || [];
+        
+        // Apply filters
+        if (filter.search) {
+          const searchLower = filter.search.toLowerCase();
+          agentsList = agentsList.filter((agent: Agent) =>
+            agent.name.toLowerCase().includes(searchLower) ||
+            agent.email.toLowerCase().includes(searchLower) ||
+            agent.phone?.includes(filter.search)
+          );
+        }
+        
+        if (filter.status === 'active') {
+          agentsList = agentsList.filter((agent: Agent) => agent.isActive);
+        } else if (filter.status === 'inactive') {
+          agentsList = agentsList.filter((agent: Agent) => !agent.isActive);
+        }
+        
+        // Map the data to match the component's interface
+        const mappedAgents = agentsList.map((agent: any) => ({
+          _id: agent._id,
+          name: agent.name,
+          email: agent.email,
+          phone: agent.phone || '',
+          city: 'India', // Can be enhanced if city data is available
+          isActive: agent.isActive,
+          shops: agent.shops || 0,
+          totalRevenue: agent.totalEarnings || 0,
+          commission: agent.earnings || 0,
+          createdAt: agent.createdAt,
+        }));
+        
+        setAgents(mappedAgents);
+        
+        // Calculate stats
+        const total = agentsList.length;
+        const active = agentsList.filter((a: any) => a.isActive).length;
+        const inactive = total - active;
+        const totalShops = agentsList.reduce((sum: number, a: any) => sum + (a.shops || 0), 0);
+        const totalRevenue = agentsList.reduce((sum: number, a: any) => sum + (a.totalEarnings || 0), 0);
+        const totalCommission = agentsList.reduce((sum: number, a: any) => sum + (a.earnings || 0), 0);
+        
+        setStats({
+          total,
+          active,
+          inactive,
+          totalShops,
+          totalRevenue,
+          totalCommission,
+        });
       }
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -78,28 +122,8 @@ export default function AgentsManagementPage() {
   };
 
   const fetchStats = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/users/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          total: data.stats.agents || 0,
-          active: data.stats.agents || 0,
-          inactive: 0,
-          totalShops: 0,
-          totalRevenue: 0,
-          totalCommission: 0,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
+    // Stats are now fetched together with agents in fetchAgents
+    return;
   };
 
   const toggleAgentStatus = async (agentId: string, currentStatus: boolean) => {
@@ -115,11 +139,14 @@ export default function AgentsManagementPage() {
       });
 
       if (response.ok) {
-        fetchAgents();
-        fetchStats();
+        await fetchAgents();
+        alert(`Agent ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
+      } else {
+        alert('Failed to update agent status');
       }
     } catch (error) {
       console.error('Error toggling agent status:', error);
+      alert('Error updating agent status');
     }
   };
 
@@ -132,11 +159,9 @@ export default function AgentsManagementPage() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all agents and their performance</p>
         </div>
         <button
-          onClick={() => {
-            fetchAgents();
-            fetchStats();
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          onClick={fetchAgents}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
         >
           <FiRefreshCw className={loading ? 'animate-spin' : ''} />
           Refresh
