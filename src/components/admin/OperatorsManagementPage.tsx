@@ -14,6 +14,7 @@ import {
   FiXCircle,
   FiRefreshCw,
   FiEye,
+  FiClock,
 } from 'react-icons/fi';
 
 interface Operator {
@@ -29,9 +30,26 @@ interface Operator {
   createdAt: string;
 }
 
+interface AgentRequest {
+  _id: string;
+  operatorId: string;
+  operatorName: string;
+  operatorEmail: string;
+  agentId: string;
+  agentName: string;
+  agentEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+}
+
 export default function OperatorsManagementPage() {
   const [operators, setOperators] = useState<Operator[]>([]);
+  const [agentRequests, setAgentRequests] = useState<AgentRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestsLoading, setRequestsLoading] = useState(false);
   const [filter, setFilter] = useState({
     search: '',
     status: '',
@@ -44,11 +62,16 @@ export default function OperatorsManagementPage() {
     totalRevenue: 0,
     totalCommission: 0,
   });
+  const [activeTab, setActiveTab] = useState<'operators' | 'requests'>('operators');
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOperators();
     fetchStats();
-  }, [filter]);
+    if (activeTab === 'requests') {
+      fetchAgentRequests();
+    }
+  }, [filter, activeTab]);
 
   const fetchOperators = async () => {
     try {
@@ -125,6 +148,93 @@ export default function OperatorsManagementPage() {
     }
   };
 
+  const fetchAgentRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/agent-requests?status=pending', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAgentRequests(data.requests || []);
+      }
+    } catch (error) {
+      console.error('Error fetching agent requests:', error);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      setProcessingRequest(requestId);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/agent-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          requestId,
+          action: 'approve',
+        }),
+      });
+
+      if (response.ok) {
+        await fetchAgentRequests();
+        await fetchOperators();
+        await fetchStats();
+        alert('Agent request approved successfully!');
+      } else {
+        const data = await response.json();
+        alert(`Error: ${data.error || 'Failed to approve request'}`);
+      }
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('An error occurred while approving the request');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    const reason = prompt('Enter rejection reason (optional):');
+    try {
+      setProcessingRequest(requestId);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/agent-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          requestId,
+          action: 'reject',
+          rejectionReason: reason || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchAgentRequests();
+        alert('Agent request rejected successfully!');
+      } else {
+        const data = await response.json();
+        alert(`Error: ${data.error || 'Failed to reject request'}`);
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('An error occurred while rejecting the request');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
   const toggleOperatorStatus = async (operatorId: string, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('token');
@@ -192,8 +302,48 @@ export default function OperatorsManagementPage() {
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setActiveTab('operators')}
+            className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
+              activeTab === 'operators'
+                ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <FiUsers />
+              Operators ({stats.total})
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors relative ${
+              activeTab === 'requests'
+                ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-b-2 border-purple-600'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <FiUser />
+              Agent Requests
+              {agentRequests.length > 0 && (
+                <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                  {agentRequests.length}
+                </span>
+              )}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Operators Tab Content */}
+      {activeTab === 'operators' && (
+        <>
+          {/* Filters */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -354,6 +504,151 @@ export default function OperatorsManagementPage() {
           </table>
         </div>
       </div>
+        </>
+      )}
+
+      {/* Agent Requests Tab Content */}
+      {activeTab === 'requests' && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Pending Agent Requests
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Operators requesting to add agents to their panel
+            </p>
+          </div>
+
+          {requestsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+            </div>
+          ) : agentRequests.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="text-gray-400 text-6xl mb-4">📭</div>
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">
+                No pending agent requests
+              </p>
+              <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
+                All agent requests have been processed
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {agentRequests.map((request) => (
+                <motion.div
+                  key={request._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-start gap-4">
+                        {/* Operator Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
+                              {request.operatorName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900 dark:text-white">
+                                {request.operatorName}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Operator
+                              </p>
+                            </div>
+                          </div>
+                          <div className="ml-12 space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <FiMail className="text-gray-400" />
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {request.operatorEmail}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Arrow */}
+                        <div className="flex items-center justify-center px-4">
+                          <div className="text-2xl text-gray-400">→</div>
+                        </div>
+
+                        {/* Agent Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                              {request.agentName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900 dark:text-white">
+                                {request.agentName}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Agent
+                              </p>
+                            </div>
+                          </div>
+                          <div className="ml-12 space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <FiMail className="text-gray-400" />
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {request.agentEmail}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Request Info */}
+                      <div className="mt-4 ml-12 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <FiClock />
+                            <span>
+                              Requested: {new Date(request.requestedAt).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            Pending Approval
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 ml-4">
+                      <button
+                        onClick={() => handleApproveRequest(request._id)}
+                        disabled={processingRequest === request._id}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FiCheckCircle />
+                        {processingRequest === request._id ? 'Approving...' : 'Approve'}
+                      </button>
+                      <button
+                        onClick={() => handleRejectRequest(request._id)}
+                        disabled={processingRequest === request._id}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FiXCircle />
+                        {processingRequest === request._id ? 'Rejecting...' : 'Reject'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
