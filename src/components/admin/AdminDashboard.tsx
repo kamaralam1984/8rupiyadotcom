@@ -73,6 +73,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -149,6 +150,46 @@ export default function AdminDashboard() {
       setSyncing(false);
       // Auto-hide message after 5 seconds
       setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
+  const handleVerifyAndFix = async () => {
+    try {
+      setVerifying(true);
+      setSyncMessage(null);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSyncMessage({ type: 'error', text: 'Please login again' });
+        return;
+      }
+
+      const response = await fetch('/api/admin/verify-and-fix-commissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const fixes = data.report?.summary?.fixes || {};
+        setSyncMessage({ 
+          type: 'success', 
+          text: `✅ Verified & Fixed! Shops: ${fixes.shopsFixed || 0}, Commissions: ${fixes.commissionsFixed || 0}, Created: ${fixes.commissionsCreated || 0}, Total: ${fixes.totalFixes || 0}` 
+        });
+        // Refresh dashboard data after verification
+        await fetchDashboardData();
+      } else {
+        const errorData = await response.json();
+        setSyncMessage({ type: 'error', text: errorData.error || 'Failed to verify and fix' });
+      }
+    } catch (error) {
+      console.error('Error verifying and fixing:', error);
+      setSyncMessage({ type: 'error', text: 'An error occurred while verifying' });
+    } finally {
+      setVerifying(false);
+      // Auto-hide message after 8 seconds (longer for detailed message)
+      setTimeout(() => setSyncMessage(null), 8000);
     }
   };
 
@@ -301,6 +342,15 @@ export default function AdminDashboard() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's your business overview.</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleVerifyAndFix}
+            disabled={verifying}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            title="Verify database and fix all commission issues"
+          >
+            <FiCheckCircle className={verifying ? 'animate-pulse' : ''} />
+            {verifying ? 'Verifying...' : 'Verify & Fix DB'}
+          </button>
           <button
             onClick={handleSyncCommissions}
             disabled={syncing}
