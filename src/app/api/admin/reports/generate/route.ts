@@ -49,18 +49,24 @@ export async function GET(req: NextRequest) {
           status: 'success',
           ...dateFilter 
         })
-          .populate('shopId', 'name')
-          .populate('userId', 'name email')
+          .populate({
+            path: 'shopId',
+            select: 'name ownerId',
+            populate: {
+              path: 'ownerId',
+              select: 'name email',
+            },
+          })
           .sort({ createdAt: -1 })
           .lean();
 
         data = payments.map((p: any) => ({
           'Payment ID': p.razorpayPaymentId || p._id,
           'Shop': p.shopId?.name || 'N/A',
-          'Customer': p.userId?.name || 'N/A',
-          'Email': p.userId?.email || 'N/A',
+          'Customer': p.shopId?.ownerId?.name || 'N/A',
+          'Email': p.shopId?.ownerId?.email || 'N/A',
           'Amount': p.amount,
-          'Payment Mode': p.paymentMode || 'online',
+          'Payment Mode': 'online',
           'Date': new Date(p.createdAt).toLocaleDateString(),
           'Time': new Date(p.createdAt).toLocaleTimeString(),
         }));
