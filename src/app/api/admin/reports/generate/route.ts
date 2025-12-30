@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
         })
           .populate({
             path: 'shopId',
-            select: 'name ownerId',
+            select: 'name shopperId',
             populate: {
-              path: 'ownerId',
+              path: 'shopperId',
               select: 'name email',
             },
           })
@@ -63,8 +63,8 @@ export async function GET(req: NextRequest) {
         data = payments.map((p: any) => ({
           'Payment ID': p.razorpayPaymentId || p._id,
           'Shop': p.shopId?.name || 'N/A',
-          'Customer': p.shopId?.ownerId?.name || 'N/A',
-          'Email': p.shopId?.ownerId?.email || 'N/A',
+          'Customer': p.shopId?.shopperId?.name || 'N/A',
+          'Email': p.shopId?.shopperId?.email || 'N/A',
           'Amount': p.amount,
           'Payment Mode': 'online',
           'Date': new Date(p.createdAt).toLocaleDateString(),
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
 
       case 'shops':
         const shops = await Shop.find(dateFilter)
-          .populate('ownerId', 'name email phone')
+          .populate('shopperId', 'name email phone')
           .populate('agentId', 'name')
           .populate('operatorId', 'name')
           .sort({ createdAt: -1 })
@@ -108,14 +108,14 @@ export async function GET(req: NextRequest) {
           'Shop ID': s._id,
           'Name': s.name,
           'Category': s.category,
-          'Owner': s.ownerId?.name || 'N/A',
-          'Email': s.ownerId?.email || 'N/A',
-          'Phone': s.ownerId?.phone || 'N/A',
+          'Owner': s.shopperId?.name || 'N/A',
+          'Email': s.shopperId?.email || 'N/A',
+          'Phone': s.shopperId?.phone || 'N/A',
           'Agent': s.agentId?.name || 'N/A',
           'Operator': s.operatorId?.name || 'N/A',
-          'City': s.address?.city || 'N/A',
+          'City': s.city || 'N/A',
           'Status': s.status,
-          'Plan': s.currentPlan || 'None',
+          'Plan': s.planId ? 'Active' : 'None',
           'Created': new Date(s.createdAt).toLocaleDateString(),
         }));
         break;
