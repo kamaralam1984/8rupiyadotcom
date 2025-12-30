@@ -79,22 +79,46 @@ export default function OperatorsManagementPage() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/users/stats', {
+      
+      // Fetch operator commission stats
+      const statsResponse = await fetch('/api/admin/operators/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          total: data.stats.operators || 0,
-          active: data.stats.operators || 0,
-          inactive: 0,
-          totalAgents: 0,
-          totalRevenue: 0,
-          totalCommission: 0,
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success && statsData.summary) {
+          const activeOps = statsData.operators.filter((op: any) => op.totalShops > 0).length;
+          setStats({
+            total: statsData.summary.totalOperators || 0,
+            active: activeOps,
+            inactive: statsData.summary.totalOperators - activeOps,
+            totalAgents: statsData.operators.reduce((sum: number, op: any) => sum + op.totalAgents, 0),
+            totalRevenue: statsData.operators.reduce((sum: number, op: any) => sum + op.totalRevenue, 0),
+            totalCommission: statsData.summary.totalOperatorCommission || 0,
+          });
+        }
+      } else {
+        // Fallback to user stats
+        const response = await fetch('/api/admin/users/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         });
+
+        if (response.ok) {
+          const data = await response.json();
+          setStats({
+            total: data.stats.operators || 0,
+            active: data.stats.operators || 0,
+            inactive: 0,
+            totalAgents: 0,
+            totalRevenue: 0,
+            totalCommission: 0,
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching stats:', error);

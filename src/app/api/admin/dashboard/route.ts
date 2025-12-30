@@ -107,9 +107,28 @@ export async function GET(req: NextRequest) {
     
     // Get total operator commission - sum all operatorAmount (even if operatorId is null, amount should be calculated)
     const totalOperatorCommissionResult = await Commission.aggregate([
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$operatorAmount', 0] } } } }
+      { $match: { operatorAmount: { $gt: 0 } } }, // Only count commissions with operator amount > 0
+      { $group: { _id: null, total: { $sum: '$operatorAmount' } } }
     ]);
-    const totalOperatorCommission = totalOperatorCommissionResult.length > 0 ? totalOperatorCommissionResult[0].total : 0;
+    let totalOperatorCommission = totalOperatorCommissionResult.length > 0 ? totalOperatorCommissionResult[0].total : 0;
+    
+    // Also calculate for commissions that might have operatorId but operatorAmount is 0
+    // This happens when commission was created but not properly calculated
+    const commissionsWithZeroOperatorAmount = await Commission.find({
+      operatorId: { $exists: true, $ne: null },
+      operatorAmount: 0
+    }).populate('paymentId');
+    
+    for (const comm of commissionsWithZeroOperatorAmount) {
+      if (comm.paymentId && (comm.paymentId as any).amount) {
+        const paymentAmount = (comm.paymentId as any).amount;
+        // Calculate operator commission: 10% of remaining after agent's 20%
+        const agentAmount = paymentAmount * 0.20;
+        const remaining = paymentAmount - agentAmount;
+        const operatorAmount = remaining * 0.10;
+        totalOperatorCommission += operatorAmount;
+      }
+    }
     
     const totalCompanyRevenueResult = await Commission.aggregate([
       { $group: { _id: null, total: { $sum: { $ifNull: ['$companyAmount', 0] } } } }
