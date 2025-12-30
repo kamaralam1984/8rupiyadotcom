@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiStar,
@@ -25,126 +25,134 @@ interface Pandit {
   name: string;
   email: string;
   phone: string;
-  specialization: string[];
-  experience: number;
+  image?: string;
+  expertise: string[];
+  specialties: string[];
+  experience: string;
   rating: number;
+  totalReviews: number;
   totalBookings: number;
-  earnings: number;
-  status: 'pending' | 'approved' | 'rejected' | 'blocked';
-  joinedDate: string;
-  language: string[];
-  city: string;
+  languages: string[];
+  plan: 'free' | 'silver' | 'gold' | 'premium';
+  price: number;
+  available: boolean;
+  bio?: string;
+  education?: string[];
+  certifications?: string[];
+  isVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Booking {
   _id: string;
+  userId?: string;
+  panditId: string;
   panditName: string;
-  userName: string;
-  service: string;
-  date: string;
-  amount: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  serviceType: 'call' | 'video';
+  customerName: string;
+  phone: string;
+  email?: string;
+  query: string;
+  plan: 'free' | 'silver' | 'gold' | 'premium';
+  price: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  scheduledAt?: string;
+  completedAt?: string;
+  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentId?: string;
+  rating?: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function JyotishAdminPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedPandit, setSelectedPandit] = useState<Pandit | null>(null);
   const [activeTab, setActiveTab] = useState<'pandits' | 'bookings'>('pandits');
+  const [stats, setStats] = useState<any>(null);
+  const [pandits, setPandits] = useState<Pandit[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [pandits, setPandits] = useState<Pandit[]>([
-    {
-      _id: '1',
-      name: 'Pandit Rajesh Sharma',
-      email: 'rajesh@example.com',
-      phone: '+91 98765 43210',
-      specialization: ['Kundali', 'Horoscope', 'Vastu'],
-      experience: 15,
-      rating: 4.8,
-      totalBookings: 450,
-      earnings: 225000,
-      status: 'approved',
-      joinedDate: '2024-01-15',
-      language: ['Hindi', 'English'],
-      city: 'Patna',
-    },
-    {
-      _id: '2',
-      name: 'Pandit Amit Kumar',
-      email: 'amit@example.com',
-      phone: '+91 98765 43211',
-      specialization: ['Kundali', 'Palmistry'],
-      experience: 10,
-      rating: 4.6,
-      totalBookings: 320,
-      earnings: 160000,
-      status: 'approved',
-      joinedDate: '2024-02-20',
-      language: ['Hindi'],
-      city: 'Delhi',
-    },
-    {
-      _id: '3',
-      name: 'Pandit Suresh Mishra',
-      email: 'suresh@example.com',
-      phone: '+91 98765 43212',
-      specialization: ['Numerology', 'Tarot'],
-      experience: 8,
-      rating: 4.5,
-      totalBookings: 180,
-      earnings: 90000,
-      status: 'pending',
-      joinedDate: '2024-12-25',
-      language: ['Hindi', 'English', 'Bengali'],
-      city: 'Kolkata',
-    },
-  ]);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const [bookings, setBookings] = useState<Booking[]>([
-    {
-      _id: '1',
-      panditName: 'Pandit Rajesh Sharma',
-      userName: 'Rahul Kumar',
-      service: 'Kundali Reading',
-      date: '2025-01-05',
-      amount: 500,
-      status: 'completed',
-    },
-    {
-      _id: '2',
-      panditName: 'Pandit Amit Kumar',
-      userName: 'Priya Singh',
-      service: 'Palmistry',
-      date: '2025-01-06',
-      amount: 300,
-      status: 'pending',
-    },
-  ]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
 
-  const stats = {
-    totalPandits: pandits.length,
-    activePandits: pandits.filter(p => p.status === 'approved').length,
-    pendingApproval: pandits.filter(p => p.status === 'pending').length,
-    totalBookings: bookings.length,
-    totalEarnings: pandits.reduce((sum, p) => sum + p.earnings, 0),
-    avgRating: (pandits.reduce((sum, p) => sum + p.rating, 0) / pandits.length).toFixed(1),
+      const [statsRes, panditsRes, bookingsRes] = await Promise.all([
+        fetch('/api/admin/jyotish/stats', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/admin/jyotish/pandits', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/admin/jyotish/bookings', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const [statsData, panditsData, bookingsData] = await Promise.all([
+        statsRes.json(),
+        panditsRes.json(),
+        bookingsRes.json(),
+      ]);
+
+      if (statsData.success) {
+        setStats(statsData.stats);
+      }
+
+      if (panditsData.success) {
+        // Map database pandit structure to component structure
+        const mappedPandits = panditsData.pandits.map((p: any) => ({
+          _id: p._id,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          specialization: p.specialties || p.expertise || [],
+          experience: parseInt(p.experience) || 0,
+          rating: p.rating || 0,
+          totalBookings: p.totalBookings || 0,
+          earnings: p.totalBookings * (p.price || 0),
+          status: p.isActive && p.isVerified ? 'approved' : p.isActive && !p.isVerified ? 'pending' : 'blocked',
+          joinedDate: new Date(p.createdAt).toISOString().split('T')[0],
+          language: p.languages || ['Hindi'],
+          city: 'India',
+        }));
+        setPandits(mappedPandits);
+      }
+
+      if (bookingsData.success) {
+        // Map database booking structure to component structure
+        const mappedBookings = bookingsData.bookings.map((b: any) => ({
+          _id: b._id,
+          panditName: b.panditName,
+          userName: b.customerName,
+          service: b.serviceType === 'call' ? 'Phone Consultation' : 'Video Consultation',
+          date: new Date(b.createdAt).toISOString().split('T')[0],
+          amount: b.price,
+          status: b.status,
+        }));
+        setBookings(mappedBookings);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      alert('Failed to fetch data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const earningsData = [
-    { month: 'Jul', earnings: 45000 },
-    { month: 'Aug', earnings: 52000 },
-    { month: 'Sep', earnings: 48000 },
-    { month: 'Oct', earnings: 61000 },
-    { month: 'Nov', earnings: 73000 },
-    { month: 'Dec', earnings: 85000 },
-  ];
-
-  const servicesData = [
-    { name: 'Kundali', value: 450, color: '#8b5cf6' },
-    { name: 'Palmistry', value: 320, color: '#3b82f6' },
-    { name: 'Vastu', value: 280, color: '#10b981' },
-    { name: 'Numerology', value: 180, color: '#f59e0b' },
-    { name: 'Tarot', value: 150, color: '#ef4444' },
-  ];
+  const earningsData = stats?.earningsData || [];
+  const servicesData = stats?.servicesData?.map((s: any) => ({
+    ...s,
+    color: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'][Math.floor(Math.random() * 5)],
+  })) || [];
 
   const handleApprove = (panditId: string) => {
     setPandits(pandits.map(p => 
@@ -206,14 +214,14 @@ export default function JyotishAdminPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        {[
-          { label: 'Total Pandits', value: stats.totalPandits, icon: FiUsers, color: 'purple' },
-          { label: 'Active Pandits', value: stats.activePandits, icon: FiCheckCircle, color: 'green' },
-          { label: 'Pending Approval', value: stats.pendingApproval, icon: FiClock, color: 'yellow' },
-          { label: 'Total Bookings', value: stats.totalBookings, icon: FiCalendar, color: 'blue' },
-          { label: 'Total Earnings', value: `₹${(stats.totalEarnings / 1000).toFixed(0)}K`, icon: FiDollarSign, color: 'green' },
-          { label: 'Avg Rating', value: stats.avgRating, icon: FiStar, color: 'yellow' },
-        ].map((stat, index) => (
+      {[
+        { label: 'Total Pandits', value: stats?.totalPandits || 0, icon: FiUsers, color: 'purple' },
+        { label: 'Active Pandits', value: stats?.activePandits || 0, icon: FiCheckCircle, color: 'green' },
+        { label: 'Pending Approval', value: stats?.pendingApproval || 0, icon: FiClock, color: 'yellow' },
+        { label: 'Total Bookings', value: stats?.totalBookings || 0, icon: FiCalendar, color: 'blue' },
+        { label: 'Total Earnings', value: `₹${((stats?.totalEarnings || 0) / 1000).toFixed(0)}K`, icon: FiDollarSign, color: 'green' },
+        { label: 'Avg Rating', value: stats?.avgRating || '0.0', icon: FiStar, color: 'yellow' },
+      ].map((stat, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
@@ -259,7 +267,7 @@ export default function JyotishAdminPage() {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {servicesData.map((entry, index) => (
+                {servicesData.map((entry: any, index: number) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
