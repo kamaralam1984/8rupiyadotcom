@@ -114,8 +114,8 @@ export async function POST(req: NextRequest) {
       pages: [],
       // All shops start as pending, require admin/accountant approval - cannot be overridden
       status: ShopStatus.PENDING,
-      paymentStatus: paymentMode === 'online' ? PaymentStatus.PAID : PaymentStatus.PENDING,
-      paymentMode: paymentMode,
+      paymentStatus: paymentMode === 'upi' ? PaymentStatus.PENDING : PaymentStatus.PENDING, // Payment status updated after verification
+      paymentMode: paymentMode === 'upi' ? 'online' : paymentMode,
       shopperId: user._id.toString(), // Use agent's ID as shopperId
       agentId: user._id.toString(),
       operatorId: approvedRequest?.operatorId?.toString() || undefined, // Set operatorId if agent has approved operator
@@ -137,25 +137,9 @@ export async function POST(req: NextRequest) {
 
     const shop = await Shop.create(shopData) as any;
 
-    // If online payment, create payment record
-    if (paymentMode === 'online') {
-      try {
-        const payment = await Payment.create({
-          shopId: shop._id?.toString() || shop._id,
-          planId: plan._id,
-          amount: plan.price,
-          status: PaymentStatusEnum.SUCCESS,
-          paidAt: new Date(),
-          razorpayOrderId: `ONLINE-${Date.now()}`,
-        });
-
-        // Create commission
-        await createCommission((payment as any)._id?.toString() || payment._id, shop._id?.toString() || shop._id);
-      } catch (paymentErr: any) {
-        console.error('Error creating payment record:', paymentErr);
-        // Continue even if payment creation fails
-      }
-    }
+    // Note: For online/UPI payments, payment record and commission will be created
+    // by /api/payments/verify route after successful Razorpay payment verification
+    // Cash payments are recorded separately via agent payment recording
 
     return NextResponse.json({
       success: true,

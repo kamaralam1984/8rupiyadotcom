@@ -127,68 +127,170 @@ export const POST = withAuth(async (req: AuthRequest) => {
     const body = await req.json();
     const user = req.user!;
 
+    console.log('📥 Shop creation request:', {
+      userRole: user.role,
+      userId: user.userId,
+      bodyKeys: Object.keys(body),
+    });
+
     // Only shoppers, agents, operators can create shops
     if (![UserRole.SHOPPER, UserRole.AGENT, UserRole.OPERATOR].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      console.error('❌ Forbidden: Invalid role', user.role);
+      return NextResponse.json({ error: 'Forbidden: Only shoppers, agents, and operators can create shops' }, { status: 403 });
     }
 
+    // Validate required fields
+    if (!body.name) {
+      return NextResponse.json({ error: 'Shop name is required' }, { status: 400 });
+    }
+    if (!body.category) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+    }
+    if (!body.address) {
+      return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+    }
+    if (!body.location || !body.location.coordinates) {
+      return NextResponse.json({ error: 'Location coordinates are required' }, { status: 400 });
+    }
+
+    // Prepare shop data
     const shopData: any = {
-      ...body,
-      // Always set status to PENDING for new shops - cannot be overridden
+      name: body.name?.trim(),
+      description: body.description || body.address || body.name,
+      category: body.category?.trim(),
+      address: body.address?.trim(),
+      area: body.area || '',
+      city: body.city || 'Patna',
+      state: body.state || 'Bihar',
+      pincode: body.pincode?.trim() || '',
+      phone: body.phone || '',
+      email: body.email || `${body.phone?.replace(/\s+/g, '')}@shop.8rupiya.com`,
+      location: body.location,
+      images: body.images || [],
+      photos: body.photos || body.images || [],
+      offers: body.offers || [],
+      pages: body.pages || [],
+      // Always set status to PENDING for new shops
       status: ShopStatus.PENDING,
-      shopperId: user.role === UserRole.SHOPPER ? user.userId : body.shopperId,
+      paymentStatus: body.paymentStatus || 'pending',
+      shopperId: user.role === UserRole.SHOPPER ? user.userId : (body.shopperId || user.userId),
     };
-    
-    // Ensure status is always PENDING (override any status from body)
-    shopData.status = ShopStatus.PENDING;
+
+    // Set plan if provided
+    if (body.planId) {
+      shopData.planId = body.planId;
+      // Calculate plan expiry if plan duration is available
+      if (body.planExpiry) {
+        shopData.planExpiry = new Date(body.planExpiry);
+      }
+    }
 
     // Set agent/operator IDs based on role
     if (user.role === UserRole.AGENT) {
       shopData.agentId = user.userId;
       // Find approved operator for this agent
-      const AgentRequest = (await import('@/models/AgentRequest')).default;
-      const RequestStatus = (await import('@/models/AgentRequest')).RequestStatus;
-      const approvedRequest = await AgentRequest.findOne({
-        agentId: user.userId,
-        status: RequestStatus.APPROVED
-      }).sort({ createdAt: 1 }); // Get the first approved operator
-      
-      if (approvedRequest) {
-        shopData.operatorId = approvedRequest.operatorId;
+      try {
+        const AgentRequest = (await import('@/models/AgentRequest')).default;
+        const RequestStatus = (await import('@/models/AgentRequest')).RequestStatus;
+        const approvedRequest = await AgentRequest.findOne({
+          agentId: user.userId,
+          status: RequestStatus.APPROVED
+        }).sort({ createdAt: 1 });
+        
+        if (approvedRequest) {
+          shopData.operatorId = approvedRequest.operatorId;
+          console.log('✅ Found operator for agent:', approvedRequest.operatorId);
+        }
+      } catch (operatorErr: any) {
+        console.warn('⚠️ Could not find operator for agent:', operatorErr.message);
+        // Continue without operator - shop will be created anyway
       }
     } else if (user.role === UserRole.OPERATOR) {
       shopData.operatorId = user.userId;
       // Get agentId from operator's profile
-      const User = (await import('@/models/User')).default;
-      const operator = await User.findById(user.userId);
-      if (operator?.agentId) {
-        shopData.agentId = operator.agentId;
+      try {
+        const User = (await import('@/models/User')).default;
+        const operator = await User.findById(user.userId);
+        if (operator?.agentId) {
+          shopData.agentId = operator.agentId;
+        }
+      } catch (agentErr: any) {
+        console.warn('⚠️ Could not find agent for operator:', agentErr.message);
+        // Continue without agent
       }
     }
 
-    const shop = await Shop.create(shopData);
+    // Add SEO fields if provided
+    if (body.seoTitle) shopData.seoTitle = body.seoTitle;
+    if (body.seoDescription) shopData.seoDescription = body.seoDescription;
+    if (body.seoKeywords) shopData.seoKeywords = body.seoKeywords;
 
-    return NextResponse.json({ success: true, shop }, { status: 201 });
+    console.log('📝 Creating shop with data:', {
+      name: shopData.name,
+      category: shopData.category,
+      city: shopData.city,
+      agentId: shopData.agentId,
+      operatorId: shopData.operatorId,
+    });
+
+    const shop = await Shop.create(shopData);
+    console.log('✅ Shop created successfully:', (shop as any)._id);
+
+    // Return shop data in format expected by frontend
+    const shopResponse = {
+      _id: (shop as any)._id?.toString() || (shop as any)._id,
+      name: (shop as any).name,
+      category: (shop as any).category,
+      status: (shop as any).status,
+      address: (shop as any).address,
+      city: (shop as any).city,
+      planId: (shop as any).planId?.toString() || (shop as any).planId,
+      paymentStatus: (shop as any).paymentStatus,
+    };
+
+    return NextResponse.json({ 
+      success: true, 
+      shop: shopResponse
+    }, { status: 201 });
   } catch (error: any) {
-    console.error('Shop creation error:', error);
+    console.error('❌ Shop creation error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
+    console.error('Error code:', error.code);
+    
     // Provide more detailed error message
     let errorMessage = error.message || 'Failed to create shop';
     
     // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors || {}).map((err: any) => err.message);
+      const validationErrors = Object.values(error.errors || {}).map((err: any) => {
+        return `${err.path}: ${err.message}`;
+      });
       errorMessage = `Validation error: ${validationErrors.join(', ')}`;
+      console.error('Validation errors:', validationErrors);
     }
     
     // Handle duplicate key errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
       errorMessage = `${field} already exists`;
+      console.error('Duplicate key error on field:', field);
+    }
+
+    // Handle cast errors (invalid ObjectId, etc.)
+    if (error.name === 'CastError') {
+      errorMessage = `Invalid ${error.path}: ${error.value}`;
+      console.error('Cast error:', error.path, error.value);
     }
 
     return NextResponse.json({ 
       error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code,
+      } : undefined
     }, { status: 500 });
   }
 }, [UserRole.SHOPPER, UserRole.AGENT, UserRole.OPERATOR]);

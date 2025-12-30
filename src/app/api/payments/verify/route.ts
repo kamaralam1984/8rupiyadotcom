@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Payment, { PaymentStatus } from '@/models/Payment';
-import Shop, { PaymentStatus as ShopPaymentStatus } from '@/models/Shop';
+import Shop, { ShopStatus, PaymentStatus as ShopPaymentStatus } from '@/models/Shop';
 import Plan from '@/models/Plan';
 import { verifyPaymentSignature } from '@/lib/razorpay';
 import { createCommission } from '@/lib/commission';
@@ -45,12 +45,23 @@ export async function POST(req: NextRequest) {
 
     if (shop && plan) {
       shop.planId = plan._id;
-      shop.planExpiry = new Date(Date.now() + plan.expiryDays * 24 * 60 * 60 * 1000);
+      shop.planExpiry = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000);
       shop.rankScore = plan.rank;
       shop.isFeatured = plan.featuredTag;
       shop.homepagePriority = plan.listingPriority;
       shop.paymentStatus = ShopPaymentStatus.PAID; // Set payment status to paid
-      shop.status = 'approved' as any; // Set shop status to approved after payment
+      
+      // If shop was temporary, update it to approved
+      if ((shop as any).isTemporary) {
+        shop.status = ShopStatus.APPROVED;
+        (shop as any).isTemporary = false;
+      } else {
+        // For existing shops, keep current status or set to approved
+        if (shop.status === ShopStatus.PENDING) {
+          shop.status = ShopStatus.APPROVED;
+        }
+      }
+      
       await shop.save();
     }
 

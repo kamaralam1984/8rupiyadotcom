@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiMapPin, FiUpload, FiCheck, FiAlertCircle } from 'react-icons/fi';
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 interface Plan {
   _id: string;
   name: string;
@@ -24,6 +30,8 @@ export default function ShopperShopCreatePage() {
   const [error, setError] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
     planId: '',
@@ -192,6 +200,10 @@ export default function ShopperShopCreatePage() {
       if (response.ok && data.success) {
         // Redirect to payment or shops page
         if (data.requiresPayment) {
+          // Set payment processing state
+          setPaymentProcessing(true);
+          setSubmitting(false); // Allow UI to show payment processing state
+          
           // Create payment order
           const paymentResponse = await fetch('/api/payments/create-order', {
             method: 'POST',
@@ -206,11 +218,167 @@ export default function ShopperShopCreatePage() {
           });
 
           const paymentData = await paymentResponse.json();
-          if (paymentResponse.ok && paymentData.orderId) {
-            // Redirect to payment page or handle Razorpay
-            router.push(`/shopper/shops?payment=${paymentData.orderId}`);
+          if (paymentResponse.ok && paymentData.success && paymentData.orderId) {
+            // Get Razorpay key
+            const keyResponse = await fetch('/api/payments/razorpay-key');
+            const keyData = await keyResponse.json();
+            
+            if (!keyData.success || !keyData.keyId) {
+              setError('Razorpay key not configured. Please contact administrator.');
+              setSubmitting(false);
+              setPaymentProcessing(false);
+              return;
+            }
+
+            // Function to open Razorpay checkout
+            const openRazorpayCheckout = () => {
+              if (!window.Razorpay) {
+                setError('Razorpay SDK not loaded. Please refresh the page and try again.');
+                setSubmitting(false);
+                setPaymentProcessing(false);
+                return;
+              }
+
+              try {
+                const selectedPlan = plans.find(p => p._id === formData.planId);
+                const options = {
+                  key: keyData.keyId,
+                  amount: (selectedPlan?.price || 0) * 100,
+                  currency: 'INR',
+                  name: '8Rupiya',
+                  description: `Payment for ${selectedPlan?.name || 'Plan'} - ${formData.shopName}`,
+                  order_id: paymentData.orderId,
+                  handler: async function (response: any) {
+                    setPaymentProcessing(true);
+                    setSubmitting(true);
+                    try {
+                      console.log('✅ Payment successful, verifying...');
+                      // Verify payment
+                      const verifyResponse = await fetch('/api/payments/verify', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          razorpay_order_id: response.razorpay_order_id,
+                          razorpay_payment_id: response.razorpay_payment_id,
+                          razorpay_signature: response.razorpay_signature,
+                        }),
+                      });
+
+                      if (verifyResponse.ok) {
+                        const verifyData = await verifyResponse.json();
+                        if (verifyData.success) {
+                          // Payment successful - enable submit button and redirect
+                          console.log('✅ Payment verified successfully');
+                          setPaymentSuccess(true);
+                          setPaymentProcessing(false);
+                          setSubmitting(false);
+                          
+                          // Redirect after a short delay
+                          setTimeout(() => {
+                            router.push('/shopper/shops?payment=success');
+                          }, 1000);
+                        } else {
+                          setError('Payment verification failed. Please contact support.');
+                          setSubmitting(false);
+                          setPaymentProcessing(false);
+                        }
+                      } else {
+                        const errorData = await verifyResponse.json();
+                        setError(`Payment verification failed: ${errorData.error || 'Unknown error'}`);
+                        setSubmitting(false);
+                        setPaymentProcessing(false);
+                      }
+                    } catch (verifyErr: any) {
+                      console.error('Payment verification error:', verifyErr);
+                      setError('Payment verification failed. Please contact support.');
+                      setSubmitting(false);
+                      setPaymentProcessing(false);
+                    }
+                  },
+                  modal: {
+                    ondismiss: function () {
+                      console.log('❌ Payment dismissed by user');
+                      setSubmitting(false);
+                      setPaymentProcessing(false);
+                      setError('Payment was cancelled. You can try again.');
+                    },
+                  },
+                  onerror: function (error: any) {
+                    console.error('❌ Razorpay error:', error);
+                    setSubmitting(false);
+                    setPaymentProcessing(false);
+                    setError('Payment failed. Please try again.');
+                  },
+                  prefill: {
+                    name: formData.shopName || '',
+                    email: formData.email || '',
+                    contact: formData.phone || '',
+                  },
+                  theme: {
+                    color: '#6366f1',
+                  },
+                };
+
+                const razorpay = new window.Razorpay(options);
+                razorpay.open();
+              } catch (razorpayErr: any) {
+                console.error('Razorpay initialization error:', razorpayErr);
+                setError('Failed to open payment gateway. Please try again.');
+                setSubmitting(false);
+                setPaymentProcessing(false);
+              }
+            };
+
+            // Check if Razorpay is already loaded
+            if (window.Razorpay) {
+              // Razorpay already loaded, open checkout immediately
+              openRazorpayCheckout();
+            } else {
+              // Load Razorpay script
+              const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+              
+              if (existingScript) {
+                // Script already exists, wait for it to load
+                existingScript.addEventListener('load', () => {
+                  if (window.Razorpay) {
+                    openRazorpayCheckout();
+                  } else {
+                    setError('Razorpay SDK failed to load. Please refresh and try again.');
+                    setSubmitting(false);
+                  }
+                });
+              } else {
+                // Create and load new script
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.async = true;
+                
+                script.onload = () => {
+                  if (window.Razorpay) {
+                    openRazorpayCheckout();
+                  } else {
+                    setError('Razorpay SDK failed to load. Please refresh and try again.');
+                    setSubmitting(false);
+                    setPaymentProcessing(false);
+                  }
+                };
+                
+                script.onerror = () => {
+                  setError('Failed to load Razorpay SDK. Please check your internet connection and try again.');
+                  setSubmitting(false);
+                  setPaymentProcessing(false);
+                };
+                
+                document.head.appendChild(script);
+              }
+            }
           } else {
-            router.push('/shopper/shops');
+            setError(paymentData.error || 'Failed to create payment order');
+            setSubmitting(false);
+            setPaymentProcessing(false);
           }
         } else {
           router.push('/shopper/shops');
@@ -575,12 +743,35 @@ export default function ShopperShopCreatePage() {
               <motion.button
                 type="button"
                 onClick={handleSubmit}
-                disabled={submitting}
-                whileHover={{ scale: submitting ? 1 : 1.02 }}
-                whileTap={{ scale: submitting ? 1 : 0.98 }}
-                className="px-6 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                disabled={submitting || paymentProcessing}
+                whileHover={{ scale: (submitting || paymentProcessing) ? 1 : 1.02 }}
+                whileTap={{ scale: (submitting || paymentProcessing) ? 1 : 0.98 }}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  paymentSuccess
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : paymentProcessing
+                    ? 'bg-yellow-600 text-white hover:bg-yellow-700 cursor-wait'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed shadow-md`}
               >
-                {submitting ? 'Creating...' : 'Create Shop & Pay Online'}
+                {paymentSuccess ? (
+                  <>
+                    <FiCheck className="text-lg" />
+                    Payment Successful! Redirecting...
+                  </>
+                ) : paymentProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    Processing Payment...
+                  </>
+                ) : submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    Creating Shop...
+                  </>
+                ) : (
+                  'Create Shop & Pay Online'
+                )}
               </motion.button>
             )}
           </div>

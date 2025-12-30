@@ -3,30 +3,49 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { verifyToken } from '@/lib/auth';
-import { UserRole } from '@/types/user';
 
 // Force Node.js runtime for file system operations
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
-                 req.cookies.get('token')?.value;
+    // Get token from header or cookie
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '') || req.cookies.get('token')?.value;
 
     if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('Upload: No token provided');
+      return NextResponse.json({ error: 'Unauthorized. Please login again.' }, { status: 401 });
     }
 
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    // Verify token
+    let payload;
+    try {
+      payload = verifyToken(token);
+      if (!payload) {
+        console.error('Upload: Invalid token');
+        return NextResponse.json({ error: 'Invalid token. Please login again.' }, { status: 401 });
+      }
+    } catch (tokenError: any) {
+      console.error('Upload: Token verification error:', tokenError);
+      return NextResponse.json({ error: 'Token verification failed' }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const file = formData.get('image') as File;
+    // Get form data
+    let formData;
+    try {
+      formData = await req.formData();
+    } catch (formError: any) {
+      console.error('Upload: FormData parsing error:', formError);
+      return NextResponse.json({ error: 'Failed to parse form data' }, { status: 400 });
+    }
+
+    // Get file from form data (try both 'image' and 'file' field names)
+    const file = (formData.get('image') || formData.get('file')) as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      console.error('Upload: No file in form data');
+      return NextResponse.json({ error: 'No file uploaded. Please select an image.' }, { status: 400 });
     }
 
     // Validate file type
@@ -51,13 +70,25 @@ export async function POST(req: NextRequest) {
 
     // Create uploads directory if it doesn't exist
     const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
+    try {
+      if (!existsSync(uploadsDir)) {
+        mkdirSync(uploadsDir, { recursive: true });
+        console.log('Created uploads directory:', uploadsDir);
+      }
+    } catch (dirError: any) {
+      console.error('Upload: Directory creation error:', dirError);
+      return NextResponse.json({ error: 'Failed to create upload directory' }, { status: 500 });
     }
 
     // Save file
     const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+    try {
+      await writeFile(filepath, buffer);
+      console.log('File uploaded successfully:', filename);
+    } catch (writeError: any) {
+      console.error('Upload: File write error:', writeError);
+      return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
+    }
 
     // Return public URL
     const url = `/uploads/${filename}`;
@@ -69,7 +100,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message || 'Upload failed' }, { status: 500 });
+    console.error('Error stack:', error.stack);
+    return NextResponse.json({ 
+      error: error.message || 'Upload failed',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 

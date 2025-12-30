@@ -48,6 +48,8 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/favicon_192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png" />
+        {/* Preload Razorpay for faster payment gateway loading */}
+        <link rel="preload" href="https://checkout.razorpay.com/v1/checkout.js" as="script" />
         <script
   async
   src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984"

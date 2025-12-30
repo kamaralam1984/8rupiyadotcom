@@ -9,7 +9,14 @@ import {
   FiMapPin,
   FiCheck,
   FiAlertCircle,
+  FiX,
 } from 'react-icons/fi';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface Plan {
   _id: string;
@@ -66,7 +73,7 @@ interface FormData {
   amount: number;
   receiptNo: string;
   sendSmsReceipt: boolean;
-  paymentMode: 'cash' | 'online';
+  paymentMode: 'cash' | 'upi';
 }
 
 export default function AddNewShopPage() {
@@ -78,6 +85,10 @@ export default function AddNewShopPage() {
   const [error, setError] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
   const [userId, setUserId] = useState<string>('');
+  const [createdShopId, setCreatedShopId] = useState<string | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     planId: '',
     selectedPlan: null,
@@ -453,9 +464,270 @@ export default function AddNewShopPage() {
 
       if (response.ok) {
         const shopId = data.shop?._id || data.shop?.id || data._id;
+        setCreatedShopId(shopId);
         
-        // Create cash payment record if cash payment was selected
-        if (formData.paymentMode === 'cash' && formData.planId && shopId) {
+        // Handle payment based on mode (upi uses Razorpay for online payment)
+        if (formData.paymentMode === 'upi' && formData.planId && shopId) {
+          console.log(`🔄 Starting Online Payment (UPI/Card) flow...`, { shopId, planId: formData.planId, mode: formData.paymentMode });
+          
+          // Disable submit button and set payment processing
+          setPaymentProcessing(true);
+          setLoading(false); // Allow UI to show payment processing state
+          
+          // For online payment, create order with shopId
+          try {
+            console.log('📤 Creating payment order...');
+            const paymentResponse = await fetch('/api/payments/create-order', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                shopId: shopId,
+                planId: formData.planId,
+              }),
+            });
+
+            console.log('📥 Payment order response status:', paymentResponse.status);
+
+            if (!paymentResponse.ok) {
+              const errorData = await paymentResponse.json().catch(() => ({ error: 'Unknown error' }));
+              console.error('❌ Payment order creation failed:', errorData);
+              setError(`Payment order failed: ${errorData.error || 'Unknown error'}`);
+              setPaymentProcessing(false);
+              setLoading(false);
+              return;
+            }
+
+            const paymentData = await paymentResponse.json();
+            console.log('✅ Payment order created:', paymentData);
+            
+            if (paymentData.success && paymentData.orderId) {
+              console.log('✅ Payment order created successfully:', paymentData.orderId);
+              
+              // Get Razorpay key
+              console.log('🔑 Fetching Razorpay key...');
+              const keyResponse = await fetch('/api/payments/razorpay-key');
+              
+              if (!keyResponse.ok) {
+                console.error('❌ Failed to fetch Razorpay key:', keyResponse.status);
+                throw new Error('Failed to get payment gateway configuration. Please try again.');
+              }
+              
+              const keyData = await keyResponse.json();
+              console.log('🔑 Razorpay key response:', keyData);
+              
+              if (!keyData.success || !keyData.keyId) {
+                console.error('❌ Razorpay key not configured');
+                throw new Error('Payment gateway not configured. Please contact administrator.');
+              }
+              
+              console.log('✅ Razorpay key obtained:', keyData.keyId.substring(0, 10) + '...');
+
+              // Function to open Razorpay checkout
+              const openRazorpayCheckout = () => {
+                console.log('🔓 Opening Razorpay checkout...');
+                
+                if (!window.Razorpay) {
+                  console.error('❌ Razorpay SDK not available');
+                  setError('Razorpay SDK not loaded. Please refresh the page and try again.');
+                  setPaymentProcessing(false);
+                  setLoading(false);
+                  return;
+                }
+
+                try {
+                  const amount = (formData.selectedPlan?.price || 0) * 100;
+                  console.log('💰 Payment amount:', amount, 'paise');
+                  
+                  const options: any = {
+                    key: keyData.keyId,
+                    amount: amount,
+                    currency: 'INR',
+                    name: '8Rupiya',
+                    description: `Payment for ${formData.selectedPlan?.name || 'Plan'} - ${formData.shopName}`,
+                    order_id: paymentData.orderId,
+                    handler: async function (response: any) {
+                      setPaymentProcessing(true);
+                      setLoading(true);
+                      try {
+                        console.log('✅ Payment successful, verifying...');
+                        // Verify payment
+                        const verifyResponse = await fetch('/api/payments/verify', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                          }),
+                        });
+
+                        if (verifyResponse.ok) {
+                          const verifyData = await verifyResponse.json();
+                          if (verifyData.success) {
+                            // Payment successful - enable submit button and redirect
+                            console.log('✅ Payment verified successfully');
+                            setPaymentSuccess(true);
+                            setPaymentProcessing(false);
+                            setLoading(false);
+                            // Redirect after a short delay to show success state
+                            setTimeout(() => {
+                              router.push('/agent/shops?payment=success');
+                            }, 1000);
+                          } else {
+                            setError('Payment verification failed. Please contact support.');
+                            setPaymentProcessing(false);
+                            setLoading(false);
+                          }
+                        } else {
+                          const errorData = await verifyResponse.json();
+                          setError(`Payment verification failed: ${errorData.error || 'Unknown error'}`);
+                          setPaymentProcessing(false);
+                          setLoading(false);
+                        }
+                      } catch (verifyErr: any) {
+                        console.error('Payment verification error:', verifyErr);
+                        setError('Payment verification failed. Please contact support.');
+                        setPaymentProcessing(false);
+                        setLoading(false);
+                      }
+                    },
+                    modal: {
+                      ondismiss: function () {
+                        setPaymentProcessing(false);
+                        setLoading(false);
+                        setError('Payment was cancelled. You can try again.');
+                      },
+                    },
+                    prefill: {
+                      name: formData.ownerName || formData.shopName || '',
+                      email: formData.email || '',
+                      contact: formData.mobileNumber || '',
+                    },
+                    theme: {
+                      color: '#6366f1',
+                    },
+                  };
+                  
+                  // Configure payment options - Razorpay will show all payment methods (UPI, Card, Net Banking)
+                  options.notes = {
+                    payment_type: 'online',
+                    shop_name: formData.shopName,
+                  };
+                  console.log('💳 Online payment configured - Razorpay will show all payment options (UPI, Card, Net Banking)');
+
+                  const razorpay = new window.Razorpay(options);
+                  razorpay.open();
+                } catch (razorpayErr: any) {
+                  console.error('Razorpay initialization error:', razorpayErr);
+                  setError('Failed to open payment gateway. Please try again.');
+                  setPaymentProcessing(false);
+                  setLoading(false);
+                }
+              };
+
+            // Check if Razorpay is already loaded
+            console.log('🔍 Checking Razorpay SDK availability...');
+            
+            if (window.Razorpay) {
+              console.log('✅ Razorpay SDK already loaded, opening checkout...');
+              // Razorpay already loaded, open checkout immediately
+              setTimeout(() => {
+                openRazorpayCheckout();
+              }, 100);
+            } else {
+              console.log('⏳ Razorpay SDK not loaded, loading script...');
+              
+              // Load Razorpay script
+              const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+              
+              if (existingScript) {
+                console.log('📜 Existing script found, waiting for load...');
+                // Script already exists, check if it's loaded
+                if ((existingScript as HTMLScriptElement).onload) {
+                  // Already has onload handler, check if Razorpay is available
+                  const checkInterval = setInterval(() => {
+                    if (window.Razorpay) {
+                      clearInterval(checkInterval);
+                      console.log('✅ Razorpay SDK loaded via existing script');
+                      openRazorpayCheckout();
+                    }
+                  }, 100);
+                  
+                  // Timeout after 5 seconds
+                  setTimeout(() => {
+                    clearInterval(checkInterval);
+                  if (!window.Razorpay) {
+                    setError('Razorpay SDK failed to load. Please refresh and try again.');
+                    setPaymentProcessing(false);
+                    setLoading(false);
+                  }
+                  }, 5000);
+                } else {
+                  // Add load event listener
+                  existingScript.addEventListener('load', () => {
+                    console.log('✅ Existing script loaded');
+                    if (window.Razorpay) {
+                      openRazorpayCheckout();
+                    } else {
+                      setError('Razorpay SDK failed to load. Please refresh and try again.');
+                      setPaymentProcessing(false);
+                      setLoading(false);
+                    }
+                  });
+                }
+              } else {
+                console.log('📥 Creating new Razorpay script...');
+                // Create and load new script
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.async = true;
+                script.id = 'razorpay-checkout-script';
+                
+                script.onload = () => {
+                  console.log('✅ Razorpay script loaded');
+                  // Give it a moment to initialize
+                  setTimeout(() => {
+                    if (window.Razorpay) {
+                      console.log('✅ Razorpay SDK initialized');
+                      openRazorpayCheckout();
+                    } else {
+                      console.error('❌ Razorpay SDK not available after script load');
+                      setError('Razorpay SDK failed to initialize. Please refresh and try again.');
+                      setPaymentProcessing(false);
+                      setLoading(false);
+                    }
+                  }, 200);
+                };
+                
+                script.onerror = (error) => {
+                  console.error('❌ Razorpay script load error:', error);
+                  setError('Failed to load Razorpay SDK. Please check your internet connection and try again.');
+                  setPaymentProcessing(false);
+                  setLoading(false);
+                };
+                
+                document.head.appendChild(script);
+                console.log('📤 Razorpay script added to head');
+              }
+            }
+            } else {
+              throw new Error('Invalid payment response from server');
+            }
+          } catch (paymentErr: any) {
+            console.error('Error processing online payment:', paymentErr);
+            setError(`Payment failed: ${paymentErr.message || 'Unknown error'}`);
+            setPaymentProcessing(false);
+            setLoading(false);
+            return;
+          }
+        } else if (formData.paymentMode === 'cash' && formData.planId && shopId) {
+          // Create cash payment record
           try {
             const paymentResponse = await fetch('/api/payments/cash', {
               method: 'POST',
@@ -480,9 +752,12 @@ export default function AddNewShopPage() {
             console.warn('Error creating payment record:', paymentErr);
             // Continue even if payment creation fails
           }
+          
+          router.push('/agent/shops');
+        } else {
+          // No payment needed
+          router.push('/agent/shops');
         }
-
-        router.push('/agent/shops');
       } else {
         setError(data.error || 'Failed to create shop');
       }
@@ -553,9 +828,33 @@ export default function AddNewShopPage() {
         {/* Form Card */}
         <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <FiAlertCircle />
-              <span>{error}</span>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-red-50 border-2 border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-start gap-3 shadow-md"
+            >
+              <FiAlertCircle className="text-red-600 text-xl flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold">Error:</p>
+                <p className="text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError('')}
+                className="text-red-600 hover:text-red-800 flex-shrink-0"
+              >
+                <FiX />
+              </button>
+            </motion.div>
+          )}
+          
+          {loading && (
+            <div className="mb-6 bg-blue-50 border-2 border-blue-300 text-blue-800 px-4 py-3 rounded-lg flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+              <span className="font-medium">
+                {formData.paymentMode === 'upi'
+                  ? 'Processing Online Payment... Please wait...' 
+                  : 'Creating shop... Please wait...'}
+              </span>
             </div>
           )}
 
@@ -1190,33 +1489,35 @@ export default function AddNewShopPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Payment Mode *
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, paymentMode: 'cash' })}
                       className={`p-6 rounded-lg border-2 transition-all ${
                         formData.paymentMode === 'cash'
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-300 hover:border-green-300'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-green-300'
                       }`}
                     >
                       <div className="text-center">
                         <div className="text-4xl mb-2">💰</div>
-                        <div className="font-semibold text-gray-900">Cash Payment</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">Cash Payment</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Offline Payment</div>
                       </div>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, paymentMode: 'online' })}
+                      onClick={() => setFormData({ ...formData, paymentMode: 'upi' })}
                       className={`p-6 rounded-lg border-2 transition-all ${
-                        formData.paymentMode === 'online'
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-300 hover:border-orange-300'
+                        formData.paymentMode === 'upi'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
                       }`}
                     >
                       <div className="text-center">
                         <div className="text-4xl mb-2">💳</div>
-                        <div className="font-semibold text-gray-900">Online Payment</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">Online Payment</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">UPI, Card, Net Banking</div>
                       </div>
                     </button>
                   </div>
@@ -1253,10 +1554,35 @@ export default function AddNewShopPage() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={loading || paymentProcessing}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  paymentSuccess
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : paymentProcessing
+                    ? 'bg-yellow-600 text-white hover:bg-yellow-700 cursor-wait'
+                    : loading
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-wait'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {loading ? 'Submitting...' : 'Submit Shop'}
+                {paymentSuccess ? (
+                  <>
+                    <FiCheck className="text-lg" />
+                    Payment Successful! Redirecting...
+                  </>
+                ) : paymentProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Processing Payment...
+                  </>
+                ) : loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Shop'
+                )}
               </button>
             )}
           </div>
