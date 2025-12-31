@@ -38,6 +38,11 @@ export async function PUT(
       'name',
       'category',
       'description',
+      'address',
+      'city',
+      'pincode',
+      'keywords',
+      'images',
       'isFeatured',
       'homepagePriority',
       'status',
@@ -49,6 +54,14 @@ export async function PUT(
         (shop as any)[field] = updates[field];
       }
     });
+
+    // Handle contact information separately
+    if (updates.contact) {
+      shop.contact = {
+        ...shop.contact,
+        ...updates.contact,
+      };
+    }
 
     await shop.save();
 

@@ -24,6 +24,7 @@ import {
   FiFileText,
   FiLayers,
   FiPercent,
+  FiPackage,
 } from 'react-icons/fi';
 import ThemeToggle from '../ThemeToggle';
 
@@ -78,6 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', icon: FiHome, href: '/admin', badge: null },
     { name: 'Users', icon: FiUsers, href: '/admin/users', badge: null },
     { name: 'Shops', icon: FiShoppingBag, href: '/admin/shops', badge: 'pending' },
+    { name: 'Categories', icon: FiPackage, href: '/admin/categories', badge: null },
     { name: 'Payments', icon: FiDollarSign, href: '/admin/payments', badge: null },
     { name: 'Commissions', icon: FiPercent, href: '/admin/commissions', badge: null },
     { name: 'Plans', icon: FiLayers, href: '/admin/plans', badge: null },

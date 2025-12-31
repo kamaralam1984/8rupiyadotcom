@@ -14,7 +14,7 @@ export interface ICategory extends Document {
 const CategorySchema = new Schema<ICategory>(
   {
     name: { type: String, required: true, unique: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slug: { type: String, unique: true, lowercase: true, trim: true },
     description: { type: String, trim: true },
     icon: { type: String },
     isActive: { type: Boolean, default: true },
@@ -24,14 +24,13 @@ const CategorySchema = new Schema<ICategory>(
 );
 
 // Generate slug from name before saving
-CategorySchema.pre('save', function (next: any) {
-  if (this.isModified('name') && !this.slug) {
+CategorySchema.pre('save', function () {
+  if (this.isNew || this.isModified('name')) {
     this.slug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   }
-  next();
 });
 
 export default mongoose.models.Category || mongoose.model<ICategory>('Category', CategorySchema);
