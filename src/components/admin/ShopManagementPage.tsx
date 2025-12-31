@@ -76,6 +76,8 @@ interface Shop {
   isFeatured: boolean;
   homepagePriority: number;
   visitors: number;
+  rating: number;
+  reviewCount: number;
   createdAt: string;
   updatedAt?: string;
   location?: {
@@ -111,6 +113,8 @@ export default function ShopManagementPage() {
     keywords: '',
     isFeatured: false,
     homepagePriority: 0,
+    rating: 0,
+    reviewCount: 0,
     status: 'pending' as 'pending' | 'approved' | 'rejected' | 'active',
   });
   const [editLoading, setEditLoading] = useState(false);
@@ -308,6 +312,8 @@ export default function ShopManagementPage() {
       keywords: (shop as any).seoKeywords || shop.keywords || '',
       isFeatured: shop.isFeatured || false,
       homepagePriority: shop.homepagePriority || 0,
+      rating: shop.rating || 0,
+      reviewCount: shop.reviewCount || 0,
       status: shop.status || 'pending',
     });
     // Set images from database (images or photos array)
@@ -461,6 +467,33 @@ export default function ShopManagementPage() {
     } finally {
       setEditLoading(false);
       setImageUploading(false);
+    }
+  };
+
+  const handleUpdateRating = async (shopId: string, rating: number, reviewCount: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/shops/${shopId}/rating`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rating, reviewCount }),
+      });
+
+      if (response.ok) {
+        await fetchShops();
+        return true;
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update rating');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      alert('Failed to update rating. Please try again.');
+      return false;
     }
   };
 
@@ -740,10 +773,26 @@ export default function ShopManagementPage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          <FiEye className="text-gray-400" />
-                          <span>{shop.visitors || 0} visitors</span>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          <div className="flex items-center gap-1">
+                            <FiEye className="text-gray-400" />
+                            <span>{shop.visitors || 0} visitors</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <FiStar className={`${shop.rating >= 4.0 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+                            <span className={`font-semibold ${shop.rating >= 4.0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                              {shop.rating.toFixed(1)}
+                            </span>
+                            <span className="text-gray-400">({shop.reviewCount})</span>
+                          </div>
                         </div>
+                        {shop.rating >= 4.0 && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+                              🏆 Top Rated
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -1569,6 +1618,125 @@ export default function ShopManagementPage() {
                         </div>
                       </label>
                     </div>
+                  </div>
+                </div>
+
+                {/* Rating & Reviews Management */}
+                <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <FiStar className="text-yellow-500" />
+                      Rating & Reviews Management
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (selectedShop && await handleUpdateRating(selectedShop._id, editFormData.rating, editFormData.reviewCount)) {
+                          alert('Rating updated successfully!');
+                        }
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm"
+                    >
+                      <FiStar className="text-white" />
+                      Update Rating
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Rating Input */}
+                    <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FiStar className="text-yellow-500" />
+                        Shop Rating
+                        <span className="text-xs text-gray-500">(0-5 stars)</span>
+                      </label>
+                      <div className="space-y-3">
+                        <input
+                          type="number"
+                          min="0"
+                          max="5"
+                          step="0.1"
+                          value={editFormData.rating}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (value >= 0 && value <= 5) {
+                              setEditFormData({ ...editFormData, rating: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 text-lg font-semibold"
+                          placeholder="Enter rating (0-5)"
+                        />
+                        {/* Visual Star Display */}
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <FiStar
+                              key={star}
+                              className={`text-2xl ${
+                                star <= editFormData.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300 dark:text-gray-600'
+                              }`}
+                            />
+                          ))}
+                          <span className="ml-2 text-lg font-bold text-gray-900 dark:text-white">
+                            {editFormData.rating.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Review Count Input */}
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FiTrendingUp className="text-blue-500" />
+                        Total Reviews
+                        <span className="text-xs text-gray-500">(Number of reviews)</span>
+                      </label>
+                      <div className="space-y-3">
+                        <input
+                          type="number"
+                          min="0"
+                          value={editFormData.reviewCount}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            if (value >= 0) {
+                              setEditFormData({ ...editFormData, reviewCount: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
+                          placeholder="Enter review count"
+                        />
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <FiTrendingUp className="text-blue-500" />
+                          <span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">{editFormData.reviewCount}</span> total reviews
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top Rated Badge Preview */}
+                  {editFormData.rating >= 4.0 && (
+                    <div className="bg-gradient-to-r from-yellow-100 via-orange-100 to-red-100 dark:from-yellow-900/30 dark:via-orange-900/30 dark:to-red-900/30 p-4 rounded-xl border-2 border-yellow-400 dark:border-yellow-700">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-yellow-500 rounded-full">
+                          <FiStar className="text-2xl text-white" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 dark:text-white text-lg">🏆 Top Rated Shop</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            This shop will display a "Top Rated" badge with {editFormData.rating.toFixed(1)} ⭐ rating
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>💡 Tip:</strong> Shops with rating ≥ 4.0 stars will automatically display a "Top Rated" badge on shop cards and detail pages.
+                    </p>
                   </div>
                 </div>
               </div>
