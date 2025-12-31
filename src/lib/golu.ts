@@ -240,13 +240,16 @@ export function detectCommandCategory(text: string): string {
     return 'REMINDER';
   }
 
-  // Location/Maps keywords
-  if (/(kahan|where|distance|dur|nearby|paas|location|address)/i.test(text)) {
+  // Location/Maps keywords (Check BEFORE translation to avoid conflicts)
+  // Priority: Location queries should be detected first
+  if (/(kahan|where|distance|dur|nearby|paas|location|address|station|airport|hospital|school|college|market|mall|restaurant|hotel|address|pata|jagah|sthan)/i.test(text) && 
+      !/(matlab|meaning|translate|hindi|english|bolo|arth)/i.test(text)) {
     return 'LOCATION';
   }
 
-  // Translation keywords
-  if (/(translate|matlab|meaning|hindi|english|bolo)/i.test(text)) {
+  // Translation keywords (Only if NOT a location query)
+  if (/(translate|matlab|meaning|hindi|english|bolo|arth|ka\s+matlab)/i.test(text) && 
+      !/(kahan|where|location|address|station|airport)/i.test(text)) {
     return 'TRANSLATION';
   }
 

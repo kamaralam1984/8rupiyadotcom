@@ -488,38 +488,173 @@ async function processMeeting(query: string, userId: any, userName?: string) {
   };
 }
 
+// Enhanced Location Processing with Gemini AI (Modern & Advanced)
 async function processLocation(query: string, userLocation: any, userName?: string) {
-  // Extract place name from query
-  const placeMatch = query.match(/([\w\s]+)\s+(kahan|where|dur|distance)/i);
-  const place = placeMatch ? placeMatch[1].trim() : query.replace(/(kahan|where|dur|distance|hai|paas|nearby)/gi, '').trim();
+  try {
+    // Enhanced place name extraction
+    let place = '';
+    
+    // Pattern 1: "Place kahan hai"
+    const pattern1 = query.match(/([\w\s]+?)\s+(kahan|where|location|address)\s+(hai|hain|he)/i);
+    if (pattern1) {
+      place = pattern1[1].trim();
+    } else {
+      // Pattern 2: "kahan hai Place"
+      const pattern2 = query.match(/(kahan|where|location|address)\s+(hai|hain|he)\s+(.+)/i);
+      if (pattern2) {
+        place = pattern2[3].trim();
+      } else {
+        // Pattern 3: Remove location keywords and get place name
+        place = query.replace(/(kahan|where|dur|distance|hai|hain|he|paas|nearby|location|address|ka|ke|ki)/gi, '').trim();
+      }
+    }
 
-  const locationData = await getLocationDetails(place);
-  
-  if (!locationData) {
+    // Clean place name
+    place = place.replace(/^(the|a|an)\s+/i, '').trim();
+
+    if (!place || place.length < 2) {
+      return {
+        response: generateFriendlyResponse(userName, 'Kripya place ka naam bataiye. Jaise "Patna station kahan hai" ya "Gandhi Maidan kahan hai".'),
+        metadata: { error: 'Place name not found' },
+      };
+    }
+
+    // Get location data from Google Maps
+    const locationData = await getLocationDetails(place);
+    
+    if (!locationData) {
+      // Try with Gemini AI to understand the query better
+      const aiProvider = process.env.NEXT_PUBLIC_AI_PROVIDER || 'gemini';
+      if (aiProvider === 'gemini' && process.env.GEMINI_API_KEY) {
+        try {
+          const aiPrompt = `User ne pucha: "${query}". Ye location query hai. Agar "${place}" ek jagah/place hai to uska sahi naam suggest karo. Agar nahi hai to "NOT_A_PLACE" return karo.`;
+          const aiResponse = await getGeminiResponse(aiPrompt, undefined, { temperature: 0.3, maxTokens: 100 });
+          
+          if (aiResponse.text && !aiResponse.text.includes('NOT_A_PLACE')) {
+            const suggestedPlace = aiResponse.text.trim().replace(/["']/g, '');
+            const retryLocation = await getLocationDetails(suggestedPlace);
+            
+            if (retryLocation) {
+              return await formatLocationResponse(suggestedPlace, retryLocation, userLocation, userName);
+            }
+          }
+        } catch (aiError) {
+          console.error('AI location enhancement error:', aiError);
+        }
+      }
+
+      return {
+        response: generateFriendlyResponse(userName, `Maaf kijiye, main "${place}" ka location nahi dhund paya. Kripya sahi place ka naam bataiye. Jaise "Patna Junction", "Gandhi Maidan", etc.`),
+        metadata: { place, error: 'Location not found' },
+      };
+    }
+
+    // Format response with Gemini AI enhancement
+    return await formatLocationResponse(place, locationData, userLocation, userName);
+  } catch (error: any) {
+    console.error('Location processing error:', error);
     return {
-      response: generateFriendlyResponse(userName, `Maaf kijiye, main "${place}" ka location nahi dhund paya. Kripya sahi naam bataiye.`),
-      metadata: {},
+      response: generateFriendlyResponse(userName, 'Maaf kijiye, location fetch karne me problem ho rahi hai. Kripya phir se try karein.'),
+      metadata: { error: error.message },
     };
   }
+}
 
-  let response = `${place} yahan hai: ${locationData.formattedAddress}`;
+// Helper function to format location response with Gemini AI
+async function formatLocationResponse(
+  place: string,
+  locationData: any,
+  userLocation: any,
+  userName?: string
+): Promise<{ response: string; metadata: any }> {
+  try {
+    // Calculate distance if user location available
+    let distanceInfo = '';
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
+      const distance = await calculateDistance(
+        { lat: userLocation.latitude, lng: userLocation.longitude },
+        { lat: locationData.latitude, lng: locationData.longitude }
+      );
 
-  // Calculate distance if user location available
-  if (userLocation && userLocation.latitude && userLocation.longitude) {
-    const distance = await calculateDistance(
-      { lat: userLocation.latitude, lng: userLocation.longitude },
-      { lat: locationData.latitude, lng: locationData.longitude }
-    );
-
-    if (distance) {
-      response += `. Aap se ${distance.distance} dur hai, pahunchne me lagbhag ${distance.duration} lagega.`;
+      if (distance) {
+        distanceInfo = ` Aap se ${distance.distance} dur hai, pahunchne me lagbhag ${distance.duration} lagega.`;
+      }
     }
-  }
 
-  return {
-    response: generateFriendlyResponse(userName, response),
-    metadata: { locationData },
-  };
+    // Build location context for Gemini AI
+    const locationContext = {
+      placeName: place,
+      address: locationData.formattedAddress,
+      coordinates: `${locationData.latitude}, ${locationData.longitude}`,
+      distanceInfo: distanceInfo,
+    };
+
+    // Use Gemini AI to generate natural, helpful response
+    const aiProvider = process.env.NEXT_PUBLIC_AI_PROVIDER || 'gemini';
+    if (aiProvider === 'gemini' && process.env.GEMINI_API_KEY) {
+      try {
+        const aiPrompt = `User ne pucha: "${place} kahan hai". Location details:
+- Place: ${locationContext.placeName}
+- Address: ${locationContext.address}
+- Distance: ${locationContext.distanceInfo || 'Not available'}
+
+Ek natural, helpful response Hinglish me do jo:
+1. Place ka naam clearly batao
+2. Complete address do
+3. Distance info do (agar available hai)
+4. Friendly aur conversational ho
+5. Google Maps link suggest karo (agar possible ho)
+
+Response Hinglish me do, natural aur helpful.`;
+
+        const aiResponse = await getGeminiResponse(aiPrompt, undefined, { 
+          temperature: 0.7, 
+          maxTokens: 200 
+        });
+
+        if (aiResponse.confidence && aiResponse.confidence > 0.6) {
+          // Add Google Maps link
+          const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.latitude)},${encodeURIComponent(locationData.longitude)}`;
+          const enhancedResponse = `${aiResponse.text}\n\n🗺️ [Google Maps pe dekho](${mapsLink})`;
+          
+          return {
+            response: generateFriendlyResponse(userName, enhancedResponse),
+            metadata: { 
+              locationData, 
+              distanceInfo: distanceInfo || null,
+              aiEnhanced: true,
+              mapsLink,
+            },
+          };
+        }
+      } catch (aiError) {
+        console.error('AI location formatting error:', aiError);
+        // Fall through to default response
+      }
+    }
+
+    // Default response without AI
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.latitude)},${encodeURIComponent(locationData.longitude)}`;
+    const defaultResponse = `${place} yahan hai:\n\n📍 ${locationData.formattedAddress}${distanceInfo}\n\n🗺️ [Google Maps pe dekho](${mapsLink})`;
+
+    return {
+      response: generateFriendlyResponse(userName, defaultResponse),
+      metadata: { 
+        locationData, 
+        distanceInfo: distanceInfo || null,
+        aiEnhanced: false,
+        mapsLink,
+      },
+    };
+  } catch (error: any) {
+    console.error('Location formatting error:', error);
+    // Fallback response
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.latitude)},${encodeURIComponent(locationData.longitude)}`;
+    return {
+      response: generateFriendlyResponse(userName, `${place} yahan hai: ${locationData.formattedAddress}\n\n🗺️ [Google Maps](${mapsLink})`),
+      metadata: { locationData, mapsLink },
+    };
+  }
 }
 
 async function processTranslation(query: string, userName?: string) {
