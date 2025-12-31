@@ -21,13 +21,36 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
-export const metadata: Metadata = generateSEOMetadata({
-  title: "8rupiya.com - Find Nearby Shops & Businesses in India",
-  description: "Discover local businesses, shops, and services near you. Browse by category, location, and ratings. Find the best shops in your city with 8rupiya.com - India's leading local business directory.",
-  keywords: ['shops near me', 'local businesses', 'find shops', 'business directory', 'India shops'],
-  url: 'https://8rupiya.com',
-  type: 'website',
-});
+export const metadata: Metadata = {
+  ...generateSEOMetadata({
+    title: "8rupiya.com - Find Nearby Shops & Businesses in India",
+    description: "Discover local businesses, shops, and services near you. Browse by category, location, and ratings. Find the best shops in your city with 8rupiya.com - India's leading local business directory.",
+    keywords: ['shops near me', 'local businesses', 'find shops', 'business directory', 'India shops'],
+    url: 'https://8rupiya.com',
+    type: 'website',
+  }),
+  // Google Official Logo Configuration (Most Important)
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon_32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon_192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon_512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/favicon_512.png',
+      },
+    ],
+  },
+  // Force Google to use our official logo
+  other: {
+    'google-site-verification': process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+  },
+};
 
 export default function RootLayout({
   children,
@@ -44,21 +67,66 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="format-detection" content="telephone=yes" />
         <link rel="canonical" href="https://8rupiya.com" />
+        
+        {/* Google Official Logo - Force recognition */}
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/favicon_192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png" />
+        <link rel="mask-icon" href="/favicon_512.png" color="#2563eb" />
+        
+        {/* Structured Data for Google - Organization Logo */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: '8rupiya.com',
+              url: 'https://8rupiya.com',
+              logo: 'https://8rupiya.com/favicon_512.png',
+              description: 'Find Nearby Shops & Businesses in India',
+              contactPoint: {
+                '@type': 'ContactPoint',
+                telephone: '+91-1234567890',
+                contactType: 'Customer Service',
+              },
+              sameAs: [
+                'https://facebook.com/8rupiya',
+                'https://twitter.com/8rupiya',
+                'https://instagram.com/8rupiya',
+              ],
+            }),
+          }}
+        />
+        
+        {/* Website Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: '8rupiya.com',
+              url: 'https://8rupiya.com',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://8rupiya.com/search?q={search_term_string}',
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
+        
         {/* Preload Razorpay for faster payment gateway loading */}
         <link rel="preload" href="https://checkout.razorpay.com/v1/checkout.js" as="script" />
+        
+        {/* Google AdSense */}
         <script
-  async
-  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984"
-  crossOrigin="anonymous">
-
-</script>
-
-
-
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
