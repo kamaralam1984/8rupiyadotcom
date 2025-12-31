@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiFilter, FiMapPin, FiTag, FiChevronDown } from 'react-icons/fi';
+import { FiFilter, FiMapPin, FiTag, FiChevronDown, FiSearch } from 'react-icons/fi';
 import AdSlot from './AdSlot';
 import AdvertisementBanner from './AdvertisementBanner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -98,6 +98,7 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categorySearchText, setCategorySearchText] = useState('');
   
   // Fetch categories from database (linked with agent panel)
   useEffect(() => {
@@ -136,8 +137,17 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setIsCategoryOpen(false);
+    setCategorySearchText(''); // Clear search on select
     onCategoryChange?.(category);
   };
+
+  // Filter categories based on search text
+  const filteredCategories = categories.filter(category => {
+    if (!categorySearchText.trim()) return true;
+    const searchLower = categorySearchText.toLowerCase();
+    return category.name.toLowerCase().includes(searchLower) ||
+           (category.icon && category.icon.includes(searchLower));
+  });
 
   return (
     <aside className="w-full lg:w-64 space-y-4 sm:space-y-6">
@@ -182,57 +192,78 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-20 max-h-64 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20 max-h-96 overflow-hidden flex flex-col"
                     role="listbox"
                     aria-label="Category options"
                   >
-                    {/* All Categories Option */}
-                    <button
-                      key="all-categories"
-                      type="button"
-                      onClick={() => handleCategorySelect(t('category.all'))}
-                      role="option"
-                      aria-selected={selectedCategory === t('category.all') || selectedCategory === 'All Categories'}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                        selectedCategory === t('category.all') || selectedCategory === 'All Categories'
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
-                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {t('category.all')}
-                    </button>
-                    
-                    {/* Database Categories */}
-                    {loadingCategories ? (
-                      <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
-                        Loading categories...
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+                      <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
+                        <input
+                          type="text"
+                          placeholder="Search category..."
+                          value={categorySearchText}
+                          onChange={(e) => setCategorySearchText(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          autoFocus
+                        />
                       </div>
-                    ) : categories.length > 0 ? (
-                      categories.map((category) => {
-                        const displayCategory = category.icon ? `${category.icon} ${category.name}` : category.name;
-                        const isSelected = selectedCategory === category.name;
-                        return (
-                          <button
-                            key={category._id}
-                            type="button"
-                            onClick={() => handleCategorySelect(category.name)}
-                            role="option"
-                            aria-selected={isSelected}
-                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                              isSelected
-                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
-                                : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            {displayCategory}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
-                        No categories available
-                      </div>
-                    )}
+                    </div>
+
+                    {/* Categories List (Scrollable) */}
+                    <div className="overflow-y-auto max-h-64">
+                      {/* All Categories Option */}
+                      {(!categorySearchText.trim() || t('category.all').toLowerCase().includes(categorySearchText.toLowerCase())) && (
+                        <button
+                          key="all-categories"
+                          type="button"
+                          onClick={() => handleCategorySelect(t('category.all'))}
+                          role="option"
+                          aria-selected={selectedCategory === t('category.all') || selectedCategory === 'All Categories'}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                            selectedCategory === t('category.all') || selectedCategory === 'All Categories'
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                              : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {t('category.all')}
+                        </button>
+                      )}
+                      
+                      {/* Database Categories */}
+                      {loadingCategories ? (
+                        <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                          Loading categories...
+                        </div>
+                      ) : filteredCategories.length > 0 ? (
+                        filteredCategories.map((category) => {
+                          const displayCategory = category.icon ? `${category.icon} ${category.name}` : category.name;
+                          const isSelected = selectedCategory === category.name;
+                          return (
+                            <button
+                              key={category._id}
+                              type="button"
+                              onClick={() => handleCategorySelect(category.name)}
+                              role="option"
+                              aria-selected={isSelected}
+                              className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                isSelected
+                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                                  : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {displayCategory}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400 text-center">
+                          {categorySearchText.trim() ? 'No categories found' : 'No categories available'}
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 </>
               )}
