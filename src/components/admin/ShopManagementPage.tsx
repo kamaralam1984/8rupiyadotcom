@@ -344,6 +344,7 @@ export default function ShopManagementPage() {
 
   const uploadImages = async (files: File[]): Promise<string[]> => {
     const uploadedUrls: string[] = [];
+    const token = localStorage.getItem('token');
 
     for (const file of files) {
       const formData = new FormData();
@@ -352,6 +353,9 @@ export default function ShopManagementPage() {
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
           body: formData,
         });
 
