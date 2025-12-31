@@ -68,7 +68,11 @@ interface Shop {
     whatsapp?: string;
   };
   images?: string[];
+  photos?: string[];
   keywords?: string;
+  seoKeywords?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   isFeatured: boolean;
   homepagePriority: number;
   visitors: number;
@@ -99,13 +103,11 @@ export default function ShopManagementPage() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     category: '',
-    description: '',
     address: '',
     city: '',
     pincode: '',
     phone: '',
     email: '',
-    whatsapp: '',
     keywords: '',
     isFeatured: false,
     homepagePriority: 0,
@@ -297,19 +299,19 @@ export default function ShopManagementPage() {
     setEditFormData({
       name: shop.name || '',
       category: shop.category || '',
-      description: shop.description || '',
       address: shop.address || '',
       city: shop.city || '',
       pincode: shop.pincode || '',
       phone: shop.contact?.phone || '',
       email: shop.contact?.email || '',
-      whatsapp: shop.contact?.whatsapp || '',
-      keywords: shop.keywords || '',
+      // Keywords from SEO keywords (database linked)
+      keywords: (shop as any).seoKeywords || shop.keywords || '',
       isFeatured: shop.isFeatured || false,
       homepagePriority: shop.homepagePriority || 0,
       status: shop.status || 'pending',
     });
-    setCurrentImages(shop.images || []);
+    // Set images from database (images or photos array)
+    setCurrentImages(shop.images || (shop as any).photos || []);
     setNewImageFiles([]);
     setImagePreviewUrls([]);
     setEditError('');
@@ -424,17 +426,18 @@ export default function ShopManagementPage() {
         body: JSON.stringify({
           name: editFormData.name,
           category: editFormData.category,
-          description: editFormData.description,
           address: editFormData.address,
           city: editFormData.city,
           pincode: editFormData.pincode,
           contact: {
             phone: editFormData.phone,
             email: editFormData.email,
-            whatsapp: editFormData.whatsapp,
+            // WhatsApp removed as per requirement
           },
           keywords: editFormData.keywords,
+          seoKeywords: editFormData.keywords, // Save to SEO keywords as well
           images: allImages,
+          photos: allImages, // Also save to photos array for compatibility
           isFeatured: editFormData.isFeatured,
           homepagePriority: editFormData.homepagePriority,
           status: editFormData.status,
@@ -1397,28 +1400,34 @@ export default function ShopManagementPage() {
 
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Description
+                        Address *
                       </label>
                       <textarea
-                        value={editFormData.description}
-                        onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                        value={editFormData.address}
+                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
                         rows={3}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                        placeholder="Brief description of the shop..."
+                        placeholder="Complete shop address..."
+                        required
                       />
                     </div>
 
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Keywords
+                        Keywords (SEO) <span className="text-xs text-gray-500">(From database SEO keywords)</span>
                       </label>
                       <input
                         type="text"
                         value={editFormData.keywords}
                         onChange={(e) => setEditFormData({ ...editFormData, keywords: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                        placeholder="mobile, electronics, repair (comma separated)"
+                        placeholder="Keywords from SEO (comma separated)"
+                        readOnly
+                        title="Keywords are linked from database SEO keywords"
                       />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        These keywords are automatically linked from the SEO keywords saved when shop was created.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1487,7 +1496,7 @@ export default function ShopManagementPage() {
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Email
                       </label>
@@ -1497,19 +1506,6 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         placeholder="email@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        WhatsApp
-                      </label>
-                      <input
-                        type="tel"
-                        value={editFormData.whatsapp}
-                        onChange={(e) => setEditFormData({ ...editFormData, whatsapp: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                        placeholder="+91-XXXXXXXXXX"
                       />
                     </div>
                   </div>

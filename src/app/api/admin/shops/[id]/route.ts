@@ -37,12 +37,13 @@ export async function PUT(
     const allowedFields = [
       'name',
       'category',
-      'description',
       'address',
       'city',
       'pincode',
       'keywords',
+      'seoKeywords', // Save SEO keywords
       'images',
+      'photos', // Also update photos array
       'isFeatured',
       'homepagePriority',
       'status',
@@ -55,11 +56,22 @@ export async function PUT(
       }
     });
 
-    // Handle contact information separately
+    // Sync images to photos array if images updated
+    if (updates.images) {
+      (shop as any).photos = updates.images;
+    }
+
+    // Sync keywords to seoKeywords if keywords updated
+    if (updates.keywords) {
+      (shop as any).seoKeywords = updates.keywords;
+    }
+
+    // Handle contact information separately (WhatsApp removed)
     if (updates.contact) {
       shop.contact = {
-        ...shop.contact,
-        ...updates.contact,
+        phone: updates.contact.phone || shop.contact?.phone,
+        email: updates.contact.email || shop.contact?.email,
+        // WhatsApp removed - not saving
       };
     }
 

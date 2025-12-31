@@ -384,30 +384,52 @@ export default function AddNewShopPage() {
         return;
       }
 
-      // Upload photo
-      let photoUrl = '';
+      // Upload photo (Multiple images support)
+      let uploadedImageUrls: string[] = [];
       if (formData.photo) {
-        const photoFormData = new FormData();
-        photoFormData.append('image', formData.photo);
+        try {
+          const photoFormData = new FormData();
+          photoFormData.append('file', formData.photo); // Changed from 'image' to 'file' to match API
 
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: photoFormData,
-        });
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: photoFormData,
+          });
 
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json();
-          photoUrl = uploadData.url || uploadData.urls?.[0] || '';
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            const imageUrl = uploadData.url || uploadData.urls?.[0] || '';
+            if (imageUrl) {
+              uploadedImageUrls.push(imageUrl);
+              console.log('✅ Image uploaded successfully:', imageUrl);
+            } else {
+              console.error('❌ Image upload response missing URL');
+              setError('Image upload failed: No URL returned');
+              setLoading(false);
+              return;
+            }
+          } else {
+            const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }));
+            console.error('❌ Image upload failed:', errorData);
+            setError(`Image upload failed: ${errorData.error || 'Unknown error'}`);
+            setLoading(false);
+            return;
+          }
+        } catch (uploadError: any) {
+          console.error('❌ Image upload error:', uploadError);
+          setError(`Image upload error: ${uploadError.message || 'Failed to upload image'}`);
+          setLoading(false);
+          return;
         }
       }
 
       // Validate plan limits
       if (formData.selectedPlan) {
         const maxPhotos = formData.selectedPlan.maxPhotos ?? formData.selectedPlan.photos ?? 1;
-        const photoCount = photoUrl ? 1 : 0;
+        const photoCount = uploadedImageUrls.length;
         
         if (photoCount > maxPhotos) {
           setError(`This plan allows only ${maxPhotos} photo(s). Please remove extra photos.`);
@@ -419,7 +441,7 @@ export default function AddNewShopPage() {
       // Create shop
       const shopData: any = {
         name: formData.shopName,
-        description: formData.fullAddress,
+        description: formData.fullAddress, // Description = Address
         category: formData.category,
         address: formData.fullAddress,
         area: formData.area || '',
@@ -435,14 +457,17 @@ export default function AddNewShopPage() {
             formData.location?.lat || parseFloat(formData.manualLatitude)
           ],
         },
-        images: photoUrl ? [photoUrl] : [],
-        photos: photoUrl ? [photoUrl] : [], // Plan-based photos array
+        // Save images properly to both arrays
+        images: uploadedImageUrls.length > 0 ? uploadedImageUrls : [],
+        photos: uploadedImageUrls.length > 0 ? uploadedImageUrls : [], // Plan-based photos array
         offers: [], // Initialize empty offers array
         pages: [], // Initialize empty pages array
         planId: formData.planId,
         paymentStatus: 'pending', // Set payment status to pending initially
         shopperId: userId, // Use agent's ID as shopperId for agent-created shops
       };
+      
+      console.log('📸 Images being saved:', uploadedImageUrls);
 
       // Add SEO fields if generated and plan has SEO enabled
       if (formData.selectedPlan && (formData.selectedPlan.seoEnabled ?? formData.selectedPlan.seo)) {
