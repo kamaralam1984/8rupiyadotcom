@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   }),
   // Google Site Verification (Step 1 - Screenshot ke hisaab se)
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'abc123xyz', // Google ne jo code diya hai wahi paste karo
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'K8rF07hqdaG9aERL', // Google ne jo code diya hai wahi paste karo
   },
   // Google Official Logo Configuration (Most Important)
   icons: {
