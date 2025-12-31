@@ -26,6 +26,7 @@ import {
   calculateDistance,
   getWeather,
   getNewsHeadlines,
+  searchYouTubeVideo,
 } from '@/lib/google-apis';
 import {
   getGeminiResponse,
@@ -1589,25 +1590,49 @@ async function processMedia(query: string, userName?: string) {
       };
     }
 
-    // Try to get first video result using YouTube search
-    // For now, generate search URL and embed URL
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+    // Search for video using YouTube Data API
+    const videoResult = await searchYouTubeVideo(searchQuery);
     
-    // Generate embed URL (will search and show first result)
-    const embedSearchUrl = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(searchQuery)}`;
-    
-    let response = `🎵 "${searchQuery}" play kar raha hoon...\n\nNeeche video player me dekh sakte hain!`;
+    if (videoResult && videoResult.videoId) {
+      // Create proper embed URL with actual video ID
+      const embedUrl = `https://www.youtube.com/embed/${videoResult.videoId}?autoplay=1`;
+      const watchUrl = `https://www.youtube.com/watch?v=${videoResult.videoId}`;
+      
+      let response = `🎵 "${videoResult.title}" play kar raha hoon...\n\n`;
+      response += `📺 ${videoResult.channelTitle}\n`;
+      response += `Neeche video player me dekh sakte hain!`;
 
-    return {
-      response: generateFriendlyResponse(userName, response),
-      metadata: { 
-        searchQuery,
-        searchUrl,
-        embedUrl: embedSearchUrl,
-        type: 'youtube_embed',
-        action: 'play_video'
-      },
-    };
+      return {
+        response: generateFriendlyResponse(userName, response),
+        metadata: { 
+          searchQuery,
+          videoId: videoResult.videoId,
+          videoTitle: videoResult.title,
+          channelTitle: videoResult.channelTitle,
+          thumbnail: videoResult.thumbnail,
+          embedUrl,
+          watchUrl,
+          type: 'youtube_embed',
+          action: 'play_video'
+        },
+      };
+    } else {
+      // Fallback to search URL if API key not configured
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+      
+      return {
+        response: generateFriendlyResponse(
+          userName,
+          `🔍 "${searchQuery}" ke liye search results:\n\n${searchUrl}\n\n(YouTube API configure karne ke baad direct video play hoga)`
+        ),
+        metadata: { 
+          searchQuery,
+          searchUrl,
+          type: 'youtube_search_fallback',
+          action: 'search_youtube'
+        },
+      };
+    }
   } catch (error: any) {
     console.error('Media processing error:', error);
     return {

@@ -589,3 +589,46 @@ export async function getNewsHeadlines(category: string = 'general', country: st
   }
 }
 
+/**
+ * Search YouTube videos using YouTube Data API v3
+ * Returns first matching video with ID for embedding
+ */
+export async function searchYouTubeVideo(query: string): Promise<{ videoId: string; title: string; channelTitle: string; thumbnail: string } | null> {
+  try {
+    const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('YouTube API key not configured');
+      return null;
+    }
+
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+    
+    if (!response.ok) {
+      console.error(`YouTube API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.items && data.items.length > 0) {
+      const video = data.items[0];
+      return {
+        videoId: video.id.videoId,
+        title: video.snippet.title,
+        channelTitle: video.snippet.channelTitle,
+        thumbnail: video.snippet.thumbnails.medium.url,
+      };
+    }
+
+    return null;
+  } catch (error: any) {
+    console.error('YouTube search error:', error);
+    return null;
+  }
+}
+
