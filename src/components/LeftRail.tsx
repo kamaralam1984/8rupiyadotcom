@@ -13,20 +13,13 @@ interface LeftRailProps {
   selectedCategory?: string;
 }
 
-// Categories will be translated dynamically
-const categoryKeys = [
-  'All Categories',
-  'Retail',
-  'Restaurant',
-  'Electronics',
-  'Clothing',
-  'Grocery',
-  'Pharmacy',
-  'Hardware',
-  'Jewelry',
-  'Automobile',
-  'Furniture',
-];
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  icon?: string;
+  displayOrder: number;
+}
 
 const popularCities = [
   'Patna',
@@ -103,11 +96,33 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState(propSelectedCategory || t('category.all'));
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   
-  // Get categories with translation
-  const categories = categoryKeys.map(key => 
-    key === 'All Categories' ? t('category.all') : key
-  );
+  // Fetch categories from database (linked with agent panel)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          setCategories(data.categories || []);
+        } else {
+          console.error('Failed to fetch categories:', data.error);
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -171,27 +186,53 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
                     role="listbox"
                     aria-label="Category options"
                   >
-                    {categoryKeys.map((categoryKey) => {
-                      const displayCategory = categoryKey === 'All Categories' ? t('category.all') : categoryKey;
-                      const isSelected = selectedCategory === displayCategory || 
-                        (categoryKey === 'All Categories' && (selectedCategory === 'All Categories' || selectedCategory === t('category.all')));
-                      return (
-                      <button
-                          key={categoryKey}
-                        type="button"
-                          onClick={() => handleCategorySelect(displayCategory)}
-                        role="option"
-                          aria-selected={isSelected}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                            isSelected
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
-                            : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                          {displayCategory}
-                      </button>
-                      );
-                    })}
+                    {/* All Categories Option */}
+                    <button
+                      key="all-categories"
+                      type="button"
+                      onClick={() => handleCategorySelect(t('category.all'))}
+                      role="option"
+                      aria-selected={selectedCategory === t('category.all') || selectedCategory === 'All Categories'}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        selectedCategory === t('category.all') || selectedCategory === 'All Categories'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {t('category.all')}
+                    </button>
+                    
+                    {/* Database Categories */}
+                    {loadingCategories ? (
+                      <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                        Loading categories...
+                      </div>
+                    ) : categories.length > 0 ? (
+                      categories.map((category) => {
+                        const displayCategory = category.icon ? `${category.icon} ${category.name}` : category.name;
+                        const isSelected = selectedCategory === category.name;
+                        return (
+                          <button
+                            key={category._id}
+                            type="button"
+                            onClick={() => handleCategorySelect(category.name)}
+                            role="option"
+                            aria-selected={isSelected}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                              isSelected
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                                : 'text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {displayCategory}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">
+                        No categories available
+                      </div>
+                    )}
                   </motion.div>
                 </>
               )}
