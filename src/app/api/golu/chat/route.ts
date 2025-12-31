@@ -199,8 +199,17 @@ export async function POST(req: NextRequest) {
           metadata = travelResult.metadata;
           break;
 
+        case 'CATEGORY':
+          const categoryResult = await processCategory(workingQuery, userName);
+          response = categoryResult.response;
+          metadata = categoryResult.metadata;
+          break;
+
         default:
-          response = generateFriendlyResponse(userName, 'Main aapki madad karne ke liye yahan hoon. Aap mujhse kuch bhi pooch sakte hain!');
+          // For general queries, try Google Search
+          const generalResult = await processGeneralQuery(workingQuery, userName);
+          response = generalResult.response;
+          metadata = generalResult.metadata;
           break;
       }
     } catch (processError: any) {
@@ -1162,5 +1171,95 @@ async function processTravel(query: string, userLocation: any, userName?: string
     response: generateFriendlyResponse(userName, response),
     metadata: { destination },
   };
+}
+
+// Process category queries
+async function processCategory(query: string, userName?: string) {
+  try {
+    const { extractCategoryFromQuery } = await import('@/lib/golu');
+    const categoryName = extractCategoryFromQuery(query);
+    
+    // Fetch categories from database
+    const Category = (await import('@/models/Category')).default;
+    await connectDB();
+    
+    // If specific category mentioned, find it
+    if (categoryName) {
+      const category = await Category.findOne({
+        name: { $regex: categoryName, $options: 'i' },
+        isActive: true,
+      });
+      
+      if (category) {
+        const response = `${category.icon || ''} ${category.name}\n\n${category.description || `${category.name} ek prakar ki dukan hai jo aapko 8rupiya.com par mil sakti hai.`}\n\nAap apne area me ${category.name} dhundne ke liye mujhse pooch sakte hain!`;
+        
+        return {
+          response: generateFriendlyResponse(userName, response),
+          metadata: { category: category.name, categoryId: category._id },
+        };
+      }
+    }
+    
+    // If no specific category or not found, show popular categories
+    const categories = await Category.find({ isActive: true })
+      .sort({ displayOrder: 1 })
+      .limit(10);
+    
+    let response = 'Hamare paas ye categories hain:\n\n';
+    categories.forEach((cat, index) => {
+      response += `${index + 1}. ${cat.icon || ''} ${cat.name}\n`;
+    });
+    response += '\nAap koi bhi category ke baare me pooch sakte hain!';
+    
+    return {
+      response: generateFriendlyResponse(userName, response),
+      metadata: { categoriesShown: categories.length },
+    };
+  } catch (error: any) {
+    console.error('Category processing error:', error);
+    return {
+      response: generateFriendlyResponse(userName, 'Maaf kijiye, categories fetch karne me problem ho rahi hai. Kripya phir se try karein.'),
+      metadata: {},
+    };
+  }
+}
+
+// Process general queries using Google Search
+async function processGeneralQuery(query: string, userName?: string) {
+  try {
+    // Try Google Search for general knowledge
+    const searchResults = await googleSearch(query);
+    
+    if (searchResults && searchResults.length > 0) {
+      const topResult = searchResults[0];
+      let response = `${topResult.snippet}\n\n`;
+      
+      if (searchResults.length > 1) {
+        response += 'Aur bhi information:\n';
+        searchResults.slice(1, 3).forEach((result, index) => {
+          response += `${index + 2}. ${result.title}\n`;
+        });
+      }
+      
+      response += '\n💡 Kya aur kuch janna chahte hain?';
+      
+      return {
+        response: generateFriendlyResponse(userName, response),
+        metadata: { source: 'google_search', resultsCount: searchResults.length },
+      };
+    }
+    
+    // Fallback if no search results
+    return {
+      response: generateFriendlyResponse(userName, 'Main aapki madad karne ke liye yahan hoon! Aap mujhse shops, categories, reminders, weather, ya kuch bhi pooch sakte hain.'),
+      metadata: { source: 'fallback' },
+    };
+  } catch (error: any) {
+    console.error('General query processing error:', error);
+    return {
+      response: generateFriendlyResponse(userName, 'Main aapki madad karne ke liye yahan hoon! Aap mujhse shops, categories, reminders, weather, ya kuch bhi pooch sakte hain.'),
+      metadata: { source: 'error_fallback' },
+    };
+  }
 }
 

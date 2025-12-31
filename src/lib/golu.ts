@@ -256,6 +256,12 @@ export function detectCommandCategory(text: string): string {
     return 'WEATHER';
   }
 
+  // Category query keywords (what is X category, X category kya hai)
+  if (/(category|categories|kya hai|what is|types of|kitne prakar|konsi dukan|shop type)/i.test(text) || 
+      /(grocery|restaurant|hotel|parlour|gym|hospital|school|clinic|pharmacy|bakery|cafe)/i.test(text) && /(kya hai|what is|chahiye|dhund|find)/i.test(text)) {
+    return 'CATEGORY';
+  }
+
   // Shopping keywords
   if (/(shop|store|dukan|kharidna|buy|mall|market|sasta|cheapest|best price)/i.test(text)) {
     return 'SHOPPING';
@@ -283,6 +289,53 @@ export function detectCommandCategory(text: string): string {
 
   console.log('⚠️ No category matched, returning GENERAL');
   return 'GENERAL';
+}
+
+/**
+ * Extract category name from query
+ * Examples:
+ * - "Grocery store kya hai" -> "Grocery"
+ * - "What is a restaurant" -> "restaurant"
+ * - "Mujhe bakery chahiye" -> "bakery"
+ */
+export function extractCategoryFromQuery(text: string): string | null {
+  text = text.toLowerCase();
+  
+  // Common category keywords
+  const categoryKeywords = [
+    'grocery', 'kirana', 'restaurant', 'hotel', 'cafe', 'bakery',
+    'pharmacy', 'medical', 'clinic', 'hospital', 'doctor',
+    'salon', 'parlour', 'spa', 'gym', 'fitness',
+    'school', 'college', 'coaching', 'tuition',
+    'electronics', 'mobile', 'computer', 'hardware',
+    'clothing', 'boutique', 'tailor', 'fashion',
+    'jewellery', 'gold', 'silver',
+    'taxi', 'cab', 'travel', 'tour',
+    'bank', 'atm', 'finance',
+  ];
+  
+  for (const keyword of categoryKeywords) {
+    if (text.includes(keyword)) {
+      return keyword;
+    }
+  }
+  
+  // Try to extract from pattern "X kya hai" or "what is X"
+  const patterns = [
+    /([a-z]+)\s+kya\s+hai/i,
+    /what\s+is\s+(?:a\s+)?([a-z]+)/i,
+    /([a-z]+)\s+chahiye/i,
+    /([a-z]+)\s+dhund/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
 }
 
 /**
