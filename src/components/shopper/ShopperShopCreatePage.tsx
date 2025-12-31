@@ -24,7 +24,7 @@ export default function ShopperShopCreatePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
-  const [categories, setCategories] = useState<Array<{ _id: string; name: string; slug: string }>>([]);
+  const [categories, setCategories] = useState<Array<{ _id: string; name: string; slug: string; icon?: string }>>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -529,7 +529,7 @@ export default function ShopperShopCreatePage() {
                     <option value="">-- Select Category --</option>
                     {categories.map((cat) => (
                       <option key={cat._id} value={cat.name}>
-                        {cat.name}
+                        {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
                       </option>
                     ))}
                   </select>

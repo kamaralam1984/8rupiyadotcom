@@ -83,7 +83,8 @@ export default function AddNewShopPage() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Array<{ _id: string; name: string; slug: string; icon?: string }>>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [userId, setUserId] = useState<string>('');
   const [createdShopId, setCreatedShopId] = useState<string | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -206,14 +207,13 @@ export default function AddNewShopPage() {
   };
 
   const fetchCategories = async () => {
+    setLoadingCategories(true);
     try {
       const response = await fetch('/api/categories');
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Extract category names from database categories
-        const categoryNames = (data.categories || []).map((cat: any) => cat.name);
-        setCategories(categoryNames);
+        setCategories(data.categories || []);
       } else {
         console.error('Failed to fetch categories:', data.error);
         setCategories([]);
@@ -221,6 +221,8 @@ export default function AddNewShopPage() {
     } catch (err) {
       console.error('Failed to fetch categories:', err);
       setCategories([]);
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -1087,11 +1089,15 @@ export default function AddNewShopPage() {
                       setFormData({ ...formData, category: e.target.value })
                     }
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loadingCategories}
+                    required
                   >
-                    <option value="">Select category</option>
+                    <option value="">
+                      {loadingCategories ? 'Loading categories...' : 'Select category'}
+                    </option>
                     {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                      <option key={cat._id} value={cat.name}>
+                        {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
                       </option>
                     ))}
                   </select>
