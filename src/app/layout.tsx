@@ -29,6 +29,10 @@ export const metadata: Metadata = {
     url: 'https://8rupiya.com',
     type: 'website',
   }),
+  // Google Site Verification (Step 1 - Screenshot ke hisaab se)
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'abc123xyz', // Google ne jo code diya hai wahi paste karo
+  },
   // Google Official Logo Configuration (Most Important)
   icons: {
     icon: [
@@ -45,10 +49,6 @@ export const metadata: Metadata = {
         url: '/favicon_512.png',
       },
     ],
-  },
-  // Force Google to use our official logo
-  other: {
-    'google-site-verification': process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
   },
 };
 
@@ -67,14 +67,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="format-detection" content="telephone=yes" />
         <link rel="canonical" href="https://8rupiya.com" />
-        
-        {/* Google Site Verification */}
-        {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
-          <meta 
-            name="google-site-verification" 
-            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} 
-          />
-        )}
         
         {/* Google Official Logo - Force recognition */}
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
