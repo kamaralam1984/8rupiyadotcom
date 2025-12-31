@@ -1571,21 +1571,40 @@ async function processCategory(query: string, userName?: string) {
 // Process media queries (YouTube, Music, Videos)
 async function processMedia(query: string, userName?: string) {
   try {
+    // Check if user wants to just open YouTube (not a specific video)
+    const isGenericYouTubeOpen = /^(youtube|yt)\s*(open|on|khol|kholo|kro|kar|chalu|chala|karo)\s*(kro|kar|do|de)?$/i.test(query.trim());
+    
+    if (isGenericYouTubeOpen) {
+      // User wants to open YouTube app/website
+      return {
+        response: generateFriendlyResponse(
+          userName,
+          `🎬 YouTube khol raha hoon...\n\nYouTube app ya browser me khulega!`
+        ),
+        metadata: { 
+          type: 'open_external',
+          url: 'https://www.youtube.com',
+          action: 'open_youtube_external',
+          openInNewTab: true
+        },
+      };
+    }
+    
     // Extract song/video name
     let searchQuery = query
       .replace(/(youtube|video|song|music|gana|gaana|sunao|sunaw|play|bajao|open|on|kro|kar|de|do|chalao|chala)/gi, '')
       .trim();
     
-    // If user just said "youtube on kro" or "youtube open kro"
+    // If no specific video name provided
     if (!searchQuery || searchQuery.length < 3) {
       return {
         response: generateFriendlyResponse(
           userName,
-          `🎬 YouTube kholne ke liye koi video ya song bataiye.\n\nJaise: "Kesariya song sunao" ya "KGF trailer dikhao"`
+          `🎵 Koi gaana ya video bataiye.\n\nJaise: "Kesariya song sunao" ya "KGF trailer dikhao"`
         ),
         metadata: { 
           type: 'youtube_prompt',
-          action: 'open_youtube'
+          action: 'prompt_video_name'
         },
       };
     }

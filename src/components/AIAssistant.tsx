@@ -550,6 +550,26 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
 
       const goluData = await goluResponse.json();
 
+      // If GOLU returned open_external action (YouTube app/browser)
+      if (goluData.success && goluData.metadata?.type === 'open_external' && goluData.metadata?.url) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: goluData.response,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        speakText(goluData.response);
+        
+        // Open URL in new tab (will try YouTube app on mobile, browser on desktop)
+        setTimeout(() => {
+          window.open(goluData.metadata.url, '_blank');
+        }, 500); // Small delay for better UX
+        
+        setIsTyping(false);
+        return;
+      }
+
       // If GOLU returned MEDIA category with YouTube embed, handle it
       if (goluData.success && goluData.category === 'MEDIA' && goluData.metadata?.embedUrl) {
         const botMessage: Message = {

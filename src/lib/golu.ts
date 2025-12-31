@@ -271,7 +271,7 @@ export function detectCommandCategory(text: string): string {
   }
 
   // Media/YouTube/Music keywords
-  if (/(youtube|video|song|music|gana|gaana|sunao|sunaw|play|bajao|open youtube|on kro|chalao)/i.test(text)) {
+  if (/(youtube|yt|video|song|music|gana|gaana|sunao|sunaw|play|bajao|open youtube|youtube open|youtube on|yt open|on kro|kholo|khol|chala|chalao)/i.test(text)) {
     return 'MEDIA';
   }
 
