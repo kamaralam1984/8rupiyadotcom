@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import GoluConversation, { CommandCategory, ConversationType } from '@/models/GoluConversation';
 import Reminder, { ReminderType, ReminderStatus } from '@/models/Reminder';
-import Shop from '@/models/Shop';
+import Shop, { ShopStatus } from '@/models/Shop';
 import UserProfile from '@/models/UserProfile';
 import MedicalRecord from '@/models/MedicalRecord';
 import FamilyMember from '@/models/FamilyMember';
@@ -209,6 +209,12 @@ export async function POST(req: NextRequest) {
           const categoryResult = await processCategory(workingQuery, userName);
           response = categoryResult.response;
           metadata = categoryResult.metadata;
+          break;
+
+        case 'MEDIA':
+          const mediaResult = await processMedia(workingQuery, userName);
+          response = mediaResult.response;
+          metadata = mediaResult.metadata;
           break;
 
         default:
@@ -751,35 +757,187 @@ async function processWeather(query: string, userName?: string) {
 }
 
 async function processShopping(query: string, userLocation: any, userName?: string) {
-  // Extract business type
-  const businessType = query.replace(/(shop|store|dukan|kahan|where|paas|nearby|hai)/gi, '').trim();
+  try {
+    await connectDB();
+    
+    // Extract business type/category from query
+    let businessType = query
+      .replace(/(shop|store|dukan|kahan|where|paas|nearby|hai|chahiye|dhund|find|search)/gi, '')
+      .trim();
+    
+    // If business type is empty, try to extract from common patterns
+    if (!businessType || businessType.length < 2) {
+      const categoryMatch = query.match(/(grocery|kirana|restaurant|hotel|cafe|bakery|pharmacy|medical|clinic|hospital|salon|parlour|gym|fitness|electronics|mobile|computer|clothing|boutique|jewellery|bank|atm)/i);
+      if (categoryMatch) {
+        businessType = categoryMatch[1];
+      }
+    }
 
-  // Search in 8rupiya database
-  const shops = await Shop.find({
-    $or: [
-      { name: { $regex: businessType, $options: 'i' } },
-      { category: { $regex: businessType, $options: 'i' } },
-    ],
-    status: 'APPROVED',
-  })
-    .limit(5)
-    .select('name category address city phone')
-    .lean();
+    // Build query for shops
+    let mongoQuery: any = {
+      status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] },
+      $and: [
+        {
+          'location.coordinates': {
+            $exists: true,
+            $ne: null,
+            $size: 2,
+          },
+        },
+        {
+          'location.coordinates.0': { $nin: [null, 0] },
+        },
+        {
+          'location.coordinates.1': { $nin: [null, 0] },
+        },
+      ],
+    };
 
-  if (shops.length === 0) {
+    // Add category/name filter if business type found
+    if (businessType && businessType.length >= 2) {
+      mongoQuery.$or = [
+        { category: { $regex: businessType, $options: 'i' } },
+        { name: { $regex: businessType, $options: 'i' } },
+      ];
+    }
+
+    // Add location-based query if user location available
+    const hasValidCoords = userLocation && 
+                          userLocation.latitude && 
+                          userLocation.longitude &&
+                          !isNaN(userLocation.latitude) && 
+                          !isNaN(userLocation.longitude) &&
+                          userLocation.latitude >= -90 && userLocation.latitude <= 90 &&
+                          userLocation.longitude >= -180 && userLocation.longitude <= 180;
+
+    if (hasValidCoords) {
+      try {
+        mongoQuery.location = {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [userLocation.longitude, userLocation.latitude],
+            },
+            $maxDistance: 50000, // 50km radius
+          },
+        };
+      } catch (geoError) {
+        // If geospatial query fails, continue without it
+        console.log('Geospatial query not available, using regular query');
+      }
+    }
+
+    // Fetch shops
+    let shops: any[] = [];
+    try {
+      shops = await Shop.find(mongoQuery)
+        .select('name category address city phone location rating reviewCount _id')
+        .limit(10)
+        .lean();
+    } catch (error: any) {
+      // If $near query fails, try without it
+      if (error.message?.includes('index') || error.message?.includes('near')) {
+        delete mongoQuery.location;
+        shops = await Shop.find(mongoQuery)
+          .select('name category address city phone location rating reviewCount _id')
+          .limit(10)
+          .lean();
+      } else {
+        throw error;
+      }
+    }
+
+    // Calculate distances if location available
+    if (hasValidCoords && shops.length > 0) {
+      const { calculateDistance } = await import('@/lib/location');
+      for (const shop of shops) {
+        if (shop.location?.coordinates && shop.location.coordinates.length === 2) {
+          const shopLng = shop.location.coordinates[0];
+          const shopLat = shop.location.coordinates[1];
+          if (!isNaN(shopLng) && !isNaN(shopLat)) {
+            shop.distance = calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              shopLat,
+              shopLng
+            );
+          }
+        }
+      }
+      // Sort by distance
+      shops.sort((a, b) => (a.distance || 999999) - (b.distance || 999999));
+    }
+
+    // Limit to top 5 shops
+    shops = shops.slice(0, 5);
+
+    if (shops.length === 0) {
+      return {
+        response: generateFriendlyResponse(
+          userName, 
+          `Maaf kijiye, "${businessType || 'shop'}" ke liye aapke area me koi shop nahi mili. Aap kisi aur category ya area try kar sakte hain.`
+        ),
+        metadata: { businessType, userLocation: hasValidCoords ? 'available' : 'not_available' },
+      };
+    }
+
+    // Format response with shop details and connection options
+    let response = `${businessType ? `"${businessType}"` : 'Nearby'} ke liye maine ${shops.length} shop${shops.length > 1 ? 's' : ''} dhundi ${shops.length > 1 ? 'hain' : 'hai'}:\n\n`;
+    
+    shops.forEach((shop: any, index: number) => {
+      response += `${index + 1}. **${shop.name}**\n`;
+      response += `   📍 ${shop.address}, ${shop.city}\n`;
+      if (shop.distance) {
+        response += `   📏 ${shop.distance.toFixed(1)} km dur\n`;
+      }
+      if (shop.rating > 0) {
+        response += `   ⭐ ${shop.rating.toFixed(1)} (${shop.reviewCount || 0} reviews)\n`;
+      }
+      if (shop.phone) {
+        const phoneClean = shop.phone.replace(/[^0-9]/g, '');
+        response += `   📞 Call: ${shop.phone}\n`;
+        response += `   💬 WhatsApp: https://wa.me/${phoneClean}\n`;
+      }
+      response += `   🔗 Shop Link: /shops/${shop._id}\n\n`;
+    });
+
+    response += `Aap in shops se directly call ya WhatsApp kar sakte hain! Kisi shop ke baare me aur janna ho to bataiye.`;
+
+    // Prepare metadata with connection info
+    const shopResults = shops.map((shop: any) => ({
+      _id: shop._id,
+      name: shop.name,
+      category: shop.category,
+      address: shop.address,
+      city: shop.city,
+      phone: shop.phone,
+      distance: shop.distance,
+      rating: shop.rating,
+      reviewCount: shop.reviewCount,
+      callLink: shop.phone ? `tel:${shop.phone}` : null,
+      whatsappLink: shop.phone ? `https://wa.me/${shop.phone.replace(/[^0-9]/g, '')}` : null,
+      shopLink: `/shops/${shop._id}`,
+    }));
+
     return {
-      response: generateFriendlyResponse(userName, `Maaf kijiye, "${businessType}" ke liye koi shop nahi mili. Aap kuch aur try kar sakte hain.`),
-      metadata: {},
+      response: generateFriendlyResponse(userName, response),
+      metadata: { 
+        shopResults,
+        businessType,
+        userLocation: hasValidCoords ? 'available' : 'not_available',
+        shopsFound: shops.length,
+      },
+    };
+  } catch (error: any) {
+    console.error('Shopping processing error:', error);
+    return {
+      response: generateFriendlyResponse(
+        userName, 
+        'Maaf kijiye, shops dhundne me thodi problem ho rahi hai. Kripya phir se try karein ya kisi specific category ka naam bataiye.'
+      ),
+      metadata: { error: error.message },
     };
   }
-
-  const shopList = shops.map((s: any, i: number) => `${i + 1}. ${s.name} - ${s.address}, ${s.city}`).join(', ');
-  const response = `${businessType} ke liye maine ${shops.length} shops dhundi hain: ${shopList}`;
-
-  return {
-    response: generateFriendlyResponse(userName, response),
-    metadata: { shopResults: shops },
-  };
 }
 
 async function processCalculation(query: string, userName?: string) {
@@ -1405,6 +1563,59 @@ async function processCategory(query: string, userName?: string) {
     return {
       response: generateFriendlyResponse(userName, 'Maaf kijiye, categories fetch karne me problem ho rahi hai. Kripya phir se try karein.'),
       metadata: {},
+    };
+  }
+}
+
+// Process media queries (YouTube, Music, Videos)
+async function processMedia(query: string, userName?: string) {
+  try {
+    // Extract song/video name
+    let searchQuery = query
+      .replace(/(youtube|video|song|music|gana|gaana|sunao|sunaw|play|bajao|open|on|kro|kar|de|do|chalao|chala)/gi, '')
+      .trim();
+    
+    // If user just said "youtube on kro" or "youtube open kro"
+    if (!searchQuery || searchQuery.length < 3) {
+      return {
+        response: generateFriendlyResponse(
+          userName,
+          `🎬 YouTube kholne ke liye koi video ya song bataiye.\n\nJaise: "Kesariya song sunao" ya "KGF trailer dikhao"`
+        ),
+        metadata: { 
+          type: 'youtube_prompt',
+          action: 'open_youtube'
+        },
+      };
+    }
+
+    // Try to get first video result using YouTube search
+    // For now, generate search URL and embed URL
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+    
+    // Generate embed URL (will search and show first result)
+    const embedSearchUrl = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(searchQuery)}`;
+    
+    let response = `🎵 "${searchQuery}" play kar raha hoon...\n\nNeeche video player me dekh sakte hain!`;
+
+    return {
+      response: generateFriendlyResponse(userName, response),
+      metadata: { 
+        searchQuery,
+        searchUrl,
+        embedUrl: embedSearchUrl,
+        type: 'youtube_embed',
+        action: 'play_video'
+      },
+    };
+  } catch (error: any) {
+    console.error('Media processing error:', error);
+    return {
+      response: generateFriendlyResponse(
+        userName, 
+        'Video play karne me problem ho rahi hai. Kripya phir se try karein.'
+      ),
+      metadata: { error: error.message },
     };
   }
 }

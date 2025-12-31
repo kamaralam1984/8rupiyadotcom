@@ -550,8 +550,53 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
 
       const goluData = await goluResponse.json();
 
+      // If GOLU returned MEDIA category with YouTube embed, handle it
+      if (goluData.success && goluData.category === 'MEDIA' && goluData.metadata?.embedUrl) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: goluData.response + '\n\n[YOUTUBE_PLAYER:' + goluData.metadata.embedUrl + ']',
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        speakText(goluData.response);
+        setIsTyping(false);
+        return;
+      }
+
       // If GOLU handled it (reminders, alarms, translation, etc.), use that response
       if (goluData.success && goluData.category && goluData.category !== 'SHOPPING') {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: goluData.response,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        speakText(goluData.response);
+        setIsTyping(false);
+        return;
+      }
+
+      // If GOLU returned SHOPPING category with shop results, use those
+      if (goluData.success && goluData.category === 'SHOPPING' && goluData.metadata?.shopResults) {
+        const shopResults = goluData.metadata.shopResults;
+        
+        // Convert GOLU shop results to ShopRecommendation format
+        const recommendations: ShopRecommendation[] = shopResults.map((shop: any) => ({
+          _id: shop._id,
+          name: shop.name,
+          category: shop.category,
+          address: shop.address,
+          city: shop.city,
+          phone: shop.phone,
+          distance: shop.distance,
+          rating: shop.rating || 0,
+          reviewCount: shop.reviewCount || 0,
+        }));
+
+        setRecommendations(recommendations);
+        
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: goluData.response,
@@ -841,7 +886,28 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                        {/* Check if message contains YouTube player */}
+                        {message.text.includes('[YOUTUBE_PLAYER:') ? (
+                          <>
+                            <p className="text-sm whitespace-pre-wrap mb-3">
+                              {message.text.split('[YOUTUBE_PLAYER:')[0]}
+                            </p>
+                            <div className="rounded-lg overflow-hidden">
+                              <iframe
+                                width="100%"
+                                height="200"
+                                src={message.text.split('[YOUTUBE_PLAYER:')[1].split(']')[0]}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="rounded-lg"
+                              ></iframe>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                        )}
                       </div>
                     </div>
                   ))}

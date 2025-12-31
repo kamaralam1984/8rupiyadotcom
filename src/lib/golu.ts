@@ -265,9 +265,14 @@ export function detectCommandCategory(text: string): string {
     return 'CATEGORY';
   }
 
-  // Shopping keywords
-  if (/(shop|store|dukan|kharidna|buy|mall|market|sasta|cheapest|best price)/i.test(text)) {
+  // Shopping keywords (including nearby shop queries)
+  if (/(shop|store|dukan|kharidna|buy|mall|market|sasta|cheapest|best price|nearby shop|paas.*shop|paas.*dukan|shop.*paas|dukan.*paas|shop.*connect|shop.*call|shop.*phone|shop.*contact)/i.test(text)) {
     return 'SHOPPING';
+  }
+
+  // Media/YouTube/Music keywords
+  if (/(youtube|video|song|music|gana|gaana|sunao|sunaw|play|bajao|open youtube|on kro|chalao)/i.test(text)) {
+    return 'MEDIA';
   }
 
   // Calculation keywords

@@ -20,6 +20,7 @@ export enum CommandCategory {
   TIME_DATE = 'TIME_DATE',
   NEWS = 'NEWS',
   MUSIC = 'MUSIC',
+  MEDIA = 'MEDIA',
   PROFILE = 'PROFILE',
   FINANCIAL = 'FINANCIAL',
   MEDICAL = 'MEDICAL',
