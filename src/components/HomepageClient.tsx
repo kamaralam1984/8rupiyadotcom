@@ -537,16 +537,18 @@ export default function HomepageClient() {
               {/* Theme Toggle */}
               <ThemeToggle />
               
-              {/* Jyotish Button */}
-              <Link
-                href="/jyotish"
-                className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base flex items-center gap-1 sm:gap-2"
-                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
-              >
-                <span className="text-base sm:text-lg">🔮</span>
-                <span className="hidden sm:inline">JYOTISH</span>
-                <span className="sm:hidden">✨</span>
-              </Link>
+              {/* Jyotish Button - Hidden for 30 days (until 30 Jan 2026) */}
+              {new Date() >= new Date('2026-01-30') && (
+                <Link
+                  href="/jyotish"
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base flex items-center gap-1 sm:gap-2"
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                >
+                  <span className="text-base sm:text-lg">🔮</span>
+                  <span className="hidden sm:inline">JYOTISH</span>
+                  <span className="sm:hidden">✨</span>
+                </Link>
+              )}
 
               {/* ADD SHOP Button */}
               <Link
