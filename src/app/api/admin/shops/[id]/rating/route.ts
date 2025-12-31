@@ -7,9 +7,12 @@ import { UserRole } from '@/types/user';
 // PUT /api/admin/shops/[id]/rating - Update shop rating
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params (Next.js 16+ requirement)
+    const { id } = await params;
+    
     const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
                  req.cookies.get('token')?.value;
 
@@ -47,7 +50,7 @@ export async function PUT(
     if (reviewCount !== undefined) updateData.reviewCount = reviewCount;
 
     const shop = await Shop.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true }
     )
