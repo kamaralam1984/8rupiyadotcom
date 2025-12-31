@@ -1613,24 +1613,34 @@ async function processMedia(query: string, userName?: string) {
     const videoResult = await searchYouTubeVideo(searchQuery);
     
     if (videoResult && videoResult.videoId) {
-      // Open video in YouTube app/browser (not embedded)
-      const watchUrl = `https://www.youtube.com/watch?v=${videoResult.videoId}`;
+      // Create multiple URL formats for better compatibility
+      const videoId = videoResult.videoId;
       
-      let response = `🎵 "${videoResult.title}" YouTube me khol raha hoon...\n\n`;
-      response += `📺 ${videoResult.channelTitle}\n`;
-      response += `YouTube app ya browser me khulega!`;
+      // Direct embed URL with autoplay (works best for direct play)
+      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      
+      // YouTube app deep link (for mobile)
+      const mobileUrl = `vnd.youtube://${videoId}`;
+      
+      // Standard watch URL (fallback for desktop)
+      const watchUrl = `https://www.youtube.com/watch?v=${videoId}&autoplay=1`;
+      
+      let response = `🎵 "${videoResult.title}" play kar raha hoon...\n\n`;
+      response += `📺 ${videoResult.channelTitle}`;
 
       return {
         response: generateFriendlyResponse(userName, response),
         metadata: { 
           searchQuery,
-          videoId: videoResult.videoId,
+          videoId,
           videoTitle: videoResult.title,
           channelTitle: videoResult.channelTitle,
           thumbnail: videoResult.thumbnail,
-          url: watchUrl,
-          type: 'open_external',
-          action: 'open_youtube_video',
+          embedUrl,        // For iframe (best for direct play)
+          mobileUrl,       // For YouTube app
+          watchUrl,        // For browser
+          type: 'youtube_video',
+          action: 'play_youtube_video',
           openInNewTab: true
         },
       };

@@ -550,6 +550,45 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
 
       const goluData = await goluResponse.json();
 
+      // If GOLU returned YouTube video to play
+      if (goluData.success && goluData.metadata?.type === 'youtube_video' && goluData.metadata?.videoId) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: goluData.response,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        speakText(goluData.response);
+        
+        // Try multiple methods to play video with autoplay
+        setTimeout(() => {
+          const videoId = goluData.metadata.videoId;
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // Try YouTube app deep link first on mobile
+            const appUrl = `vnd.youtube://${videoId}?autoplay=1`;
+            const fallbackUrl = `https://www.youtube.com/watch?v=${videoId}&autoplay=1`;
+            
+            // Attempt to open in YouTube app
+            window.location.href = appUrl;
+            
+            // Fallback to browser after 1 second if app doesn't open
+            setTimeout(() => {
+              window.open(fallbackUrl, '_blank');
+            }, 1000);
+          } else {
+            // Desktop: Open with autoplay parameter
+            const watchUrl = `https://www.youtube.com/watch?v=${videoId}&autoplay=1`;
+            window.open(watchUrl, '_blank');
+          }
+        }, 500);
+        
+        setIsTyping(false);
+        return;
+      }
+
       // If GOLU returned open_external action (YouTube app/browser)
       if (goluData.success && goluData.metadata?.type === 'open_external' && goluData.metadata?.url) {
         const botMessage: Message = {
