@@ -123,10 +123,13 @@ export default function ShopManagementPage() {
     active: 0,
     expired: 0,
   });
+  const [categories, setCategories] = useState<Array<{ _id: string; name: string; slug: string; icon?: string }>>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
     fetchShops();
     fetchStats();
+    fetchCategories();
   }, [filters]);
 
   const fetchShops = async () => {
@@ -171,6 +174,26 @@ export default function ShopManagementPage() {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setCategories(data.categories || []);
+      } else {
+        console.error('Failed to fetch categories:', data.error);
+        setCategories([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -1358,20 +1381,17 @@ export default function ShopManagementPage() {
                         value={editFormData.category}
                         onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                        disabled={loadingCategories}
                         required
                       >
-                        <option value="">Select Category</option>
-                        <option value="Restaurant">Restaurant</option>
-                        <option value="Clothing">Clothing</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Grocery">Grocery</option>
-                        <option value="Hardware">Hardware</option>
-                        <option value="Pharmacy">Pharmacy</option>
-                        <option value="Beauty">Beauty</option>
-                        <option value="Education">Education</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Services">Services</option>
-                        <option value="Other">Other</option>
+                        <option value="">
+                          {loadingCategories ? 'Loading categories...' : 'Select Category'}
+                        </option>
+                        {categories.map((cat) => (
+                          <option key={cat._id} value={cat.name}>
+                            {cat.icon ? `${cat.icon} ${cat.name}` : cat.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
