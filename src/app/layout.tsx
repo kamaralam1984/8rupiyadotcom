@@ -68,6 +68,14 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=yes" />
         <link rel="canonical" href="https://8rupiya.com" />
         
+        {/* Google Site Verification */}
+        {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
+          <meta 
+            name="google-site-verification" 
+            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION} 
+          />
+        )}
+        
         {/* Google Official Logo - Force recognition */}
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png" />
