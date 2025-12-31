@@ -570,7 +570,7 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
         return;
       }
 
-      // If GOLU returned MEDIA category with YouTube embed, handle it
+      // If GOLU returned MEDIA category with YouTube embed, handle it (Legacy - now unused)
       if (goluData.success && goluData.category === 'MEDIA' && goluData.metadata?.embedUrl) {
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),

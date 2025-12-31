@@ -1613,13 +1613,12 @@ async function processMedia(query: string, userName?: string) {
     const videoResult = await searchYouTubeVideo(searchQuery);
     
     if (videoResult && videoResult.videoId) {
-      // Create proper embed URL with actual video ID
-      const embedUrl = `https://www.youtube.com/embed/${videoResult.videoId}?autoplay=1`;
+      // Open video in YouTube app/browser (not embedded)
       const watchUrl = `https://www.youtube.com/watch?v=${videoResult.videoId}`;
       
-      let response = `🎵 "${videoResult.title}" play kar raha hoon...\n\n`;
+      let response = `🎵 "${videoResult.title}" YouTube me khol raha hoon...\n\n`;
       response += `📺 ${videoResult.channelTitle}\n`;
-      response += `Neeche video player me dekh sakte hain!`;
+      response += `YouTube app ya browser me khulega!`;
 
       return {
         response: generateFriendlyResponse(userName, response),
@@ -1629,10 +1628,10 @@ async function processMedia(query: string, userName?: string) {
           videoTitle: videoResult.title,
           channelTitle: videoResult.channelTitle,
           thumbnail: videoResult.thumbnail,
-          embedUrl,
-          watchUrl,
-          type: 'youtube_embed',
-          action: 'play_video'
+          url: watchUrl,
+          type: 'open_external',
+          action: 'open_youtube_video',
+          openInNewTab: true
         },
       };
     } else {
@@ -1642,13 +1641,14 @@ async function processMedia(query: string, userName?: string) {
       return {
         response: generateFriendlyResponse(
           userName,
-          `🔍 "${searchQuery}" ke liye search results:\n\n${searchUrl}\n\n(YouTube API configure karne ke baad direct video play hoga)`
+          `🔍 "${searchQuery}" YouTube me search kar raha hoon...\n\nYouTube app ya browser me khulega!`
         ),
         metadata: { 
           searchQuery,
-          searchUrl,
-          type: 'youtube_search_fallback',
-          action: 'search_youtube'
+          url: searchUrl,
+          type: 'open_external',
+          action: 'open_youtube_search',
+          openInNewTab: true
         },
       };
     }
