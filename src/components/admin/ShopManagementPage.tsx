@@ -1267,11 +1267,11 @@ export default function ShopManagementPage() {
                   </div>
                 )}
 
-                {/* Image Upload Section */}
+                {/* Image Upload Section - Database Linked */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <FiImage />
-                    Shop Images
+                    Shop Images <span className="text-xs text-gray-500 font-normal">(From database: images/photos array)</span>
                   </h3>
                   
                   {/* Current & New Images Preview */}
@@ -1363,9 +1363,10 @@ export default function ShopManagementPage() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Shop Name - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Shop Name *
+                        Shop Name * <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <input
                         type="text"
@@ -1373,12 +1374,14 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         required
+                        title="Shop name from database"
                       />
                     </div>
 
+                    {/* Category - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Category *
+                        Category * <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <select
                         value={editFormData.category}
@@ -1386,6 +1389,7 @@ export default function ShopManagementPage() {
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         disabled={loadingCategories}
                         required
+                        title="Category from database"
                       >
                         <option value="">
                           {loadingCategories ? 'Loading categories...' : 'Select Category'}
@@ -1398,20 +1402,7 @@ export default function ShopManagementPage() {
                       </select>
                     </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Address *
-                      </label>
-                      <textarea
-                        value={editFormData.address}
-                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
-                        rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                        placeholder="Complete shop address..."
-                        required
-                      />
-                    </div>
-
+                    {/* Keywords (SEO) - Database Linked */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Keywords (SEO) <span className="text-xs text-gray-500">(From database SEO keywords)</span>
@@ -1423,10 +1414,10 @@ export default function ShopManagementPage() {
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         placeholder="Keywords from SEO (comma separated)"
                         readOnly
-                        title="Keywords are linked from database SEO keywords"
+                        title="Keywords are linked from database SEO keywords (seoKeywords field)"
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        These keywords are automatically linked from the SEO keywords saved when shop was created.
+                        These keywords are automatically linked from the SEO keywords (seoKeywords) saved in database when shop was created.
                       </p>
                     </div>
                   </div>
@@ -1437,22 +1428,26 @@ export default function ShopManagementPage() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Location Details</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Address - Database Linked (Duplicate Removed) */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Address *
+                        Address * <span className="text-xs text-gray-500">(From database)</span>
                       </label>
-                      <input
-                        type="text"
+                      <textarea
                         value={editFormData.address}
                         onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                        rows={3}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                        placeholder="Complete shop address..."
                         required
+                        title="Address from database"
                       />
                     </div>
 
+                    {/* City - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        City *
+                        City * <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <input
                         type="text"
@@ -1460,12 +1455,14 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         required
+                        title="City from database"
                       />
                     </div>
 
+                    {/* Pincode - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Pincode *
+                        Pincode * <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <input
                         type="text"
@@ -1473,6 +1470,7 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, pincode: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         required
+                        title="Pincode from database"
                       />
                     </div>
                   </div>
@@ -1482,10 +1480,11 @@ export default function ShopManagementPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contact Details</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Phone - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Phone
+                        Phone <span className="text-xs text-gray-500">(From database contact.phone)</span>
                       </label>
                       <input
                         type="tel"
@@ -1493,12 +1492,14 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         placeholder="+91-XXXXXXXXXX"
+                        title="Phone from database contact.phone"
                       />
                     </div>
 
-                    <div className="md:col-span-2">
+                    {/* Email - Database Linked */}
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email
+                        Email <span className="text-xs text-gray-500">(From database contact.email)</span>
                       </label>
                       <input
                         type="email"
@@ -1506,24 +1507,27 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         placeholder="email@example.com"
+                        title="Email from database contact.email"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Status & Features */}
+                {/* Status & Features - Database Linked */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Status & Features</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Status - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Status
+                        Status <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <select
                         value={editFormData.status}
                         onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as any })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                        title="Status from database"
                       >
                         <option value="pending">Pending</option>
                         <option value="approved">Approved</option>
@@ -1532,9 +1536,10 @@ export default function ShopManagementPage() {
                       </select>
                     </div>
 
+                    {/* Homepage Priority - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Homepage Priority
+                        Homepage Priority <span className="text-xs text-gray-500">(From database)</span>
                       </label>
                       <input
                         type="number"
@@ -1542,9 +1547,11 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, homepagePriority: parseInt(e.target.value) || 0 })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         min="0"
+                        title="Homepage priority from database"
                       />
                     </div>
 
+                    {/* Featured Shop - Database Linked */}
                     <div className="flex items-end">
                       <label className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors w-full">
                         <input
@@ -1552,11 +1559,12 @@ export default function ShopManagementPage() {
                           checked={editFormData.isFeatured}
                           onChange={(e) => setEditFormData({ ...editFormData, isFeatured: e.target.checked })}
                           className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                          title="Featured status from database"
                         />
                         <div>
                           <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
                             <FiStar className="text-yellow-500" />
-                            Featured Shop
+                            Featured Shop <span className="text-xs text-gray-500">(From database)</span>
                           </span>
                         </div>
                       </label>
