@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectionStatus from './ConnectionStatus';
@@ -15,12 +16,17 @@ import AdSlot from './AdSlot';
 import AdvertisementBanner from './AdvertisementBanner';
 import InFeedAd from './InFeedAd';
 import DisplayAd from './DisplayAd';
-import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut } from 'react-icons/fi';
+import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import AdStatusIndicator from './AdStatusIndicator';
-import AIAssistant from './AIAssistant';
+
+// Dynamic imports for heavy components (lazy load)
+const AIAssistant = dynamic(() => import('./AIAssistant'), {
+  ssr: false, // Don't render on server
+  loading: () => null, // No loading indicator
+});
 
 interface Shop {
   _id?: string;
@@ -90,6 +96,11 @@ export default function HomepageClient() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [homepageLayout, setHomepageLayout] = useState<HomepageLayout | null>(null);
   const [logoError, setLogoError] = useState(false);
+  
+  // Infinite scroll states
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Define functions BEFORE hooks (so they're available in useEffect)
   const fetchUser = async () => {
@@ -123,9 +134,13 @@ export default function HomepageClient() {
     }
   };
 
-  const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string) => {
+  const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string, pageNum: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
       const params = new URLSearchParams();
       
@@ -154,7 +169,12 @@ export default function HomepageClient() {
         params.append('city', useCity);
       }
       
-      params.append('limit', '50'); // Reduced from 100 to 50 for faster initial load
+      // Ultra-fast initial load: only 10 shops
+      // Then load 20 more on each scroll
+      const limit = pageNum === 1 ? 10 : 20;
+      params.append('limit', limit.toString());
+      params.append('page', pageNum.toString());
+      params.append('skip', ((pageNum - 1) * limit).toString());
 
       const response = await fetch(`/api/shops/nearby?${params}`, {
         // Add cache headers for better performance
@@ -163,16 +183,27 @@ export default function HomepageClient() {
       const data = await response.json();
 
       if (data.shops && data.shops.length > 0) {
-        setShops(data.shops);
-        setLoading(false); // Set loading false immediately after getting shops
+        if (append) {
+          setShops(prev => [...prev, ...data.shops]);
+        } else {
+          setShops(data.shops);
+        }
+        setHasMore(data.shops.length >= limit);
+        setLoading(false);
+        setLoadingMore(false);
       } else {
-        fetchAllShops();
+        if (!append) {
+          fetchAllShops();
+        }
+        setHasMore(false);
+        setLoadingMore(false);
       }
     } catch (err) {
       console.error('Fetch error:', err);
       setError('Failed to load shops');
-      // Don't call fetchAllShops on error to avoid double loading
       setLoading(false);
+      setLoadingMore(false);
+      setHasMore(false);
     }
   };
 
@@ -349,19 +380,59 @@ export default function HomepageClient() {
   useEffect(() => {
     if (!mounted) return;
     
+    // Reset pagination when filters change
+    setPage(1);
+    setHasMore(true);
+    
     // Use a small delay to debounce rapid changes
     const timeoutId = setTimeout(() => {
       // Use location if available, otherwise fetch without it (faster)
       if (location && location.lat && location.lng) {
-        fetchShops(location.lat, location.lng, selectedCategory, selectedCity);
+        fetchShops(location.lat, location.lng, selectedCategory, selectedCity, 1, false);
       } else {
         // Fetch immediately without location - don't block on geolocation
-        fetchShops(undefined, undefined, selectedCategory, selectedCity);
+        fetchShops(undefined, undefined, selectedCategory, selectedCity, 1, false);
       }
     }, 100); // Small delay to debounce
 
     return () => clearTimeout(timeoutId);
   }, [selectedCategory, selectedCity, mounted, location]);
+
+  // Infinite scroll effect - load more shops when user scrolls to bottom
+  useEffect(() => {
+    if (!mounted || !hasMore || loadingMore) return;
+
+    const handleScroll = () => {
+      // Check if user scrolled near bottom (500px before end)
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+      
+      if (scrollTop + clientHeight >= scrollHeight - 500) {
+        // Load next page
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchShops(location?.lat, location?.lng, selectedCategory, selectedCity, nextPage, true);
+      }
+    };
+
+    // Throttle scroll event for better performance
+    let throttleTimeout: NodeJS.Timeout | null = null;
+    const throttledScroll = () => {
+      if (throttleTimeout === null) {
+        throttleTimeout = setTimeout(() => {
+          handleScroll();
+          throttleTimeout = null;
+        }, 200); // Check every 200ms max
+      }
+    };
+
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', throttledScroll);
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
+  }, [mounted, hasMore, loadingMore, page, location, selectedCategory, selectedCity]);
 
   // FIX #2: Mounted check AFTER all hooks (hooks must run in same order)
   if (!mounted) {
@@ -822,6 +893,28 @@ export default function HomepageClient() {
             onShopClick={handleShopClick} 
             userLocation={location} 
           />
+        )}
+
+        {/* Infinite Scroll Loading Indicator */}
+        {loadingMore && (
+          <div className="flex justify-center items-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Loading more shops...</p>
+            </div>
+          </div>
+        )}
+
+        {/* No More Shops Indicator */}
+        {!hasMore && shops.length > 0 && !loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 px-8 py-4 rounded-full border-2 border-blue-200 dark:border-blue-800">
+              <p className="text-gray-700 dark:text-gray-300 font-semibold flex items-center gap-2">
+                <FiCheck className="text-green-600 dark:text-green-400" />
+                All shops loaded
+              </p>
+            </div>
+          </div>
         )}
       </main>
 

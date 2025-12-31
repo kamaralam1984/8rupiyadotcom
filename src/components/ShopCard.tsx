@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation } from 'react-icons/fi';
 import { calculateDistanceAndTime } from '@/utils/distanceCalculation';
 
@@ -47,6 +48,32 @@ interface DistanceTime {
 
 export default function ShopCard({ shop, index = 0, onClick, userLocation }: ShopCardProps) {
   const [distanceTime, setDistanceTime] = useState<DistanceTime>({});
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for lazy rendering
+  useEffect(() => {
+    if (!cardRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect(); // Stop observing once visible
+          }
+        });
+      },
+      {
+        rootMargin: '100px', // Load 100px before card enters viewport
+        threshold: 0.01,
+      }
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   // Calculate distance and time using enhanced utility
   useEffect(() => {
@@ -94,8 +121,23 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
       setDistanceTime({});
     }
   }, [userLocation, shop.location, shop.distance]);
+  // Render placeholder skeleton if not visible yet
+  if (!isVisible) {
+    return (
+      <div ref={cardRef} className="bg-gray-200 dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg h-full animate-pulse">
+        <div className="h-40 sm:h-48 bg-gray-300 dark:bg-gray-700 rounded-t-xl"></div>
+        <div className="p-4 sm:p-5 space-y-3">
+          <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.5 }}
@@ -114,22 +156,17 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
     >
       <article className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
           {/* Image */}
-          <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100">
+          <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
             {(shop.images && shop.images.length > 0) || (shop.photos && shop.photos.length > 0) ? (
               <img
                 src={(shop.images && shop.images.length > 0) ? shop.images[0] : (shop.photos && shop.photos.length > 0) ? shop.photos[0] : ''}
                 alt={`${shop.name} - ${shop.category} in ${shop.city}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-opacity duration-300"
                 style={{
                   objectFit: 'cover',
                   objectPosition: 'center',
-                  imageRendering: 'auto',
-                  backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)',
-                  WebkitTransform: 'translateZ(0)',
                 } as React.CSSProperties}
-                loading={index !== undefined && index < 6 ? "eager" : "lazy"}
+                loading="lazy"
                 decoding="async"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
