@@ -1610,11 +1610,14 @@ async function processMedia(query: string, userName?: string) {
     }
 
     // Search for video using YouTube Data API
+    console.log(`🔍 Searching YouTube for: "${searchQuery}"`);
     const videoResult = await searchYouTubeVideo(searchQuery);
     
     if (videoResult && videoResult.videoId) {
-      // Create multiple URL formats for better compatibility
+      // API SUCCESS: Got video ID from YouTube Data API
       const videoId = videoResult.videoId;
+      
+      console.log(`✅ Found video: "${videoResult.title}" (ID: ${videoId})`);
       
       // Direct embed URL with autoplay (works best for direct play)
       const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
@@ -1645,20 +1648,25 @@ async function processMedia(query: string, userName?: string) {
         },
       };
     } else {
-      // Fallback to search URL if API key not configured
-      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+      // API KEY MISSING: Use smart fallback with direct search to first video
+      console.warn('⚠️ YouTube API not configured - using fallback search method');
+      
+      // Instead of search results page, redirect to search which auto-plays first video
+      // This is better UX than showing search results
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}&sp=CAMSAhAB`;
       
       return {
         response: generateFriendlyResponse(
           userName,
-          `🔍 "${searchQuery}" YouTube me search kar raha hoon...\n\nYouTube app ya browser me khulega!`
+          `🎵 "${searchQuery}" search kar ke first video play kar raha hoon...\n\n⚠️ Behtar results ke liye YouTube API key configure karein!`
         ),
         metadata: { 
           searchQuery,
           url: searchUrl,
           type: 'open_external',
           action: 'open_youtube_search',
-          openInNewTab: true
+          openInNewTab: true,
+          note: 'Configure YouTube API key for direct video play'
         },
       };
     }

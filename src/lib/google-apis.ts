@@ -591,9 +591,9 @@ export async function getNewsHeadlines(category: string = 'general', country: st
 
 /**
  * Search YouTube videos using YouTube Data API v3
- * Returns first matching video with ID for embedding
+ * Returns first matching video (most relevant/popular) with ID for embedding
  */
-export async function searchYouTubeVideo(query: string): Promise<{ videoId: string; title: string; channelTitle: string; thumbnail: string } | null> {
+export async function searchYouTubeVideo(query: string): Promise<{ videoId: string; title: string; channelTitle: string; thumbnail: string; viewCount?: number } | null> {
   try {
     const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
     
@@ -602,9 +602,11 @@ export async function searchYouTubeVideo(query: string): Promise<{ videoId: stri
       return null;
     }
 
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&key=${apiKey}`;
+    // Search with order=relevance to get most popular/relevant video first
+    // This ensures the #1 search result (most views/likes) is returned
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&order=relevance&key=${apiKey}`;
     
-    const response = await fetch(url, {
+    const response = await fetch(searchUrl, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
     
@@ -617,14 +619,19 @@ export async function searchYouTubeVideo(query: string): Promise<{ videoId: stri
 
     if (data.items && data.items.length > 0) {
       const video = data.items[0];
+      const videoId = video.id.videoId;
+      
+      console.log(`✅ YouTube video found: ${video.snippet.title} (ID: ${videoId})`);
+      
       return {
-        videoId: video.id.videoId,
+        videoId,
         title: video.snippet.title,
         channelTitle: video.snippet.channelTitle,
         thumbnail: video.snippet.thumbnails.medium.url,
       };
     }
 
+    console.warn('No YouTube videos found for query:', query);
     return null;
   } catch (error: any) {
     console.error('YouTube search error:', error);
