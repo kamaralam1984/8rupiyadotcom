@@ -594,13 +594,51 @@ export default function HomepageClient() {
                           <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                             <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300">{user.email}</p>
+                            
+                            {/* Dashboard Links for all roles */}
                             {user.role === 'admin' && (
                               <Link
                                 href="/admin"
                                 onClick={() => setIsUserMenuOpen(false)}
-                                className="block mt-2 text-sm text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                                className="block mt-2 px-3 py-2 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-medium text-center transition-all shadow-md"
                               >
-                                {t('nav.adminDashboard')}
+                                🛡️ Admin Dashboard
+                              </Link>
+                            )}
+                            {user.role === 'agent' && (
+                              <Link
+                                href="/agent"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block mt-2 px-3 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-medium text-center transition-all shadow-md"
+                              >
+                                👤 Agent Dashboard
+                              </Link>
+                            )}
+                            {user.role === 'operator' && (
+                              <Link
+                                href="/operator"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block mt-2 px-3 py-2 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-medium text-center transition-all shadow-md"
+                              >
+                                👥 Operator Dashboard
+                              </Link>
+                            )}
+                            {user.role === 'shopper' && (
+                              <Link
+                                href="/shopper"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block mt-2 px-3 py-2 text-sm bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:from-emerald-700 hover:to-green-700 font-medium text-center transition-all shadow-md"
+                              >
+                                🛍️ Shopper Dashboard
+                              </Link>
+                            )}
+                            {user.role === 'accountant' && (
+                              <Link
+                                href="/accountant"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="block mt-2 px-3 py-2 text-sm bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 font-medium text-center transition-all shadow-md"
+                              >
+                                💰 Accountant Dashboard
                               </Link>
                             )}
                           </div>

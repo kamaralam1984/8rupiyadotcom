@@ -73,14 +73,14 @@ export async function middleware(req: NextRequest) {
       }
     }
 
-    // Shopper routes - only shopper can access
+    // Shopper routes - only shopper and admin can access
     if (req.nextUrl.pathname.startsWith('/shopper')) {
       if (!token) {
         return NextResponse.redirect(new URL('/login', req.url));
       }
       try {
         const payload = await verifyTokenEdge(token);
-        if (!payload || payload.role !== UserRole.SHOPPER) {
+        if (!payload || (payload.role !== UserRole.SHOPPER && payload.role !== UserRole.ADMIN)) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
       } catch (error) {
