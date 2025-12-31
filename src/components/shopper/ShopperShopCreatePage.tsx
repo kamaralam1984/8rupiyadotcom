@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiShoppingBag, FiMapPin, FiUpload, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { FiShoppingBag, FiMapPin, FiUpload, FiCheck, FiAlertCircle, FiCamera, FiX } from 'react-icons/fi';
 
 declare global {
   interface Window {
@@ -113,6 +113,61 @@ export default function ShopperShopCreatePage() {
     );
   };
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimensions for mobile
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  };
+
   const handleImageUpload = async (file: File) => {
     setUploadingImages(true);
     setError('');
@@ -125,8 +180,25 @@ export default function ShopperShopCreatePage() {
         return;
       }
 
+      // Validate file size (max 10MB before compression)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Image size should be less than 10MB');
+        setUploadingImages(false);
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload a valid image file');
+        setUploadingImages(false);
+        return;
+      }
+
+      // Compress image for mobile
+      const compressedFile = await compressImage(file);
+
       const formDataToUpload = new FormData();
-      formDataToUpload.append('image', file);
+      formDataToUpload.append('image', compressedFile);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -136,22 +208,33 @@ export default function ShopperShopCreatePage() {
         body: formDataToUpload,
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error(data.error || 'Failed to upload image');
       }
 
-      const data = await response.json();
       if (data.url) {
         setFormData(prev => ({
           ...prev,
           images: [...prev.images, data.url],
         }));
+      } else {
+        throw new Error('No image URL returned');
       }
     } catch (err: any) {
+      console.error('Image upload error:', err);
       setError(err.message || 'Failed to upload image');
     } finally {
       setUploadingImages(false);
     }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = async () => {
@@ -217,8 +300,17 @@ export default function ShopperShopCreatePage() {
             }),
           });
 
+          if (!paymentResponse.ok) {
+            const errorData = await paymentResponse.json();
+            console.error('❌ Payment order creation failed:', errorData);
+            setError(`Failed to create payment order: ${errorData.error || 'Please try again'}`);
+            setSubmitting(false);
+            setPaymentProcessing(false);
+            return;
+          }
+
           const paymentData = await paymentResponse.json();
-          if (paymentResponse.ok && paymentData.success && paymentData.orderId) {
+          if (paymentData.success && paymentData.orderId) {
             // Get Razorpay key
             const keyResponse = await fetch('/api/payments/razorpay-key');
             const keyData = await keyResponse.json();
@@ -241,6 +333,10 @@ export default function ShopperShopCreatePage() {
 
               try {
                 const selectedPlan = plans.find(p => p._id === formData.planId);
+                
+                // Detect if device is mobile
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
                 const options = {
                   key: keyData.keyId,
                   amount: (selectedPlan?.price || 0) * 100,
@@ -248,6 +344,7 @@ export default function ShopperShopCreatePage() {
                   name: '8Rupiya',
                   description: `Payment for ${selectedPlan?.name || 'Plan'} - ${formData.shopName}`,
                   order_id: paymentData.orderId,
+                  image: '/logo.png', // Add your logo here
                   handler: async function (response: any) {
                     setPaymentProcessing(true);
                     setSubmitting(true);
@@ -305,21 +402,59 @@ export default function ShopperShopCreatePage() {
                       setPaymentProcessing(false);
                       setError('Payment was cancelled. You can try again.');
                     },
-                  },
-                  onerror: function (error: any) {
-                    console.error('❌ Razorpay error:', error);
-                    setSubmitting(false);
-                    setPaymentProcessing(false);
-                    setError('Payment failed. Please try again.');
+                    confirm_close: true, // Ask for confirmation before closing on mobile
+                    escape: true, // Allow ESC key to close modal
+                    backdropclose: false, // Prevent accidental closes
+                    animation: true, // Smooth animations
+                    handleback: true, // Handle Android back button
                   },
                   prefill: {
                     name: formData.shopName || '',
                     email: formData.email || '',
                     contact: formData.phone || '',
                   },
-                  theme: {
-                    color: '#6366f1',
+                  notes: {
+                    shop_name: formData.shopName,
+                    shop_id: data.shop._id,
+                    plan_id: formData.planId,
                   },
+                  theme: {
+                    color: '#10b981', // Emerald green
+                    backdrop_color: 'rgba(0, 0, 0, 0.5)',
+                  },
+                  config: {
+                    display: {
+                      blocks: {
+                        banks: {
+                          name: 'All payment methods',
+                          instruments: [
+                            {
+                              method: 'upi',
+                            },
+                            {
+                              method: 'card',
+                            },
+                            {
+                              method: 'netbanking',
+                            },
+                            {
+                              method: 'wallet',
+                            },
+                          ],
+                        },
+                      },
+                      sequence: ['block.banks'],
+                      preferences: {
+                        show_default_blocks: true,
+                      },
+                    },
+                  },
+                  retry: {
+                    enabled: true,
+                    max_count: 3,
+                  },
+                  timeout: 600, // 10 minutes timeout
+                  remember_customer: false,
                 };
 
                 const razorpay = new window.Razorpay(options);
@@ -647,35 +782,109 @@ export default function ShopperShopCreatePage() {
 
         {/* Step 3: Images */}
         {currentStep === 3 && (
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Shop Images</h3>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Upload Images
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Shop Images</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Upload up to {formData.selectedPlan?.maxPhotos || 5} images • Max 10MB per image
+              </p>
+            </div>
+
+            {/* Upload Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Camera Capture - Mobile Optimized */}
+              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-emerald-300 dark:border-emerald-600 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-400 cursor-pointer transition-all bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 hover:shadow-lg group">
+                <FiCamera className="text-4xl text-emerald-600 dark:text-emerald-400 mb-3 group-hover:scale-110 transition-transform" />
+                <span className="text-base font-semibold text-gray-900 dark:text-white">Capture Photo</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">Use camera to take photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file);
+                    }
+                    e.target.value = ''; // Reset input
+                  }}
+                  className="hidden"
+                  disabled={uploadingImages || formData.images.length >= (formData.selectedPlan?.maxPhotos || 5)}
+                />
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  files.forEach(file => handleImageUpload(file));
-                }}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 dark:file:bg-green-900/30 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-900/40 transition-colors"
-              />
-              {uploadingImages && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Uploading...</p>
-              )}
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-3 gap-4 mt-4">
+
+              {/* File Upload */}
+              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:shadow-lg group">
+                <FiUpload className="text-4xl text-blue-600 dark:text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
+                <span className="text-base font-semibold text-gray-900 dark:text-white">Upload from Device</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">Choose from gallery</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    files.forEach(file => handleImageUpload(file));
+                    e.target.value = ''; // Reset input
+                  }}
+                  className="hidden"
+                  disabled={uploadingImages || formData.images.length >= (formData.selectedPlan?.maxPhotos || 5)}
+                />
+              </label>
+            </div>
+
+            {/* Uploading State */}
+            {uploadingImages && (
+              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Uploading image...</p>
+              </div>
+            )}
+
+            {/* Uploaded Images Grid */}
+            {formData.images.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  Uploaded Images ({formData.images.length}/{formData.selectedPlan?.maxPhotos || 5})
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {formData.images.map((img, index) => (
-                    <div key={index} className="relative">
-                      <img src={img} alt={`Shop ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                    </div>
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative group aspect-square"
+                    >
+                      <img 
+                        src={img} 
+                        alt={`Shop ${index + 1}`} 
+                        className="w-full h-full object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-md"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <FiX className="text-sm" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                        #{index + 1}
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* No Images Warning */}
+            {formData.images.length === 0 && !uploadingImages && (
+              <div className="flex items-center gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <FiAlertCircle className="text-amber-600 dark:text-amber-400" />
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Add at least one image to make your shop more attractive
+                </p>
+              </div>
+            )}
           </div>
         )}
 
