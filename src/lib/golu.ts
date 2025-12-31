@@ -68,26 +68,92 @@ export function parseTimeFromText(text: string): Date | null {
 
 /**
  * Parse medicine schedule from voice command
- * Example: "10 baje Calpol, 1 baje liver ki dawa, raat me neend ki dawa"
+ * Examples:
+ * - "10 baje Calpol"
+ * - "Subah 8 baje BP ki dawa 1 tablet"
+ * - "Raat me 10 baje sugar ki medicine 2 capsule"
+ * - "Dopahar 2 baje liver ki dawa khali pet"
  */
-export function parseMedicineSchedule(text: string): Array<{ time: Date; medicine: string; dosage?: string }> {
-  const medicines: Array<{ time: Date; medicine: string; dosage?: string }> = [];
+export function parseMedicineSchedule(text: string): Array<{ 
+  time: Date; 
+  medicine: string; 
+  dosage?: string;
+  withFood?: boolean;
+  frequency?: string;
+}> {
+  const medicines: Array<{ 
+    time: Date; 
+    medicine: string; 
+    dosage?: string;
+    withFood?: boolean;
+    frequency?: string;
+  }> = [];
   
-  // Split by comma
-  const parts = text.split(',').map(p => p.trim());
+  // Split by comma or 'aur'
+  const parts = text.split(/,|aur/).map(p => p.trim());
 
   for (const part of parts) {
-    // Try to extract time and medicine name
-    const timeMatch = part.match(/(\d+\s*baje|subah|sham|raat|dopahar)/i);
-    const medicineMatch = part.match(/([A-Za-z]+(?:\s+[A-Za-z]+)?)\s*(?:ki\s+dawa)?/i);
+    // Try to extract time
+    const time = parseTimeFromText(part);
+    if (!time) continue;
 
-    if (timeMatch && medicineMatch) {
-      const time = parseTimeFromText(part);
-      const medicine = medicineMatch[1].trim();
+    // Extract medicine name (supports Hindi and English)
+    let medicine = '';
+    const medicinePatterns = [
+      /([A-Za-z]+)\s*(?:ki\s+dawa|ki\s+medicine|tablet|capsule)/i,
+      /dawa\s+([A-Za-z]+)/i,
+      /medicine\s+([A-Za-z]+)/i,
+      /(Calpol|Paracetamol|Aspirin|Metformin|Insulin|Thyronorm|Ecosprin|BP|Sugar|Liver|Heart)/i,
+    ];
 
-      if (time) {
-        medicines.push({ time, medicine });
+    for (const pattern of medicinePatterns) {
+      const match = part.match(pattern);
+      if (match) {
+        medicine = match[1].trim();
+        break;
       }
+    }
+
+    if (!medicine) {
+      // Fallback: extract any capitalized word or common medicine terms
+      const words = part.split(/\s+/);
+      for (const word of words) {
+        if (/^[A-Z][a-z]+/i.test(word) && !/(baje|subah|sham|raat|dopahar|ki|dawa)/i.test(word)) {
+          medicine = word;
+          break;
+        }
+      }
+    }
+
+    // Extract dosage
+    let dosage: string | undefined;
+    const dosageMatch = part.match(/(\d+)\s*(tablet|capsule|drop|drops|spoon|ml|mg)/i);
+    if (dosageMatch) {
+      dosage = `${dosageMatch[1]} ${dosageMatch[2]}`;
+    }
+
+    // Check if with food
+    const withFood = /(khane\s+ke\s+baad|after\s+food|with\s+food|khane\s+ke\s+saath)/i.test(part);
+    const emptyStomach = /(khali\s+pet|empty\s+stomach|before\s+food|khane\s+se\s+pahle)/i.test(part);
+
+    // Check frequency
+    let frequency: string | undefined;
+    if (/roz|daily|har\s+din|everyday/i.test(part)) {
+      frequency = 'daily';
+    } else if (/din\s+me\s+2\s+baar|twice|do\s+baar/i.test(part)) {
+      frequency = 'twice-daily';
+    } else if (/hafte|week|weekly/i.test(part)) {
+      frequency = 'weekly';
+    }
+
+    if (time && medicine) {
+      medicines.push({ 
+        time, 
+        medicine,
+        dosage,
+        withFood: emptyStomach ? false : withFood,
+        frequency,
+      });
     }
   }
 

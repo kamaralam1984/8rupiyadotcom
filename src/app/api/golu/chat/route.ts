@@ -341,32 +341,99 @@ async function processMedicine(query: string, userId: any, userName?: string) {
   
   if (schedule.length === 0) {
     return {
-      response: generateFriendlyResponse(userName, 'Kripya medicine ka naam aur time bataiye, jaise "10 baje Calpol, 2 baje liver ki dawa".'),
+      response: generateFriendlyResponse(userName, 'Kripya medicine ka naam aur time bataiye, jaise "Subah 8 baje BP ki dawa 1 tablet".'),
       metadata: {},
     };
   }
 
+  // Get or create medical record
+  let medicalRecord = await MedicalRecord.findOne({ userId });
+  if (!medicalRecord) {
+    medicalRecord = await MedicalRecord.create({ userId, medicines: [], appointments: [], healthChecks: [] });
+  }
+
   // Create reminders for each medicine
+  const createdReminders = [];
   for (const med of schedule) {
-    await Reminder.create({
+    // Determine if it's recurring
+    const isRecurring = med.frequency === 'daily' || med.frequency === 'twice-daily' || med.frequency === 'weekly';
+    
+    // Build recurring pattern
+    let recurringPattern: any = undefined;
+    if (isRecurring) {
+      if (med.frequency === 'daily') {
+        recurringPattern = { frequency: 'daily' };
+      } else if (med.frequency === 'weekly') {
+        recurringPattern = { frequency: 'weekly' };
+      } else if (med.frequency === 'twice-daily') {
+        recurringPattern = { frequency: 'custom', customInterval: 12 * 60 }; // 12 hours
+      }
+    }
+
+    // Create reminder
+    const reminder = await Reminder.create({
       userId,
       type: ReminderType.MEDICINE,
-      title: `Medicine: ${med.medicine}`,
-      message: `${userName || 'Bhai'}, ${med.medicine} lene ka time ho gaya hai.`,
+      title: `💊 Medicine: ${med.medicine}`,
+      message: `${userName || 'Ji'}, ${med.medicine} lene ka time ho gaya hai${med.dosage ? ` (${med.dosage})` : ''}${med.withFood ? ' - Khane ke baad lena hai' : ''}`,
       scheduledTime: med.time,
       notifyBeforeMinutes: 5,
+      isRecurring,
+      recurringPattern,
       status: ReminderStatus.ACTIVE,
       metadata: {
         medicineName: med.medicine,
-        dosage: med.dosage,
+        dosage: med.dosage || '1 tablet',
       },
       voiceCommand: query,
     });
+    createdReminders.push(reminder);
+
+    // Add to medical record if not already present
+    const medicineExists = medicalRecord.medicines.find(
+      (m: any) => m.name.toLowerCase() === med.medicine.toLowerCase()
+    );
+
+    if (!medicineExists && isRecurring) {
+      // Extract time string (HH:MM format)
+      const timeString = `${med.time.getHours().toString().padStart(2, '0')}:${med.time.getMinutes().toString().padStart(2, '0')}`;
+      
+      medicalRecord.medicines.push({
+        name: med.medicine,
+        dosage: med.dosage || '1 tablet',
+        frequency: med.frequency || 'daily',
+        timings: [timeString],
+        withFood: med.withFood || false,
+        startDate: new Date(),
+        reminderEnabled: true,
+      } as any);
+      
+      await medicalRecord.save();
+    }
   }
 
+  // Build response message
+  let response = `Theek hai ${userName || 'Ji'}, maine ${schedule.length} medicine reminder${schedule.length > 1 ? 's' : ''} set kar diye hain:\n\n`;
+  
+  for (const med of schedule) {
+    const timeStr = med.time.toLocaleString('hi-IN', { hour: 'numeric', minute: 'numeric', hour12: true });
+    response += `💊 ${med.medicine}`;
+    if (med.dosage) response += ` - ${med.dosage}`;
+    response += ` @ ${timeStr}`;
+    if (med.frequency === 'daily') response += ` (रोज़)`;
+    if (med.withFood) response += ` 🍽️`;
+    response += '\n';
+  }
+
+  response += '\nMain aapko time par yaad dila dunga! 😊';
+
   return {
-    response: generateFriendlyResponse(userName, `Theek hai, maine ${schedule.length} medicine reminders set kar diye hain. Main aapko time par yaad dila dunga.`),
-    metadata: { medicines: schedule },
+    response: generateFriendlyResponse(userName, response),
+    metadata: { 
+      medicines: schedule,
+      reminders: createdReminders.length,
+      recurring: schedule.filter(m => m.frequency).length,
+    },
   };
 }
 
