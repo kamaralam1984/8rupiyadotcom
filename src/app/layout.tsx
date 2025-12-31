@@ -22,49 +22,24 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
+// ✅ FINAL SAFE FIX (Production Grade)
+// Isko hard-code kar do (bilkul allowed hai, Google token secret nahi hota)
 export const metadata: Metadata = {
   ...generateSEOMetadata({
     title: "8rupiya.com - Find Nearby Shops & Businesses in India",
-    description: "Discover local businesses, shops, and services near you. Browse by category, location, and ratings. Find the best shops in your city with 8rupiya.com - India's leading local business directory.",
-    keywords: ['shops near me', 'local businesses', 'find shops', 'business directory', 'India shops'],
+    description: "Discover local businesses, shops, and services near you.",
+    keywords: ['shops near me', 'local businesses', 'find shops'],
     url: 'https://8rupiya.com',
     type: 'website',
   }),
-  // Step 1: Google Site Verification (Screenshot ke hisaab se)
-  // ⚠️ meta tag manually mat likho - Next.js automatically generate karega
+  // ❌ process.env... hata do yahan se - Hard-code karo (Production Grade)
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'K8rF07hqdaG9aERL', // Google ne jo code diya hai wahi paste karo
-  },
-  // Viewport and other meta tags (Next.js automatically head me add karega)
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
+    google: 'K8rF07hqdaG9aERLCYdlNrPQrL91W5sYmKzdiur3_Ao',
   },
   themeColor: '#2563eb',
-  // Google Official Logo Configuration (Most Important)
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon_32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon_192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/favicon_512.png', sizes: '512x512', type: 'image/png' },
-    ],
-    other: [
-      {
-        rel: 'mask-icon',
-        url: '/favicon_512.png',
-      },
-    ],
-  },
-  // Additional meta tags
-  other: {
-    'mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
-    'format-detection': 'telephone=yes',
+    icon: '/favicon.ico',
+    apple: '/favicon_512.png',
   },
 };
 
