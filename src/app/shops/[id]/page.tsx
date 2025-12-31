@@ -331,18 +331,6 @@ export default function ShopDetailPage() {
                   </a>
                 </div>
               )}
-
-              {/* Plan Info */}
-              {shop.planId && (
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Plan
-                  </h3>
-                  <span className="inline-block px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-medium">
-                    {shop.planId.name}
-                  </span>
-                </div>
-              )}
             </motion.div>
           </div>
         </div>
