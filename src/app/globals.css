@@ -291,3 +291,13 @@ html {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
 }
+
+/* CSS for smooth dropdown - Hide scrollbar (Optional) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
