@@ -491,20 +491,30 @@ export async function estimateCabFare(
 }
 
 /**
- * Get weather information (using OpenWeatherMap API as Google doesn't have direct weather API)
+ * Get weather information (using OpenWeatherMap API)
+ * Modern implementation with advanced features
  */
 export async function getWeather(city: string): Promise<any> {
   try {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
+    // Support both NEXT_PUBLIC_ and non-prefixed keys
+    const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY;
     
     if (!apiKey) {
       console.warn('OpenWeather API key not configured');
       return null;
     }
 
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+    // Enhanced weather API call with better error handling
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric&lang=en`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Weather API error: ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (data.main && data.weather) {
@@ -512,14 +522,21 @@ export async function getWeather(city: string): Promise<any> {
         temperature: Math.round(data.main.temp),
         feelsLike: Math.round(data.main.feels_like),
         humidity: data.main.humidity,
+        pressure: data.main.pressure,
+        windSpeed: data.wind?.speed || 0,
+        windDirection: data.wind?.deg || 0,
         description: data.weather[0].description,
         icon: data.weather[0].icon,
         city: data.name,
+        country: data.sys?.country || '',
+        sunrise: data.sys?.sunrise,
+        sunset: data.sys?.sunset,
+        visibility: data.visibility ? (data.visibility / 1000).toFixed(1) : null,
       };
     }
 
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Weather API error:', error);
     return null;
   }
@@ -527,33 +544,46 @@ export async function getWeather(city: string): Promise<any> {
 
 /**
  * Get news headlines (using News API)
+ * Modern implementation with advanced features
  */
-export async function getNewsHeadlines(category: string = 'general', country: string = 'in'): Promise<any[]> {
+export async function getNewsHeadlines(category: string = 'general', country: string = 'in', limit: number = 5): Promise<any[]> {
   try {
-    const apiKey = process.env.NEWS_API_KEY;
+    // Support both NEXT_PUBLIC_ and non-prefixed keys
+    const apiKey = process.env.NEXT_PUBLIC_NEWS_API_KEY || process.env.NEWS_API_KEY;
     
     if (!apiKey) {
       console.warn('News API key not configured');
       return [];
     }
 
-    const url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&apiKey=${apiKey}`;
+    // Enhanced news API call with better error handling
+    const url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&apiKey=${apiKey}&pageSize=${limit}`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 600 }, // Cache for 10 minutes
+    });
+    
+    if (!response.ok) {
+      throw new Error(`News API error: ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (data.articles && Array.isArray(data.articles)) {
-      return data.articles.slice(0, 5).map((article: any) => ({
+      return data.articles.slice(0, limit).map((article: any) => ({
         title: article.title,
         description: article.description,
         url: article.url,
+        imageUrl: article.urlToImage,
         source: article.source.name,
         publishedAt: article.publishedAt,
+        author: article.author,
+        content: article.content,
       }));
     }
 
     return [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('News API error:', error);
     return [];
   }

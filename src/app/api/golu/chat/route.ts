@@ -27,6 +27,12 @@ import {
   getWeather,
   getNewsHeadlines,
 } from '@/lib/google-apis';
+import {
+  getGeminiResponse,
+  getContextualGeminiResponse,
+  getEnhancedAIResponse,
+  enhanceQueryWithAI,
+} from '@/lib/gemini-ai';
 
 // POST /api/golu/chat - Main GOLU chat endpoint (OPTIONAL AUTH)
 export async function POST(req: NextRequest) {
@@ -206,8 +212,8 @@ export async function POST(req: NextRequest) {
           break;
 
         default:
-          // For general queries, try Google Search
-          const generalResult = await processGeneralQuery(workingQuery, userName);
+          // For general queries, try AI first, then Google Search
+          const generalResult = await processGeneralQuery(workingQuery, userName, user?.userId);
           response = generalResult.response;
           metadata = generalResult.metadata;
           break;
@@ -558,7 +564,8 @@ async function processWeather(query: string, userName?: string) {
   // Clean city name
   city = city.replace(/\s+(mausam|weather|kaisa|kya|hai)\s*/gi, '').trim();
 
-  const apiKey = process.env.OPENWEATHER_API_KEY;
+  // Support both NEXT_PUBLIC_ and non-prefixed keys
+  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY;
   
   // If no API key, provide helpful fallback
   if (!apiKey) {
@@ -668,23 +675,66 @@ function processTimeDate(query: string, userName?: string): string {
   return generateFriendlyResponse(userName, `Abhi ${getCurrentTimeIndian()} hain. ${getCurrentDateIndian()}`);
 }
 
+// Enhanced News Processing with AI (Modern & Advanced)
 async function processNews(query: string, userName?: string) {
-  const headlines = await getNewsHeadlines();
-  
-  if (headlines.length === 0) {
+  try {
+    // Extract category from query if mentioned
+    let category = 'general';
+    const categoryMatch = query.match(/(sports|technology|business|entertainment|health|science)/i);
+    if (categoryMatch) {
+      category = categoryMatch[1].toLowerCase();
+    }
+
+    const headlines = await getNewsHeadlines(category, 'in', 5);
+    
+    if (headlines.length === 0) {
+      return {
+        response: generateFriendlyResponse(userName, 'Maaf kijiye, abhi news nahi mil pa rahi hai. Kripya thodi der baad try karein.'),
+        metadata: { category, error: 'No news found' },
+      };
+    }
+
+    // Enhanced response with AI if available
+    const aiProvider = process.env.NEXT_PUBLIC_AI_PROVIDER || 'gemini';
+    let response = '';
+
+    if (aiProvider === 'gemini' && process.env.GEMINI_API_KEY && headlines.length > 0) {
+      try {
+        const newsSummary = headlines.slice(0, 3).map((n: any) => n.title).join(', ');
+        const aiPrompt = `Summarize these news headlines in Hinglish in 2-3 sentences: ${newsSummary}`;
+        const aiResponse = await getGeminiResponse(aiPrompt, undefined, { temperature: 0.5, maxTokens: 200 });
+        
+        if (aiResponse.confidence && aiResponse.confidence > 0.5) {
+          response = `📰 Aaj ki top news:\n\n${aiResponse.text}\n\n`;
+          response += `Aur bhi news:\n`;
+          headlines.slice(0, 3).forEach((n: any, i: number) => {
+            response += `${i + 1}. ${n.title}\n`;
+          });
+        } else {
+          throw new Error('AI response low confidence');
+        }
+      } catch (aiError) {
+        // Fallback to simple format
+        const newsList = headlines.slice(0, 3).map((n: any, i: number) => `${i + 1}. ${n.title}`).join('\n');
+        response = `📰 Aaj ki top news:\n\n${newsList}`;
+      }
+    } else {
+      // Simple format without AI
+      const newsList = headlines.slice(0, 3).map((n: any, i: number) => `${i + 1}. ${n.title}`).join('\n');
+      response = `📰 Aaj ki top news:\n\n${newsList}`;
+    }
+
     return {
-      response: generateFriendlyResponse(userName, 'Maaf kijiye, abhi news nahi mil pa rahi hai.'),
-      metadata: {},
+      response: generateFriendlyResponse(userName, response),
+      metadata: { newsResults: headlines, category, aiEnhanced: aiProvider === 'gemini' },
+    };
+  } catch (error: any) {
+    console.error('News processing error:', error);
+    return {
+      response: generateFriendlyResponse(userName, 'Maaf kijiye, news fetch karne me problem ho rahi hai. Kripya phir se try karein.'),
+      metadata: { error: error.message },
     };
   }
-
-  const newsList = headlines.slice(0, 3).map((n: any, i: number) => `${i + 1}. ${n.title}`).join('. ');
-  const response = `Aaj ki top news: ${newsList}`;
-
-  return {
-    response: generateFriendlyResponse(userName, response),
-    metadata: { newsResults: headlines },
-  };
 }
 
 async function processSearch(query: string, userName?: string) {
@@ -1224,10 +1274,58 @@ async function processCategory(query: string, userName?: string) {
   }
 }
 
-// Process general queries using Google Search
-async function processGeneralQuery(query: string, userName?: string) {
+// Process general queries using AI + Google Search (Modern & Advanced)
+async function processGeneralQuery(query: string, userName?: string, userId?: any) {
   try {
-    // Try Google Search for general knowledge
+    const aiProvider = process.env.NEXT_PUBLIC_AI_PROVIDER || 'gemini';
+    
+    // Step 1: Try Gemini AI first (if enabled)
+    if (aiProvider === 'gemini' && process.env.GEMINI_API_KEY) {
+      try {
+        // Get user context for better responses
+        let userContext: any = {};
+        if (userId) {
+          const profile = await UserProfile.findOne({ userId });
+          if (profile) {
+            userContext = {
+              name: profile.nickName || profile.fullName,
+              location: profile.city || profile.state,
+            };
+          }
+        }
+
+        // Get AI response with context
+        const aiResponse = await getContextualGeminiResponse(query, [], userContext);
+        
+        if (aiResponse.confidence && aiResponse.confidence > 0.6) {
+          // Enhance with Google Search for additional context
+          const searchResults = await googleSearch(query, 2);
+          
+          let enhancedResponse = aiResponse.text;
+          
+          if (searchResults && searchResults.length > 0) {
+            enhancedResponse += '\n\n📚 Aur bhi information:\n';
+            searchResults.slice(0, 2).forEach((result, index) => {
+              enhancedResponse += `${index + 1}. ${result.title}\n`;
+            });
+          }
+          
+          return {
+            response: generateFriendlyResponse(userName, enhancedResponse),
+            metadata: { 
+              source: 'gemini_ai', 
+              confidence: aiResponse.confidence,
+              searchResults: searchResults?.length || 0,
+            },
+          };
+        }
+      } catch (aiError: any) {
+        console.error('Gemini AI error:', aiError);
+        // Fall through to Google Search
+      }
+    }
+    
+    // Step 2: Fallback to Google Search
     const searchResults = await googleSearch(query);
     
     if (searchResults && searchResults.length > 0) {
@@ -1249,7 +1347,7 @@ async function processGeneralQuery(query: string, userName?: string) {
       };
     }
     
-    // Fallback if no search results
+    // Step 3: Final fallback
     return {
       response: generateFriendlyResponse(userName, 'Main aapki madad karne ke liye yahan hoon! Aap mujhse shops, categories, reminders, weather, ya kuch bhi pooch sakte hain.'),
       metadata: { source: 'fallback' },
