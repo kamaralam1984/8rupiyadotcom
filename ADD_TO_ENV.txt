@@ -1,0 +1,46 @@
+# ======================================
+# ADD THESE LINES TO YOUR .env.local FILE
+# ======================================
+
+# Cloudinary Configuration (for cloud image uploads)
+# Get these values from: https://console.cloudinary.com/console
+CLOUDINARY_CLOUD_NAME=your-cloud-name-here
+CLOUDINARY_API_KEY=your-api-key-here
+CLOUDINARY_API_SECRET=your-api-secret-here
+
+# ======================================
+# HOW TO ADD:
+# ======================================
+# 1. Open your .env.local file (currently open in your editor)
+# 2. Scroll to bottom of file
+# 3. Add a blank line
+# 4. Paste these 3 lines (with your actual values):
+#
+#    CLOUDINARY_CLOUD_NAME=8rupiya
+#    CLOUDINARY_API_KEY=123456789012345
+#    CLOUDINARY_API_SECRET=AbCdEfGhIjKlMnOpQrStUvWxYz
+#
+# 5. Save file (Ctrl+S)
+# 6. Restart server:
+#    - Stop server: Ctrl+C in terminal
+#    - Start server: npm run dev
+
+# ======================================
+# WHERE TO GET VALUES:
+# ======================================
+# 1. Go to: https://cloudinary.com/
+# 2. Sign up (or login if you already have account)
+# 3. Go to Dashboard
+# 4. You'll see "Account Details" section with:
+#    - Cloud Name
+#    - API Key
+#    - API Secret (click eye icon to reveal)
+# 5. Copy these values and paste in .env.local
+
+# ======================================
+# EXAMPLE (Replace with your actual values):
+# ======================================
+# CLOUDINARY_CLOUD_NAME=8rupiya
+# CLOUDINARY_API_KEY=123456789012345
+# CLOUDINARY_API_SECRET=AbCdEfGhIjKlMnOpQrStUvWxYz
+
