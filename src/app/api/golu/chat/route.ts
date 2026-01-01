@@ -62,37 +62,55 @@ export async function POST(req: NextRequest) {
           
           // Fetch user's actual name from database
           try {
-            // Try to get nickname from UserProfile first
-            const userProfile = await UserProfile.findOne({ userId: payload.userId });
-            if (userProfile?.nickName) {
-              userName = userProfile.nickName;
-            } else if (userProfile?.fullName) {
-              userName = userProfile.fullName;
+            // First try User model (most reliable)
+            const { default: User } = await import('@/models/User');
+            const userDoc = await User.findById(payload.userId);
+            
+            if (userDoc?.name) {
+              userName = userDoc.name;
+              console.log('GOLU: Found name from User model:', userName);
             }
             
-            // If no profile, get from User model
+            // Try UserProfile for nickname/fullName if User model doesn't have name
             if (!userName) {
-              const { default: User } = await import('@/models/User');
-              const userDoc = await User.findById(payload.userId);
-              if (userDoc?.name) {
-                userName = userDoc.name;
+              const userProfile = await UserProfile.findOne({ userId: payload.userId });
+              if (userProfile?.nickName) {
+                userName = userProfile.nickName;
+                console.log('GOLU: Found nickname from UserProfile:', userName);
+              } else if (userProfile?.fullName) {
+                userName = userProfile.fullName;
+                console.log('GOLU: Found fullName from UserProfile:', userName);
               }
             }
             
-            // Add role title for respect
-            if (userName && user.role) {
+            // Final fallback based on role
+            if (!userName) {
+              userName = user.role === 'admin' ? 'Admin' :
+                         user.role === 'agent' ? 'Agent' :
+                         user.role === 'shopper' ? 'Shop Owner' :
+                         user.role === 'operator' ? 'Operator' :
+                         'Dost';
+              console.log('GOLU: Using role-based name:', userName);
+            }
+            
+            console.log('GOLU: Final userName before role append:', userName, 'Role:', user.role);
+            
+            // Don't add role title if userName is already a role
+            const isRoleName = ['Admin', 'Agent', 'Shop Owner', 'Operator', 'Dost'].includes(userName);
+            if (!isRoleName && user.role) {
               const roleTitle = user.role === 'admin' ? 'Admin' : 
                                user.role === 'agent' ? 'Agent' :
-                               user.role === 'shopper' ? 'Shop Owner' : '';
+                               user.role === 'shopper' ? 'Shop Owner' :
+                               user.role === 'operator' ? 'Operator' : '';
               if (roleTitle) {
                 userName = `${userName} (${roleTitle})`;
               }
             }
             
-            console.log('GOLU: Authenticated as', userName || 'User', 'with role', user.role);
+            console.log('GOLU: Final authenticated as:', userName, 'with role', user.role);
           } catch (nameError) {
             console.error('GOLU: Error fetching user name:', nameError);
-            userName = 'User';
+            userName = user.role === 'admin' ? 'Admin' : 'Dost';
           }
         }
       }

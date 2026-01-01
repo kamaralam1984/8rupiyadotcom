@@ -450,24 +450,14 @@ export default function AIAssistant({ userLocation, userId }: AIAssistantProps) 
       setIsRecording(false);
       setIsListening(false);
       
-      // Use ref value which is always up-to-date
+      // DON'T send message here - let recognition.onend handle it
+      // This prevents double sending
       const textToSend = capturedTranscriptRef.current.trim() || listeningText.trim() || inputText.trim();
-      console.log('Manual stop - text to send:', textToSend);
+      console.log('Manual stop - text captured:', textToSend, '(will be sent by onend)');
       
+      // Just update the input text, onend will send it
       if (textToSend) {
         setInputText(textToSend);
-      setListeningText('');
-        setFinalTranscript('');
-        capturedTranscriptRef.current = '';
-        // Small delay to ensure state is updated, then send
-        setTimeout(() => {
-          console.log('Auto-sending message after manual stop:', textToSend);
-          handleSendMessage(textToSend);
-        }, 300);
-      } else {
-        setListeningText('');
-        setFinalTranscript('');
-        capturedTranscriptRef.current = '';
       }
     }
   };
