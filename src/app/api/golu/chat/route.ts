@@ -59,6 +59,41 @@ export async function POST(req: NextRequest) {
         const payload = verifyToken(token);
         if (payload) {
           user = { userId: payload.userId, role: payload.role };
+          
+          // Fetch user's actual name from database
+          try {
+            // Try to get nickname from UserProfile first
+            const userProfile = await UserProfile.findOne({ userId: payload.userId });
+            if (userProfile?.nickName) {
+              userName = userProfile.nickName;
+            } else if (userProfile?.fullName) {
+              userName = userProfile.fullName;
+            }
+            
+            // If no profile, get from User model
+            if (!userName) {
+              const { default: User } = await import('@/models/User');
+              const userDoc = await User.findById(payload.userId);
+              if (userDoc?.name) {
+                userName = userDoc.name;
+              }
+            }
+            
+            // Add role title for respect
+            if (userName && user.role) {
+              const roleTitle = user.role === 'admin' ? 'Admin' : 
+                               user.role === 'agent' ? 'Agent' :
+                               user.role === 'shopper' ? 'Shop Owner' : '';
+              if (roleTitle) {
+                userName = `${userName} (${roleTitle})`;
+              }
+            }
+            
+            console.log('GOLU: Authenticated as', userName || 'User', 'with role', user.role);
+          } catch (nameError) {
+            console.error('GOLU: Error fetching user name:', nameError);
+            userName = 'User';
+          }
         }
       }
     } catch (authError) {
