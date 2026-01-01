@@ -16,7 +16,7 @@ export const GET = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
     
-    const { userId } = req.user;
+    const { userId } = req.user as any;
     const url = new URL(req.url);
     const action = url.searchParams.get('action') || 'list';
     const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -75,7 +75,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
     
-    const { userId, name } = req.user;
+    const { userId, name } = req.user as any;
     const body = await req.json();
     
     const { action = 'generate', startDate, endDate } = body;

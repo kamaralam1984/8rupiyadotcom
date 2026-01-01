@@ -102,10 +102,10 @@ export default function RootLayout({
           }}
         />
         
-        {/* Google AdSense - Using dangerouslySetInnerHTML to avoid data-nscript warning */}
+        {/* ⚡ Google AdSense - Load after page is interactive */}
         <Script
           id="google-adsense"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -119,14 +119,14 @@ export default function RootLayout({
           }}
         />
         
-        {/* Google Analytics (Tag Manager) */}
+        {/* ⚡ Google Analytics - Load lazily to not block page load */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AM-1765454983"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <Script
           id="google-analytics"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];

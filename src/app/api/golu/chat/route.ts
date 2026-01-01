@@ -2052,7 +2052,9 @@ async function processTask(query: string, userId: any, userName?: string) {
         if (tasks[taskNumber - 1]) {
           const task = await UnprioritizedTask.findById(tasks[taskNumber - 1]._id);
           if (task) {
-            await task.markComplete();
+            task.status = 'COMPLETED' as any;
+            task.completedAt = new Date();
+            await task.save();
             response = `🎉 Badhai ho! Task "${task.title}" complete ho gaya!\n\n✨ Bahut achha kaam kiya aapne! Keep going! 💪`;
             metadata = { action: 'complete', taskId: task._id };
           }

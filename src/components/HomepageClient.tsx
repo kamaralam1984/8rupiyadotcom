@@ -11,21 +11,38 @@ import RightRail from './RightRail';
 import Nearby from './Nearby';
 import TopRated from './TopRated';
 import ShopCard from './ShopCard';
-import ShopPopup from './ShopPopup';
 import AdSlot from './AdSlot';
-import AdvertisementBanner from './AdvertisementBanner';
-import InFeedAd from './InFeedAd';
-import DisplayAd from './DisplayAd';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import AdStatusIndicator from './AdStatusIndicator';
 
-// Dynamic imports for heavy components (lazy load)
+// ⚡ Dynamic imports for heavy components (lazy load for better performance)
 const AIAssistant = dynamic(() => import('./AIAssistant'), {
   ssr: false, // Don't render on server
   loading: () => null, // No loading indicator
+});
+
+// ⚡ Lazy load other heavy components
+const ShopPopup = dynamic(() => import('./ShopPopup'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const AdvertisementBanner = dynamic(() => import('./AdvertisementBanner'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const InFeedAd = dynamic(() => import('./InFeedAd'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const DisplayAd = dynamic(() => import('./DisplayAd'), {
+  ssr: false,
+  loading: () => null,
 });
 
 interface Shop {
