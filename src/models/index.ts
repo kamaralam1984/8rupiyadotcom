@@ -27,6 +27,8 @@ import PageView from './PageView';
 import ClickEvent from './ClickEvent';
 import ShopAnalytics from './ShopAnalytics';
 import ConversationMemory from './ConversationMemory';
+import UnprioritizedTask from './UnprioritizedTask';
+import WeeklySummary from './WeeklySummary';
 
 // Export all models for easy importing
 export {
@@ -53,6 +55,8 @@ export {
   ClickEvent,
   ShopAnalytics,
   ConversationMemory,
+  UnprioritizedTask,
+  WeeklySummary,
 };
 
 /**
@@ -84,6 +88,8 @@ export function registerAllModels() {
   ClickEvent.modelName;
   ShopAnalytics.modelName;
   ConversationMemory.modelName;
+  UnprioritizedTask.modelName;
+  WeeklySummary.modelName;
   
   return {
     User,
@@ -109,6 +115,8 @@ export function registerAllModels() {
     ClickEvent,
     ShopAnalytics,
     ConversationMemory,
+    UnprioritizedTask,
+    WeeklySummary,
   };
 }
 
@@ -136,6 +144,8 @@ export default {
   ClickEvent,
   ShopAnalytics,
   ConversationMemory,
+  UnprioritizedTask,
+  WeeklySummary,
   registerAllModels,
 };
 

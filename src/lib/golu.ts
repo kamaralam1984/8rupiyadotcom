@@ -191,6 +191,17 @@ export function detectCommandCategory(text: string): string {
   // Debug log
   console.log('Detecting category for text:', text);
 
+  // Task Management keywords (Check early to avoid conflicts)
+  if (/(task|kaam|kaam karna|todo|to-do|kar|karni|karna hai|karne hai|list|pending|complete|done)/i.test(text) &&
+      /(add|create|banao|likhna|note|yaad|list|pending|show|dekho|complete|khatam|done|ho gaya)/i.test(text)) {
+    return 'TASK';
+  }
+
+  // Weekly Summary keywords
+  if (/(summary|weekly|week ka|is hafte|last week|pichle hafte|report|analysis)/i.test(text)) {
+    return 'SUMMARY';
+  }
+
   // Profile/Personal Information keywords
   if (/(mera naam|my name|birthday|janamdin|call me|bula|rehta|city|shahar|live)/i.test(text)) {
     return 'PROFILE';
@@ -418,5 +429,90 @@ export function getCurrentDateIndian(): string {
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
   return `Aaj ${days[now.getDay()]} hai, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+/**
+ * Parse task from natural language
+ * Examples:
+ * - "Task banao: groceries kharidni hai"
+ * - "Yaad rakhna: meeting hai kal"
+ * - "Pending kaam: website complete karna"
+ */
+export function parseTaskFromText(text: string): {
+  title: string;
+  description?: string;
+  category?: string;
+  action: 'create' | 'list' | 'complete' | 'show';
+} | null {
+  const lowerText = text.toLowerCase();
+  
+  // Detect action
+  let action: 'create' | 'list' | 'complete' | 'show' = 'create';
+  
+  if (/(show|dekho|dikhao|list|sabhi|sare|pending|batao)/i.test(lowerText)) {
+    action = 'list';
+  } else if (/(complete|done|khatam|ho gaya|kar liya|finished)/i.test(lowerText)) {
+    action = 'complete';
+  } else if (/(add|create|banao|likhna|yaad rakhna|note)/i.test(lowerText)) {
+    action = 'create';
+  }
+  
+  // Extract task title
+  let title = '';
+  let description = '';
+  let category = 'OTHER';
+  
+  // Try to extract from common patterns
+  const patterns = [
+    /task\s*[:-]?\s*(.+)/i,
+    /kaam\s*[:-]?\s*(.+)/i,
+    /yaad\s+rakhna\s*[:-]?\s*(.+)/i,
+    /note\s*[:-]?\s*(.+)/i,
+    /todo\s*[:-]?\s*(.+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      title = match[1].trim();
+      break;
+    }
+  }
+  
+  // If no pattern matched, use the whole text
+  if (!title && action === 'create') {
+    title = text.replace(/(task|kaam|yaad rakhna|note|todo|banao|likhna|add|create)/gi, '').trim();
+  }
+  
+  // Detect category from keywords
+  if (/(grocery|sabzi|kirana|vegetables|fruits)/i.test(text)) {
+    category = 'SHOPPING';
+  } else if (/(meeting|call|appointment|doctor|visit)/i.test(text)) {
+    category = 'WORK';
+  } else if (/(medicine|dawa|health|exercise|gym)/i.test(text)) {
+    category = 'HEALTH';
+  } else if (/(bill|rent|salary|payment|paisa)/i.test(text)) {
+    category = 'FINANCE';
+  } else if (/(family|mummy|papa|bhai|behen|wife|husband)/i.test(text)) {
+    category = 'FAMILY';
+  } else if (/(personal|ghar|home|khud)/i.test(text)) {
+    category = 'PERSONAL';
+  } else if (/(office|work|kaam|business|client)/i.test(text)) {
+    category = 'WORK';
+  }
+  
+  return {
+    title: title || 'Untitled Task',
+    description,
+    category,
+    action,
+  };
+}
+
+/**
+ * Detect if query is asking for weekly summary
+ */
+export function isWeeklySummaryQuery(text: string): boolean {
+  return /(summary|weekly|week ka|is hafte|last week|pichle hafte|report|analysis|kya hua|kya kiya)/i.test(text.toLowerCase());
 }
 

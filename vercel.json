@@ -1,6 +1,11 @@
 {
-    "routes": [
-      { "src": "/ads.txt", "dest": "/ads.txt" }
-    ]
-  }
-  
+  "routes": [
+    { "src": "/ads.txt", "dest": "/ads.txt" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/weekly-summary",
+      "schedule": "0 0 * * 1"
+    }
+  ]
+}

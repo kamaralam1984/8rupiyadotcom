@@ -29,6 +29,8 @@ export enum CommandCategory {
   ASTROLOGY = 'ASTROLOGY',
   CATEGORY = 'CATEGORY',
   TRAVEL = 'TRAVEL',
+  TASK = 'TASK',
+  SUMMARY = 'SUMMARY',
   OTHER = 'OTHER',
 }
 

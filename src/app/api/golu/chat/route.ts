@@ -361,6 +361,18 @@ export async function POST(req: NextRequest) {
           metadata = mediaResult.metadata;
           break;
 
+        case 'TASK':
+          const taskResult = await processTask(workingQuery, user?.userId, userName);
+          response = taskResult.response;
+          metadata = taskResult.metadata;
+          break;
+
+        case 'SUMMARY':
+          const summaryResult = await processSummary(user?.userId, userName);
+          response = summaryResult.response;
+          metadata = summaryResult.metadata;
+          break;
+
         default:
           // For general queries, try AI first, then Google Search
           const generalResult = await processGeneralQuery(workingQuery, userName, user?.userId);
@@ -1956,6 +1968,228 @@ async function processGeneralQuery(query: string, userName?: string, userId?: an
     return {
       response: generateFriendlyResponse(userName, 'Main aapki madad karne ke liye yahan hoon! Aap mujhse shops, categories, reminders, weather, ya kuch bhi pooch sakte hain.'),
       metadata: { source: 'error_fallback' },
+    };
+  }
+}
+
+// Process Task commands
+async function processTask(query: string, userId: any, userName?: string) {
+  try {
+    // Check if user is logged in
+    if (!userId) {
+      return {
+        response: generateFriendlyResponse(userName, 'Task banane ke liye please login kariye. Phir main aapke sare tasks yaad rakh sakta hun! 📝'),
+        metadata: { requiresAuth: true },
+      };
+    }
+
+    // Import required modules
+    const { parseTaskFromText } = await import('@/lib/golu');
+    const UnprioritizedTask = (await import('@/models/UnprioritizedTask')).default;
+    const { TaskStatus, TaskCategory } = await import('@/models/UnprioritizedTask');
+
+    // Parse task from query
+    const taskData = parseTaskFromText(query);
+    
+    if (!taskData) {
+      return {
+        response: generateFriendlyResponse(userName, 'Maaf kijiye, main task samajh nahi paya. Aise boliye: "Task banao: groceries kharidni hai" ya "Pending tasks dikhao"'),
+        metadata: {},
+      };
+    }
+
+    let response = '';
+    let metadata: any = {};
+
+    if (taskData.action === 'list' || taskData.action === 'show') {
+      // Show pending tasks
+      const tasks = await UnprioritizedTask.find({
+        userId,
+        status: { $in: [TaskStatus.PENDING, TaskStatus.IN_PROGRESS] },
+        isDeleted: false,
+      })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+
+      if (tasks.length === 0) {
+        response = 'Aapke paas koi pending task nahi hai! Sab kaam complete hain 🎉\n\nNaya task add karna hai? Aise boliye: "Task banao: [kaam ka naam]"';
+      } else {
+        response = `📝 Aapke Pending Tasks (${tasks.length}):\n\n`;
+        tasks.forEach((task: any, index: number) => {
+          const categoryEmoji = 
+            task.category === TaskCategory.SHOPPING ? '🛒' :
+            task.category === TaskCategory.WORK ? '💼' :
+            task.category === TaskCategory.HEALTH ? '🏥' :
+            task.category === TaskCategory.FINANCE ? '💰' :
+            task.category === TaskCategory.FAMILY ? '👨‍👩‍👧' :
+            task.category === TaskCategory.PERSONAL ? '🏠' : '📋';
+          
+          response += `${index + 1}. ${categoryEmoji} ${task.title}\n`;
+          if (task.description) {
+            response += `   📄 ${task.description}\n`;
+          }
+        });
+        response += '\n✅ Task complete karne ke liye boliye: "Task [number] complete karo"';
+      }
+
+      metadata = { action: 'list', tasksCount: tasks.length };
+
+    } else if (taskData.action === 'complete') {
+      // Complete a task - extract task number or title
+      const taskMatch = query.match(/(\d+)/);
+      if (taskMatch) {
+        const taskNumber = parseInt(taskMatch[1]);
+        const tasks = await UnprioritizedTask.find({
+          userId,
+          status: { $in: [TaskStatus.PENDING, TaskStatus.IN_PROGRESS] },
+          isDeleted: false,
+        })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .lean();
+
+        if (tasks[taskNumber - 1]) {
+          const task = await UnprioritizedTask.findById(tasks[taskNumber - 1]._id);
+          if (task) {
+            await task.markComplete();
+            response = `🎉 Badhai ho! Task "${task.title}" complete ho gaya!\n\n✨ Bahut achha kaam kiya aapne! Keep going! 💪`;
+            metadata = { action: 'complete', taskId: task._id };
+          }
+        } else {
+          response = 'Yeh task number mujhe nahi mila. Pending tasks dekhne ke liye "Tasks dikhao" boliye.';
+        }
+      } else {
+        response = 'Task complete karne ke liye number bataye. Jaise: "Task 1 complete karo"';
+      }
+
+    } else if (taskData.action === 'create') {
+      // Create new task
+      const task = await UnprioritizedTask.create({
+        userId,
+        userName,
+        title: taskData.title,
+        description: taskData.description,
+        category: taskData.category || TaskCategory.OTHER,
+        status: TaskStatus.PENDING,
+      });
+
+      const categoryEmoji = 
+        task.category === TaskCategory.SHOPPING ? '🛒' :
+        task.category === TaskCategory.WORK ? '💼' :
+        task.category === TaskCategory.HEALTH ? '🏥' :
+        task.category === TaskCategory.FINANCE ? '💰' :
+        task.category === TaskCategory.FAMILY ? '👨‍👩‍👧' :
+        task.category === TaskCategory.PERSONAL ? '🏠' : '📋';
+
+      response = `✅ Task add ho gaya!\n\n${categoryEmoji} "${task.title}"\n\n📝 Main isko yaad rakh lunga! Jab complete ho jaye toh mujhe batana.`;
+      metadata = { action: 'create', taskId: task._id, category: task.category };
+    }
+
+    return {
+      response: generateFriendlyResponse(userName, response),
+      metadata,
+    };
+
+  } catch (error: any) {
+    console.error('Task processing error:', error);
+    return {
+      response: generateFriendlyResponse(userName, 'Task manage karne me problem aa rahi hai. Kripya thodi der baad try karein.'),
+      metadata: { error: error.message },
+    };
+  }
+}
+
+// Process Weekly Summary request
+async function processSummary(userId: any, userName?: string) {
+  try {
+    // Check if user is logged in
+    if (!userId) {
+      return {
+        response: generateFriendlyResponse(userName, 'Weekly summary dekhne ke liye please login kariye! 📊'),
+        metadata: { requiresAuth: true },
+      };
+    }
+
+    // Import required modules
+    const { getLatestWeeklySummary, checkAndGenerateSummary } = await import('@/lib/goluWeeklySummary');
+
+    // Try to get latest summary
+    let summary = await getLatestWeeklySummary(userId);
+
+    // If no summary exists, try to generate one
+    if (!summary) {
+      summary = await checkAndGenerateSummary(userId);
+    }
+
+    if (!summary) {
+      return {
+        response: generateFriendlyResponse(userName, 
+          'Abhi tak koi summary available nahi hai! 📊\n\n' +
+          'Is hafte aur zyada baat kariye mere saath, phir main aapka weekly summary bana dunga! 💬\n\n' +
+          'Summary me ye sab dikhega:\n' +
+          '✅ Kitne conversations hue\n' +
+          '✅ Aapke main activities\n' +
+          '✅ Important insights\n' +
+          '✅ What you learned'
+        ),
+        metadata: { summaryAvailable: false },
+      };
+    }
+
+    // Format summary response
+    const startDate = new Date(summary.startDate).toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+    const endDate = new Date(summary.endDate).toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+
+    let response = `📊 WEEK ${summary.weekNumber} SUMMARY (${startDate} - ${endDate})\n\n`;
+    response += `${summary.summary}\n\n`;
+
+    // Add statistics
+    response += `📈 STATISTICS:\n`;
+    response += `💬 Total Conversations: ${summary.totalConversations}\n`;
+    if (summary.totalRemindersSet > 0) {
+      response += `⏰ Reminders Set: ${summary.totalRemindersSet}\n`;
+    }
+    if (summary.totalTasksCreated > 0) {
+      response += `📝 Tasks Created: ${summary.totalTasksCreated}\n`;
+    }
+    if (summary.totalShopsSearched > 0) {
+      response += `🛒 Shops Searched: ${summary.totalShopsSearched}\n`;
+    }
+
+    // Add key insights
+    if (summary.keyInsights && summary.keyInsights.length > 0) {
+      response += `\n💡 KEY INSIGHTS:\n`;
+      summary.keyInsights.forEach((insight: string, index: number) => {
+        response += `${index + 1}. ${insight}\n`;
+      });
+    }
+
+    // Add top categories
+    if (summary.topCategories && summary.topCategories.length > 0) {
+      response += `\n🎯 TOP ACTIVITIES:\n`;
+      summary.topCategories.slice(0, 3).forEach((cat: any) => {
+        response += `• ${cat.category}: ${cat.count} times\n`;
+      });
+    }
+
+    response += `\n✨ Agle hafte bhi aise hi active rehna! Keep going! 💪`;
+
+    return {
+      response: generateFriendlyResponse(userName, response),
+      metadata: { 
+        summaryId: summary._id,
+        week: summary.weekNumber,
+        year: summary.year,
+        totalConversations: summary.totalConversations,
+      },
+    };
+
+  } catch (error: any) {
+    console.error('Summary processing error:', error);
+    return {
+      response: generateFriendlyResponse(userName, 'Summary generate karne me problem aa rahi hai. Kripya thodi der baad try karein.'),
+      metadata: { error: error.message },
     };
   }
 }
