@@ -102,11 +102,21 @@ export default function RootLayout({
           }}
         />
         
-        {/* Google AdSense */}
+        {/* Google AdSense - Using dangerouslySetInnerHTML to avoid data-nscript warning */}
         <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984"
+          id="google-adsense"
           strategy="afterInteractive"
-          crossOrigin="anonymous"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var script = document.createElement('script');
+                script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984';
+                script.async = true;
+                script.crossOrigin = 'anonymous';
+                document.head.appendChild(script);
+              })();
+            `,
+          }}
         />
         
         {/* Google Analytics (Tag Manager) */}
