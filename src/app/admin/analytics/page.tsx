@@ -84,6 +84,7 @@ interface RealtimeData {
   }>;
   recentVisitors: Array<{
     visitorId: string;
+    userName: string;
     device: string;
     country: string;
     city: string;
@@ -463,7 +464,7 @@ export default function AnalyticsPage() {
                           <span className={`w-2 h-2 rounded-full ${visitor.timeAgo < 60 ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {visitor.city}, {visitor.country}
+                              {visitor.userName} • {visitor.city}, {visitor.country}
                             </div>
                             <div className="text-xs text-gray-500">
                               {visitor.device} • {visitor.isLoggedIn ? '👤 Logged in' : '👻 Guest'}

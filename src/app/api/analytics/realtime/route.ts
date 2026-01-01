@@ -109,12 +109,18 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.users - a.users)
       .slice(0, 10);
 
+    // Get user information for logged-in visitors
+    const userIds = activeVisitors.filter(v => v.userId).map(v => v.userId);
+    const users = await User.find({ _id: { $in: userIds } }).select('_id name');
+    const userMap = new Map(users.map(u => [u._id.toString(), u.name]));
+
     // Recent visitors details
     const recentVisitors = activeVisitors
       .sort((a, b) => b.lastVisit.getTime() - a.lastVisit.getTime())
       .slice(0, 20)
       .map(v => ({
         visitorId: v.visitorId.substring(0, 8),
+        userName: v.userId ? (userMap.get(v.userId.toString()) || 'User') : 'Guest',
         device: v.deviceType,
         country: v.country || 'Unknown',
         city: v.city || 'Unknown',

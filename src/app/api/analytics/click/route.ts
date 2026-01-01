@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import ClickEvent from '@/models/ClickEvent';
 import ShopAnalytics from '@/models/ShopAnalytics';
+import Visitor from '@/models/Visitor';
 import { ClickType } from '@/models/ClickEvent';
 
 export async function POST(req: NextRequest) {
@@ -21,6 +22,16 @@ export async function POST(req: NextRequest) {
       deviceType,
     } = data;
 
+    // Get location from visitor record
+    let country, city;
+    if (visitorId) {
+      const visitor = await Visitor.findOne({ visitorId }).select('country city');
+      if (visitor) {
+        country = visitor.country;
+        city = visitor.city;
+      }
+    }
+
     if (!visitorId || !clickType) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -38,6 +49,8 @@ export async function POST(req: NextRequest) {
       sourcePage,
       targetUrl,
       deviceType,
+      country,
+      city,
       timestamp: new Date(),
     });
 
