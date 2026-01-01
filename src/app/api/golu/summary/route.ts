@@ -50,7 +50,16 @@ export const GET = withAuth(async (req: AuthRequest) => {
       
     } else if (action === 'stats') {
       // Get summary statistics
-      const stats = await WeeklySummary.getSummaryStats(userId);
+      const summaries = await getUserWeeklySummaries(userId, 10);
+      
+      const stats = {
+        totalSummaries: summaries.length,
+        latestWeek: summaries[0]?.weekNumber || null,
+        latestYear: summaries[0]?.year || null,
+        avgConversations: summaries.length > 0 
+          ? Math.round(summaries.reduce((sum: number, s: any) => sum + s.totalConversations, 0) / summaries.length)
+          : 0,
+      };
       
       return NextResponse.json({
         success: true,
