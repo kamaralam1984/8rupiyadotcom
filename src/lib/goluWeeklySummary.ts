@@ -281,8 +281,9 @@ Generate a warm, friendly summary in Hinglish that:
 Style: Friendly, conversational Hinglish (like GOLU talks)
 `;
     
-    const aiResponse = await getEnhancedAIResponse(prompt, 'You are GOLU, a friendly AI assistant summarizing the week.');
-    return aiResponse || 'Is week bahut achha raha! Aapne GOLU ke saath achhi baatcheet ki. 🎉';
+    const fallbackResponse = 'Is week bahut achha raha! Aapne GOLU ke saath achhi baatcheet ki. 🎉';
+    const aiResponse = await getEnhancedAIResponse(prompt, 'weekly-summary', fallbackResponse);
+    return aiResponse;
     
   } catch (error) {
     console.error('AI summary generation failed:', error);

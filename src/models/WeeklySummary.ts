@@ -239,11 +239,10 @@ WeeklySummarySchema.index({ userId: 1, startDate: -1 });
 WeeklySummarySchema.index({ userId: 1, status: 1 });
 
 // Pre-save: Set generatedAt when status changes to COMPLETED
-WeeklySummarySchema.pre('save', function (next) {
+WeeklySummarySchema.pre('save', async function () {
   if (this.isModified('status') && this.status === SummaryStatus.COMPLETED && !this.generatedAt) {
     this.generatedAt = new Date();
   }
-  next();
 });
 
 // Static Methods
@@ -308,9 +307,9 @@ WeeklySummarySchema.statics = {
       return null;
     }
     
-    const totalConversations = summaries.reduce((sum, s) => sum + s.totalConversations, 0);
-    const totalReminders = summaries.reduce((sum, s) => sum + s.totalRemindersSet, 0);
-    const totalTasks = summaries.reduce((sum, s) => sum + s.totalTasksCreated, 0);
+    const totalConversations = summaries.reduce((sum: number, s: any) => sum + s.totalConversations, 0);
+    const totalReminders = summaries.reduce((sum: number, s: any) => sum + s.totalRemindersSet, 0);
+    const totalTasks = summaries.reduce((sum: number, s: any) => sum + s.totalTasksCreated, 0);
     
     return {
       totalWeeks: summaries.length,

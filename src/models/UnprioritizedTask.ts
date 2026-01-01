@@ -46,6 +46,24 @@ export interface IUnprioritizedTask extends Document {
   
   // Soft Delete
   isDeleted: boolean;
+  
+  // Instance Methods
+  markComplete(): Promise<IUnprioritizedTask>;
+  markCancelled(): Promise<IUnprioritizedTask>;
+  softDelete(): Promise<IUnprioritizedTask>;
+}
+
+export interface IUnprioritizedTaskModel extends Model<IUnprioritizedTask> {
+  getActiveTasks(userId: mongoose.Types.ObjectId): Promise<IUnprioritizedTask[]>;
+  getTasksByCategory(userId: mongoose.Types.ObjectId, category: TaskCategory): Promise<IUnprioritizedTask[]>;
+  getCompletedTasks(userId: mongoose.Types.ObjectId, limit?: number): Promise<IUnprioritizedTask[]>;
+  getTaskStats(userId: mongoose.Types.ObjectId): Promise<{
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+    cancelled: number;
+  }>;
 }
 
 const UnprioritizedTaskSchema: Schema<IUnprioritizedTask> = new Schema(
@@ -138,11 +156,10 @@ UnprioritizedTaskSchema.index({ userId: 1, category: 1, isDeleted: 1 });
 UnprioritizedTaskSchema.index({ userId: 1, createdAt: -1 });
 
 // Pre-save: Auto-set completedAt when status changes to COMPLETED
-UnprioritizedTaskSchema.pre('save', function (next) {
+UnprioritizedTaskSchema.pre('save', async function () {
   if (this.isModified('status') && this.status === TaskStatus.COMPLETED && !this.completedAt) {
     this.completedAt = new Date();
   }
-  next();
 });
 
 // Static Methods
@@ -241,8 +258,8 @@ UnprioritizedTaskSchema.methods = {
 };
 
 // Prevent model recompilation in development
-const UnprioritizedTask: Model<IUnprioritizedTask> =
-  mongoose.models.UnprioritizedTask || mongoose.model<IUnprioritizedTask>('UnprioritizedTask', UnprioritizedTaskSchema);
+const UnprioritizedTask: IUnprioritizedTaskModel =
+  (mongoose.models.UnprioritizedTask as IUnprioritizedTaskModel) || mongoose.model<IUnprioritizedTask, IUnprioritizedTaskModel>('UnprioritizedTask', UnprioritizedTaskSchema);
 
 export default UnprioritizedTask;
 

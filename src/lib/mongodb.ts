@@ -56,7 +56,7 @@ async function connectDB() {
 
   if (!cached.promise) {
     // ⚡ Optimized connection options for faster performance
-    const opts = {
+    const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       
       // Connection pooling for better performance
@@ -75,10 +75,10 @@ async function connectDB() {
       
       // Compression for faster data transfer
       compressors: ['zlib'],
-      zlibCompressionLevel: 6, // Balance between speed and compression
+      zlibCompressionLevel: 6,
       
       // Read preference for better performance
-      readPreference: 'primaryPreferred', // Try primary first, fallback to secondary
+      readPreference: 'primaryPreferred',
       
       // Write concern for faster writes (adjust based on your needs)
       writeConcern: {

@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import UnprioritizedTask, { TaskStatus, TaskCategory } from '@/models/UnprioritizedTask';
 import { withAuth, AuthRequest } from '@/middleware/auth';
+import User from '@/models/User';
+import mongoose from 'mongoose';
 
 // GET /api/golu/tasks - Get all tasks for authenticated user
 export const GET = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
+    
+    if (!req.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     const { userId } = req.user;
     const url = new URL(req.url);
@@ -34,7 +40,7 @@ export const GET = withAuth(async (req: AuthRequest) => {
       .lean();
     
     // Get statistics
-    const stats = await UnprioritizedTask.getTaskStats(userId);
+    const stats = await UnprioritizedTask.getTaskStats(new mongoose.Types.ObjectId(userId));
     
     return NextResponse.json({
       success: true,
@@ -54,7 +60,16 @@ export const POST = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
     
-    const { userId, name } = req.user;
+    if (!req.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { userId } = req.user;
+    
+    // Fetch user to get name
+    const user = await User.findById(userId).select('name');
+    const userName = user?.name || req.user.email;
+    
     const body = await req.json();
     
     const {
@@ -76,7 +91,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
     
     const task = await UnprioritizedTask.create({
       userId,
-      userName: name,
+      userName: userName,
       title: title.trim(),
       description: description?.trim(),
       category,
@@ -87,7 +102,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
       estimatedTime,
     });
     
-    console.log(`✅ Task created: "${title}" by ${name}`);
+    console.log(`✅ Task created: "${title}" by ${userName}`);
     
     return NextResponse.json({
       success: true,
@@ -105,6 +120,10 @@ export const POST = withAuth(async (req: AuthRequest) => {
 export const PATCH = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
+    
+    if (!req.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     const { userId } = req.user;
     const body = await req.json();
@@ -171,6 +190,10 @@ export const PATCH = withAuth(async (req: AuthRequest) => {
 export const DELETE = withAuth(async (req: AuthRequest) => {
   try {
     await connectDB();
+    
+    if (!req.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
     const { userId } = req.user;
     const url = new URL(req.url);
