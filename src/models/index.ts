@@ -22,6 +22,10 @@ import Review from './Review';
 import Withdrawal from './Withdrawal';
 import JyotishBooking from './JyotishBooking';
 import JyotishPandit from './JyotishPandit';
+import Visitor from './Visitor';
+import PageView from './PageView';
+import ClickEvent from './ClickEvent';
+import ShopAnalytics from './ShopAnalytics';
 
 // Export all models for easy importing
 export {
@@ -43,6 +47,10 @@ export {
   Withdrawal,
   JyotishBooking,
   JyotishPandit,
+  Visitor,
+  PageView,
+  ClickEvent,
+  ShopAnalytics,
 };
 
 /**
@@ -69,6 +77,10 @@ export function registerAllModels() {
   Withdrawal.modelName;
   JyotishBooking.modelName;
   JyotishPandit.modelName;
+  Visitor.modelName;
+  PageView.modelName;
+  ClickEvent.modelName;
+  ShopAnalytics.modelName;
   
   return {
     User,
@@ -89,6 +101,10 @@ export function registerAllModels() {
     Withdrawal,
     JyotishBooking,
     JyotishPandit,
+    Visitor,
+    PageView,
+    ClickEvent,
+    ShopAnalytics,
   };
 }
 
@@ -111,6 +127,10 @@ export default {
   Withdrawal,
   JyotishBooking,
   JyotishPandit,
+  Visitor,
+  PageView,
+  ClickEvent,
+  ShopAnalytics,
   registerAllModels,
 };
 
