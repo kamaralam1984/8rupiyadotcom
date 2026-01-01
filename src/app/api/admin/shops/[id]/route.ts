@@ -66,13 +66,16 @@ export async function PUT(
       (shop as any).seoKeywords = updates.keywords;
     }
 
-    // Handle contact information separately (WhatsApp removed)
+    // Handle contact information (phone and email are direct fields in Shop model)
     if (updates.contact) {
-      shop.contact = {
-        phone: updates.contact.phone || shop.contact?.phone,
-        email: updates.contact.email || shop.contact?.email,
-        // WhatsApp removed - not saving
-      };
+      console.log('📞 Updating contact info:', updates.contact);
+      if (updates.contact.phone) {
+        shop.phone = updates.contact.phone;
+      }
+      if (updates.contact.email) {
+        shop.email = updates.contact.email;
+      }
+      console.log('✅ Contact updated - Phone:', shop.phone, 'Email:', shop.email);
     }
 
     await shop.save();
