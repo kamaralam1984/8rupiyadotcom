@@ -15,9 +15,15 @@ declare global {
 /**
  * Initialize AdSense for a specific ad element
  * @param element - The ins.adsbygoogle element to initialize
+ * @param retryCount - Current retry attempt (internal use)
+ * @param maxRetries - Maximum number of retries (default: 50)
  * @returns Promise that resolves when ad is initialized
  */
-export function initializeAd(element: HTMLElement): Promise<void> {
+export function initializeAd(
+  element: HTMLElement, 
+  retryCount: number = 0, 
+  maxRetries: number = 50
+): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       // Check cache first
@@ -37,16 +43,20 @@ export function initializeAd(element: HTMLElement): Promise<void> {
 
       // Check if AdSense script is loaded
       if (!isBrowser() || !window.adsbygoogle) {
-        safeWarn('⏳ Waiting for AdSense script to load...');
+        // Check max retries
+        if (retryCount >= maxRetries) {
+          devLog('⚠️ AdSense script not available, skipping ad initialization');
+          // Resolve instead of reject - fail gracefully
+          resolve();
+          return;
+        }
+
         // Retry after a short delay
         setTimeout(() => {
-          initializeAd(element)
+          initializeAd(element, retryCount + 1, maxRetries)
             .then(resolve)
-            .catch((err) => {
-              safeError('❌ Retry failed:', err);
-              reject(err);
-            });
-        }, 100);
+            .catch(resolve); // Resolve even on error - fail gracefully
+        }, 200);
         return;
       }
 
@@ -70,14 +80,16 @@ export function initializeAd(element: HTMLElement): Promise<void> {
         // Remove initialization mark on failure
         element.removeAttribute('data-ads-initialized');
         adCache.remove(element);
-        reject(pushError);
+        // Resolve instead of reject - fail gracefully
+        resolve();
       }
     } catch (error) {
       safeError('❌ AdSense initialization error:', error);
       // Ensure element is not marked as initialized on error
       element.removeAttribute('data-ads-initialized');
       adCache.remove(element);
-      reject(error);
+      // Resolve instead of reject - fail gracefully
+      resolve();
     }
   });
 }
@@ -92,12 +104,14 @@ export function isAdSenseLoaded(): boolean {
 
 /**
  * Wait for AdSense script to load
- * @param timeout - Maximum time to wait in milliseconds (default: 10000)
- * @returns Promise that resolves when script is loaded
+ * @param timeout - Maximum time to wait in milliseconds (default: 30000)
+ * @returns Promise that resolves when script is loaded or timeout
  */
-export function waitForAdSense(timeout: number = 10000): Promise<void> {
-  return new Promise((resolve, reject) => {
+export function waitForAdSense(timeout: number = 30000): Promise<void> {
+  return new Promise((resolve) => {
+    // Already loaded
     if (isAdSenseLoaded()) {
+      devLog('✅ AdSense script already loaded');
       resolve();
       return;
     }
@@ -106,13 +120,15 @@ export function waitForAdSense(timeout: number = 10000): Promise<void> {
     const checkInterval = setInterval(() => {
       if (isAdSenseLoaded()) {
         clearInterval(checkInterval);
-        devLog('✅ AdSense script loaded');
+        devLog('✅ AdSense script loaded successfully');
         resolve();
       } else if (Date.now() - startTime > timeout) {
         clearInterval(checkInterval);
-        reject(new Error('AdSense script load timeout'));
+        // Resolve instead of reject - fail gracefully
+        devLog('⚠️ AdSense script load timeout - continuing without ads');
+        resolve();
       }
-    }, 100);
+    }, 200);
   });
 }
 

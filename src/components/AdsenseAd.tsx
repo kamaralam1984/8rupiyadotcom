@@ -23,16 +23,13 @@ export default function AdsenseAd() {
     if (!insElement) return;
 
     const init = async () => {
-      try {
-        await waitForAdSense();
-        await initializeAd(insElement);
-        initializedRef.current = true;
-        console.log('✅ AdsenseAd initialized');
-      } catch (error) {
-        console.error('❌ AdsenseAd initialization failed:', error);
-        // Retry after 1 second
-        setTimeout(init, 1000);
-      }
+      // Wait for AdSense script (resolves gracefully if timeout)
+      await waitForAdSense();
+      
+      // Initialize the ad (resolves gracefully if fails)
+      await initializeAd(insElement);
+      
+      initializedRef.current = true;
     };
 
     init();

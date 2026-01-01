@@ -33,21 +33,15 @@ export default function DisplayAd({ className = '' }: DisplayAdProps) {
 
     const element = adRef.current;
 
-    // Initialize ad with proper error handling
+    // Initialize ad (now handles retries internally)
     const init = async () => {
-      try {
-        // Wait for AdSense script to load
-        await waitForAdSense();
-        
-        // Initialize the ad
-        await initializeAd(element);
-        
-        initializedRef.current = true;
-      } catch (error) {
-        console.error('DisplayAd initialization failed:', error);
-        // Retry after 1 second
-        setTimeout(init, 1000);
-      }
+      // Wait for AdSense script (resolves gracefully if timeout)
+      await waitForAdSense();
+      
+      // Initialize the ad (resolves gracefully if fails)
+      await initializeAd(element);
+      
+      initializedRef.current = true;
     };
 
     init();

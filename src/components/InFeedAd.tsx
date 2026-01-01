@@ -1,66 +1,57 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { initializeAd, waitForAdSense, cleanupAd } from '@/lib/adsense';
 
 interface InFeedAdProps {
   className?: string;
 }
 
 export default function InFeedAd({ className = '' }: InFeedAdProps) {
+  const pathname = usePathname();
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || 'ca-pub-4472734290958984';
   const adSlot = '4723091404';
 
+  // Block ads on admin panels
+  const isAdminPanel = pathname?.startsWith('/admin') || 
+                       pathname?.startsWith('/agent') || 
+                       pathname?.startsWith('/operator') ||
+                       pathname?.startsWith('/accountant') ||
+                       pathname?.startsWith('/shopper');
+
+  if (isAdminPanel) {
+    return null;
+  }
+
   useEffect(() => {
-    // Wait for AdSense script to load
-    const initializeAd = () => {
-      // Skip if already initialized or no ad element
-      if (initializedRef.current || !adRef.current) {
-        return;
-      }
+    if (initializedRef.current || !adRef.current) {
+      return;
+    }
 
-      const element = adRef.current;
+    const element = adRef.current;
+
+    // Initialize ad (now handles retries internally)
+    const init = async () => {
+      // Wait for AdSense script (resolves gracefully if timeout)
+      await waitForAdSense();
       
-      // Check if this specific element already has ads initialized
-      if (element.hasAttribute('data-ads-initialized')) {
-        initializedRef.current = true;
-        return;
-      }
-
-      // Check if adsbygoogle is available
-      if (typeof window === 'undefined' || !(window as any).adsbygoogle) {
-        // Retry after a short delay if script hasn't loaded yet
-        setTimeout(initializeAd, 100);
-        return;
-      }
-
-      try {
-        // Initialize adsbygoogle array if it doesn't exist
-        (window as any).adsbygoogle = (window as any).adsbygoogle || [];
-        
-        // Only push if it's an array and this element hasn't been initialized
-        if (Array.isArray((window as any).adsbygoogle)) {
-          // Mark as initialized before pushing
-          initializedRef.current = true;
-          element.setAttribute('data-ads-initialized', 'true');
-          
-          (window as any).adsbygoogle.push({});
-        }
-      } catch (err) {
-        console.error('InFeed AdSense error:', err);
-        initializedRef.current = false;
-      }
+      // Initialize the ad (resolves gracefully if fails)
+      await initializeAd(element);
+      
+      initializedRef.current = true;
     };
 
-    // Try to initialize immediately
-    initializeAd();
-    
-    // Also listen for script load event
-    if (typeof window !== 'undefined') {
-      window.addEventListener('load', initializeAd);
-      return () => window.removeEventListener('load', initializeAd);
-    }
+    init();
+
+    // Cleanup on unmount
+    return () => {
+      if (element) {
+        cleanupAd(element);
+      }
+    };
   }, []);
 
   if (!adsenseId) {
