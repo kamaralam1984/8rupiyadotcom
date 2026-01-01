@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { initializeAd, waitForAdSense, cleanupAd } from "@/lib/adsense";
 
 export default function AdsenseAd() {
   const pathname = usePathname();
   const adRef = useRef<HTMLDivElement>(null);
+  const insRef = useRef<HTMLModElement>(null);
+  const initializedRef = useRef(false);
 
   // Block ads on admin, agent, operator, accountant, and shopper panels
   const isAdminPanel = pathname?.startsWith('/admin') || 
@@ -14,19 +17,31 @@ export default function AdsenseAd() {
                        pathname?.startsWith('/shopper');
 
   useEffect(() => {
-    if (isAdminPanel || !adRef.current) return;
+    if (isAdminPanel || initializedRef.current) return;
 
-    // Prevent double ads on re-render
-    if (adRef.current.getAttribute("data-loaded")) return;
+    const insElement = insRef.current;
+    if (!insElement) return;
 
-    try {
-      if (typeof window !== 'undefined') {
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-        adRef.current?.setAttribute("data-loaded", "true");
+    const init = async () => {
+      try {
+        await waitForAdSense();
+        await initializeAd(insElement);
+        initializedRef.current = true;
+        console.log('✅ AdsenseAd initialized');
+      } catch (error) {
+        console.error('❌ AdsenseAd initialization failed:', error);
+        // Retry after 1 second
+        setTimeout(init, 1000);
       }
-    } catch (e) {
-      console.log("Adsense error", e);
-    }
+    };
+
+    init();
+
+    return () => {
+      if (insElement) {
+        cleanupAd(insElement);
+      }
+    };
   }, [isAdminPanel]);
 
   if (isAdminPanel) {
@@ -34,8 +49,9 @@ export default function AdsenseAd() {
   }
 
   return (
-    <div ref={adRef}>
+    <div ref={adRef} className="adsense-ad-container">
       <ins
+        ref={insRef}
         className="adsbygoogle"
         style={{ display: "block" }}
         data-ad-client="ca-pub-4472734290958984"

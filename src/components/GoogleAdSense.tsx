@@ -4,11 +4,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAdStatus } from '@/contexts/AdStatusContext';
 
-declare global {
-  interface Window {
-    adsbygoogle: any[] | { loaded?: boolean; push?: (ad: any) => void };
-  }
-}
+// Window interface extension removed - using global declaration from @/lib/adsense
 
 interface GoogleAdSenseProps {
   slot?: string;
