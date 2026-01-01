@@ -6,6 +6,7 @@ import { generateMetadata as generateSEOMetadata } from "@/lib/seo";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AdStatusProvider } from "@/contexts/AdStatusContext";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 
 
 const geistSans = Geist({
@@ -129,7 +130,9 @@ export default function RootLayout({
         <ThemeProvider>
         <AdStatusProvider>
         <LanguageProvider>
+        <AnalyticsProvider>
         {children}
+        </AnalyticsProvider>
         </LanguageProvider>
         </AdStatusProvider>
         </ThemeProvider>

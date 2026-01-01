@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FaPhone, FaEnvelope, FaGlobe, FaMapMarkerAlt, FaStar, FaEye, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import Analytics from '@/lib/analytics';
 
 interface Shop {
   _id: string;
@@ -60,6 +61,12 @@ export default function ShopDetailPage() {
         }
 
         setShop(data.shop);
+        
+        // Track shop view in analytics
+        if (data.shop._id && data.shop.name) {
+          Analytics.trackShopView(data.shop._id, data.shop.name);
+        }
+        
         // Increment visitor count
         await fetch(`/api/shops/${params.id}`, {
           method: 'PUT',
@@ -286,6 +293,7 @@ export default function ShopDetailPage() {
               <div className="mb-4">
                 <a
                   href={`tel:${shop.phone}`}
+                  onClick={() => Analytics.trackPhoneClick(shop._id, shop.phone)}
                   className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                 >
                   <FaPhone className="mr-3" />
@@ -297,6 +305,7 @@ export default function ShopDetailPage() {
               <div className="mb-4">
                 <a
                   href={`https://wa.me/${shop.phone.replace(/[^0-9]/g, '')}`}
+                  onClick={() => Analytics.trackWhatsAppClick(shop._id, shop.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
@@ -310,6 +319,7 @@ export default function ShopDetailPage() {
               <div className="mb-4">
                 <a
                   href={`mailto:${shop.email}`}
+                  onClick={() => Analytics.trackClick('email_click', { shopId: shop._id, targetUrl: `mailto:${shop.email}` })}
                   className="flex items-center p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
                 >
                   <FaEnvelope className="mr-3" />

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation } from 'react-icons/fi';
 import { calculateDistanceAndTime } from '@/utils/distanceCalculation';
+import Analytics from '@/lib/analytics';
 
 interface ShopCardProps {
   shop: {
@@ -121,6 +122,16 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
       setDistanceTime({});
     }
   }, [userLocation, shop.location, shop.distance]);
+  // Handle click with analytics tracking
+  const handleClick = () => {
+    // Track shop card click
+    if (shop._id && shop.name) {
+      Analytics.trackShopCardClick(shop._id, shop.name);
+    }
+    // Call original onClick handler
+    onClick?.();
+  };
+
   // Render placeholder skeleton if not visible yet
   if (!isVisible) {
     return (
@@ -143,13 +154,13 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
       transition={{ delay: index * 0.1, duration: 0.5 }}
       whileHover={{ scale: 1.03, y: -5 }}
       className="group cursor-pointer"
-      onClick={onClick}
+      onClick={handleClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onClick?.();
+          handleClick();
         }
       }}
       aria-label={`View details for ${shop.name}`}
