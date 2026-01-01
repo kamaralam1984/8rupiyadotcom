@@ -60,12 +60,16 @@ export async function GET(req: NextRequest) {
       lastVisit: { $gte: startDate }
     });
 
-    // Get avg time spent
+    // Get avg time spent and total hours
     const visitors = await Visitor.find({
       lastVisit: { $gte: startDate }
     });
     const totalTime = visitors.reduce((sum, v) => sum + v.totalTimeSpent, 0);
     const avgTimeSpent = visitors.length > 0 ? Math.floor(totalTime / visitors.length) : 0;
+    const totalHoursSpent = Math.floor(totalTime / 3600); // Convert seconds to hours
+    
+    // Get logged-in users count
+    const loggedInUsers = visitors.filter(v => v.userId).length;
 
     // Get device breakdown
     const deviceBreakdown = await PageView.aggregate([
@@ -195,7 +199,10 @@ export async function GET(req: NextRequest) {
         totalVisits,
         uniqueVisitors: uniqueVisitors.length,
         returningVisitors,
+        loggedInUsers,
+        anonymousUsers: uniqueVisitors.length - loggedInUsers,
         avgTimeSpent,
+        totalHoursSpent,
         bounceRate: 0, // Calculate based on single-page sessions
         totalShops,
         activeShops,
