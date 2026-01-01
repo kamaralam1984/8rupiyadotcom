@@ -173,8 +173,11 @@ export default function ShopperShopCreatePage() {
     setError('');
 
     try {
+      console.log('📸 Starting image upload:', file.name, file.size, file.type);
+      
       const token = localStorage.getItem('token');
       if (!token) {
+        console.error('❌ No token found');
         setError('Please login again');
         setUploadingImages(false);
         return;
@@ -182,6 +185,7 @@ export default function ShopperShopCreatePage() {
 
       // Validate file size (max 10MB before compression)
       if (file.size > 10 * 1024 * 1024) {
+        console.error('❌ File too large:', file.size);
         setError('Image size should be less than 10MB');
         setUploadingImages(false);
         return;
@@ -189,17 +193,21 @@ export default function ShopperShopCreatePage() {
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
+        console.error('❌ Invalid file type:', file.type);
         setError('Please upload a valid image file');
         setUploadingImages(false);
         return;
       }
 
+      console.log('🔄 Compressing image...');
       // Compress image for mobile
       const compressedFile = await compressImage(file);
+      console.log('✅ Compressed:', compressedFile.size, 'bytes');
 
       const formDataToUpload = new FormData();
       formDataToUpload.append('image', compressedFile);
 
+      console.log('📤 Uploading to server...');
       const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -209,6 +217,7 @@ export default function ShopperShopCreatePage() {
       });
 
       const data = await response.json();
+      console.log('📥 Server response:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to upload image');
@@ -219,12 +228,13 @@ export default function ShopperShopCreatePage() {
           ...prev,
           images: [...prev.images, data.url],
         }));
+        console.log('✅ Image uploaded successfully:', data.url);
       } else {
         throw new Error('No image URL returned');
       }
     } catch (err: any) {
-      console.error('Image upload error:', err);
-      setError(err.message || 'Failed to upload image');
+      console.error('❌ Image upload error:', err);
+      setError(err.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploadingImages(false);
     }
@@ -336,6 +346,8 @@ export default function ShopperShopCreatePage() {
                 
                 // Detect if device is mobile
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
+                console.log('💳 Opening Razorpay for amount:', selectedPlan?.price);
                 
                 const options = {
                   key: keyData.keyId,
@@ -344,12 +356,13 @@ export default function ShopperShopCreatePage() {
                   name: '8Rupiya',
                   description: `Payment for ${selectedPlan?.name || 'Plan'} - ${formData.shopName}`,
                   order_id: paymentData.orderId,
-                  image: '/logo.png', // Add your logo here
+                  image: '/logo.png',
                   handler: async function (response: any) {
+                    console.log('✅ Payment successful:', response);
                     setPaymentProcessing(true);
                     setSubmitting(true);
                     try {
-                      console.log('✅ Payment successful, verifying...');
+                      console.log('🔄 Verifying payment...');
                       // Verify payment
                       const verifyResponse = await fetch('/api/payments/verify', {
                         method: 'POST',
@@ -364,33 +377,29 @@ export default function ShopperShopCreatePage() {
                         }),
                       });
 
-                      if (verifyResponse.ok) {
-                        const verifyData = await verifyResponse.json();
-                        if (verifyData.success) {
-                          // Payment successful - enable submit button and redirect
-                          console.log('✅ Payment verified successfully');
-                          setPaymentSuccess(true);
-                          setPaymentProcessing(false);
-                          setSubmitting(false);
-                          
-                          // Redirect after a short delay
-                          setTimeout(() => {
-                            router.push('/shopper/shops?payment=success');
-                          }, 1000);
-                        } else {
-                          setError('Payment verification failed. Please contact support.');
-                          setSubmitting(false);
-                          setPaymentProcessing(false);
-                        }
+                      const verifyData = await verifyResponse.json();
+                      console.log('📥 Verification response:', verifyData);
+
+                      if (verifyResponse.ok && verifyData.success) {
+                        // Payment successful - enable submit button and redirect
+                        console.log('✅ Payment verified successfully');
+                        setPaymentSuccess(true);
+                        setPaymentProcessing(false);
+                        setSubmitting(false);
+                        
+                        // Redirect after a short delay
+                        setTimeout(() => {
+                          router.push('/shopper/shops?payment=success');
+                        }, 1000);
                       } else {
-                        const errorData = await verifyResponse.json();
-                        setError(`Payment verification failed: ${errorData.error || 'Unknown error'}`);
+                        console.error('❌ Verification failed:', verifyData);
+                        setError(`Payment verification failed: ${verifyData.error || 'Please contact support'}`);
                         setSubmitting(false);
                         setPaymentProcessing(false);
                       }
                     } catch (verifyErr: any) {
-                      console.error('Payment verification error:', verifyErr);
-                      setError('Payment verification failed. Please contact support.');
+                      console.error('❌ Payment verification error:', verifyErr);
+                      setError('Payment verification failed. Please contact support with your payment ID.');
                       setSubmitting(false);
                       setPaymentProcessing(false);
                     }
@@ -402,11 +411,11 @@ export default function ShopperShopCreatePage() {
                       setPaymentProcessing(false);
                       setError('Payment was cancelled. You can try again.');
                     },
-                    confirm_close: true, // Ask for confirmation before closing on mobile
-                    escape: true, // Allow ESC key to close modal
+                    confirm_close: isMobile, // Only confirm on mobile
+                    escape: !isMobile, // Only allow ESC on desktop
                     backdropclose: false, // Prevent accidental closes
-                    animation: true, // Smooth animations
-                    handleback: true, // Handle Android back button
+                    animation: true,
+                    handleback: isMobile, // Handle Android back button on mobile
                   },
                   prefill: {
                     name: formData.shopName || '',
@@ -417,16 +426,18 @@ export default function ShopperShopCreatePage() {
                     shop_name: formData.shopName,
                     shop_id: data.shop._id,
                     plan_id: formData.planId,
+                    device_type: isMobile ? 'mobile' : 'desktop',
                   },
                   theme: {
-                    color: '#10b981', // Emerald green
-                    backdrop_color: 'rgba(0, 0, 0, 0.5)',
+                    color: '#10b981',
+                    backdrop_color: 'rgba(0, 0, 0, 0.6)',
+                    hide_topbar: isMobile, // Hide topbar on mobile for more space
                   },
                   config: {
-                    display: {
+                    display: isMobile ? {
                       blocks: {
                         banks: {
-                          name: 'All payment methods',
+                          name: 'Pay using',
                           instruments: [
                             {
                               method: 'upi',
@@ -447,21 +458,44 @@ export default function ShopperShopCreatePage() {
                       preferences: {
                         show_default_blocks: true,
                       },
-                    },
+                    } : {},
                   },
                   retry: {
                     enabled: true,
                     max_count: 3,
                   },
-                  timeout: 600, // 10 minutes timeout
+                  timeout: 600,
                   remember_customer: false,
+                  readonly: {
+                    email: false,
+                    contact: false,
+                    name: false,
+                  },
                 };
 
+                console.log('🚀 Initializing Razorpay with options:', {
+                  key: keyData.keyId,
+                  amount: options.amount,
+                  currency: options.currency,
+                  order_id: options.order_id,
+                  isMobile,
+                });
+
                 const razorpay = new window.Razorpay(options);
+                
+                // Add error handler
+                razorpay.on('payment.failed', function (response: any) {
+                  console.error('❌ Payment failed:', response.error);
+                  setError(`Payment failed: ${response.error.description || 'Please try again'}`);
+                  setSubmitting(false);
+                  setPaymentProcessing(false);
+                });
+
                 razorpay.open();
+                console.log('✅ Razorpay checkout opened');
               } catch (razorpayErr: any) {
-                console.error('Razorpay initialization error:', razorpayErr);
-                setError('Failed to open payment gateway. Please try again.');
+                console.error('❌ Razorpay initialization error:', razorpayErr);
+                setError(`Failed to open payment gateway: ${razorpayErr.message || 'Please try again'}`);
                 setSubmitting(false);
                 setPaymentProcessing(false);
               }
@@ -793,17 +827,28 @@ export default function ShopperShopCreatePage() {
             {/* Upload Options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Camera Capture - Mobile Optimized */}
-              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-emerald-300 dark:border-emerald-600 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-400 cursor-pointer transition-all bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 hover:shadow-lg group">
+              <label 
+                className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl transition-all hover:shadow-lg group ${
+                  uploadingImages || formData.images.length >= (formData.selectedPlan?.maxPhotos || 5)
+                    ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed opacity-60'
+                    : 'border-emerald-300 dark:border-emerald-600 hover:border-emerald-500 dark:hover:border-emerald-400 cursor-pointer bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20'
+                }`}
+              >
                 <FiCamera className="text-4xl text-emerald-600 dark:text-emerald-400 mb-3 group-hover:scale-110 transition-transform" />
-                <span className="text-base font-semibold text-gray-900 dark:text-white">Capture Photo</span>
+                <span className="text-base font-semibold text-gray-900 dark:text-white">📸 Capture Photo</span>
                 <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">Use camera to take photo</span>
+                {formData.images.length >= (formData.selectedPlan?.maxPhotos || 5) && (
+                  <span className="text-xs text-red-600 dark:text-red-400 mt-1">Max photos reached</span>
+                )}
                 <input
                   type="file"
                   accept="image/*"
                   capture="environment"
                   onChange={(e) => {
+                    console.log('📸 Camera capture triggered');
                     const file = e.target.files?.[0];
                     if (file) {
+                      console.log('📸 File selected:', file.name, file.type, file.size);
                       handleImageUpload(file);
                     }
                     e.target.value = ''; // Reset input
@@ -814,17 +859,30 @@ export default function ShopperShopCreatePage() {
               </label>
 
               {/* File Upload */}
-              <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:shadow-lg group">
+              <label 
+                className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl transition-all hover:shadow-lg group ${
+                  uploadingImages || formData.images.length >= (formData.selectedPlan?.maxPhotos || 5)
+                    ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed opacity-60'
+                    : 'border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'
+                }`}
+              >
                 <FiUpload className="text-4xl text-blue-600 dark:text-blue-400 mb-3 group-hover:scale-110 transition-transform" />
-                <span className="text-base font-semibold text-gray-900 dark:text-white">Upload from Device</span>
+                <span className="text-base font-semibold text-gray-900 dark:text-white">📁 Upload from Device</span>
                 <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">Choose from gallery</span>
+                {formData.images.length >= (formData.selectedPlan?.maxPhotos || 5) && (
+                  <span className="text-xs text-red-600 dark:text-red-400 mt-1">Max photos reached</span>
+                )}
                 <input
                   type="file"
                   accept="image/*"
-                  multiple
                   onChange={(e) => {
+                    console.log('📁 File upload triggered');
                     const files = Array.from(e.target.files || []);
-                    files.forEach(file => handleImageUpload(file));
+                    console.log('📁 Files selected:', files.length);
+                    files.forEach(file => {
+                      console.log('📁 Uploading file:', file.name, file.type, file.size);
+                      handleImageUpload(file);
+                    });
                     e.target.value = ''; // Reset input
                   }}
                   className="hidden"
