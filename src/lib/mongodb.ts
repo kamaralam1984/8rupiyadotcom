@@ -55,16 +55,50 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
+    // ⚡ Optimized connection options for faster performance
     const opts = {
       bufferCommands: false,
+      
+      // Connection pooling for better performance
+      maxPoolSize: 10, // Maximum number of connections in pool
+      minPoolSize: 2,  // Minimum number of connections
+      
+      // Timeout settings for faster failure detection
+      serverSelectionTimeoutMS: 5000, // 5 seconds timeout
+      socketTimeoutMS: 45000, // 45 seconds socket timeout
+      
+      // Heartbeat settings
+      heartbeatFrequencyMS: 10000, // Check server every 10 seconds
+      
+      // Connection settings
+      maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
+      
+      // Compression for faster data transfer
+      compressors: ['zlib'],
+      zlibCompressionLevel: 6, // Balance between speed and compression
+      
+      // Read preference for better performance
+      readPreference: 'primaryPreferred', // Try primary first, fallback to secondary
+      
+      // Write concern for faster writes (adjust based on your needs)
+      writeConcern: {
+        w: 1, // Acknowledge after writing to primary
+        j: false, // Don't wait for journal
+      },
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .then((mongoose) => {
-        console.log('✅ MongoDB connected successfully');
+        console.log('✅ MongoDB connected successfully with optimized pool');
+        
         // Register all models to prevent schema registration errors
         registerAllModels();
         console.log('✅ All models registered');
+        
+        // Set up mongoose optimizations
+        mongoose.set('strictQuery', false); // Faster queries
+        mongoose.set('autoIndex', process.env.NODE_ENV === 'development'); // Only auto-index in dev
+        
         return mongoose;
       })
       .catch((error) => {
