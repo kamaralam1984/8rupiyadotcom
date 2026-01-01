@@ -16,6 +16,8 @@ import {
   FiAlertCircle,
   FiTrendingUp,
   FiUserCheck,
+  FiArrowLeft,
+  FiGlobe,
 } from 'react-icons/fi';
 import ThemeToggle from '../ThemeToggle';
 
@@ -137,6 +139,17 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Back to Homepage Button */}
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <Link
+                href="/"
+                className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <FiGlobe className="text-xl" />
+                <span className="font-semibold">Back to Homepage</span>
+              </Link>
             </div>
 
             {/* Navigation */}
