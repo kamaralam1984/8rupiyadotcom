@@ -35,6 +35,12 @@ import {
   enhanceQueryWithAI,
 } from '@/lib/gemini-ai';
 
+// 🔥 NEW: Advanced GOLU System
+import { getSystemPrompt } from '@/lib/goluSystemPrompt';
+import { getPersonaPrompt, detectPersonaContext, type UserRole } from '@/lib/goluPersonas';
+import { toneCorrect, adjustForContext, hasGoodTone } from '@/lib/toneCorrector';
+import { getCachedReply, setCachedReply, shouldCache } from '@/lib/replyCache';
+
 // POST /api/golu/chat - Main GOLU chat endpoint (OPTIONAL AUTH)
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -119,6 +125,38 @@ export async function POST(req: NextRequest) {
       console.log('GOLU: Running without authentication');
     }
 
+    // 🔥 NEW: Get user role for persona
+    const userRole: UserRole = (user?.role as UserRole) || 'user';
+    console.log('🎯 GOLU: User role detected:', userRole);
+
+    // 🔥 NEW: Check cache first (FAST RESPONSE)
+    if (shouldCache(query)) {
+      const cachedReply = getCachedReply(query, userRole);
+      if (cachedReply) {
+        console.log('⚡ GOLU: Cache HIT - returning instant response');
+        
+        // Save to conversation history
+        await GoluConversation.create({
+          userId: user?.userId,
+          sessionId,
+          userQuery: query,
+          botResponse: cachedReply,
+          category: 'GENERAL' as CommandCategory,
+          type: type as ConversationType,
+          wasSuccessful: true,
+          cached: true,
+        }).catch(err => console.error('Failed to save cached conversation:', err));
+
+        return NextResponse.json({
+          success: true,
+          response: cachedReply,
+          category: 'GENERAL',
+          cached: true,
+          responseTime: Date.now() - startTime,
+        });
+      }
+    }
+
     // Detect language
     const detectedLanguage = await detectLanguage(query);
     let workingQuery = query;
@@ -130,6 +168,11 @@ export async function POST(req: NextRequest) {
       translatedQuery = translation.translatedText;
       workingQuery = translatedQuery;
     }
+
+    // 🔥 NEW: Get persona context for this user type
+    const personaPrompt = getPersonaPrompt(userRole);
+    const contextualHint = detectPersonaContext(workingQuery, userRole);
+    console.log('🎭 GOLU: Persona loaded for', userRole);
 
     // Detect command category
     const category = detectCommandCategory(workingQuery) as CommandCategory;
@@ -285,11 +328,37 @@ export async function POST(req: NextRequest) {
       response = generateFriendlyResponse(userName, 'Maaf kijiye, mujhe thodi problem ho rahi hai. Kripya phir se try karein.');
     }
 
+    // 🔥 NEW: Apply TONE CORRECTION (SECRET SAUCE!)
+    console.log('🎨 GOLU: Original response:', response.substring(0, 100) + '...');
+    
+    // Check if tone is already good
+    if (!hasGoodTone(response)) {
+      console.log('⚠️  GOLU: Applying tone correction...');
+      response = toneCorrect(response);
+      
+      // Apply context-specific adjustments
+      response = adjustForContext(response, {
+        isError: errorMessage !== undefined,
+        isSuccess: wasSuccessful && !errorMessage,
+        userName: userName,
+      });
+      
+      console.log('✅ GOLU: Tone corrected:', response.substring(0, 100) + '...');
+    } else {
+      console.log('✅ GOLU: Tone already good!');
+    }
+
     // Translate response back to user's language if needed
     let responseInUserLanguage = response;
     if (detectedLanguage !== 'hi' && detectedLanguage !== 'en') {
       const translation = await translateText(response, detectedLanguage);
       responseInUserLanguage = translation.translatedText;
+    }
+
+    // 🔥 NEW: Cache this response if appropriate
+    if (shouldCache(query) && wasSuccessful && !errorMessage) {
+      setCachedReply(query, responseInUserLanguage, userRole);
+      console.log('💾 GOLU: Response cached for future use');
     }
 
     const processingTimeMs = Date.now() - startTime;
@@ -317,6 +386,8 @@ export async function POST(req: NextRequest) {
       console.log('Could not save conversation (user may not be logged in)');
     }
 
+    console.log(`🎉 GOLU: Response complete in ${processingTimeMs}ms`);
+
     return NextResponse.json({
       success: true,
       response: responseInUserLanguage,
@@ -326,6 +397,8 @@ export async function POST(req: NextRequest) {
       metadata,
       conversationId,
       requiresAuth: !user && ['PROFILE', 'FINANCIAL', 'MEDICAL', 'FAMILY', 'BUSINESS'].includes(category),
+      toneCorrected: !hasGoodTone(response),
+      cached: false,
     });
   } catch (error: any) {
     console.error('GOLU chat error:', error);
