@@ -77,6 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Admin menu items - Enterprise grade admin panel
   const menuItems = [
     { name: 'Dashboard', icon: FiHome, href: '/admin', badge: null },
+    { name: 'Analytics', icon: FiTrendingUp, href: '/admin/analytics', badge: 'new' },
     { name: 'Users', icon: FiUsers, href: '/admin/users', badge: null },
     { name: 'Shops', icon: FiShoppingBag, href: '/admin/shops', badge: 'pending' },
     { name: 'Categories', icon: FiPackage, href: '/admin/categories', badge: null },
