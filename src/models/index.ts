@@ -26,6 +26,7 @@ import Visitor from './Visitor';
 import PageView from './PageView';
 import ClickEvent from './ClickEvent';
 import ShopAnalytics from './ShopAnalytics';
+import ConversationMemory from './ConversationMemory';
 
 // Export all models for easy importing
 export {
@@ -51,6 +52,7 @@ export {
   PageView,
   ClickEvent,
   ShopAnalytics,
+  ConversationMemory,
 };
 
 /**
@@ -81,6 +83,7 @@ export function registerAllModels() {
   PageView.modelName;
   ClickEvent.modelName;
   ShopAnalytics.modelName;
+  ConversationMemory.modelName;
   
   return {
     User,
@@ -105,6 +108,7 @@ export function registerAllModels() {
     PageView,
     ClickEvent,
     ShopAnalytics,
+    ConversationMemory,
   };
 }
 
@@ -131,6 +135,7 @@ export default {
   PageView,
   ClickEvent,
   ShopAnalytics,
+  ConversationMemory,
   registerAllModels,
 };
 

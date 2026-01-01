@@ -40,6 +40,13 @@ import { getSystemPrompt } from '@/lib/goluSystemPrompt';
 import { getPersonaPrompt, detectPersonaContext, type UserRole } from '@/lib/goluPersonas';
 import { toneCorrect, adjustForContext, hasGoodTone } from '@/lib/toneCorrector';
 import { getCachedReply, setCachedReply, shouldCache } from '@/lib/replyCache';
+// 🧠 NEW: Memory System
+import { 
+  saveConversationMemory, 
+  loadConversationMemory, 
+  getMemorySummary,
+  injectMemoryIntoPrompt 
+} from '@/lib/goluMemory';
 
 // POST /api/golu/chat - Main GOLU chat endpoint (OPTIONAL AUTH)
 export async function POST(req: NextRequest) {
@@ -170,9 +177,49 @@ export async function POST(req: NextRequest) {
     }
 
     // 🔥 NEW: Get persona context for this user type
-    const personaPrompt = getPersonaPrompt(userRole);
+    let personaPrompt = getPersonaPrompt(userRole);
     const contextualHint = detectPersonaContext(workingQuery, userRole);
     console.log('🎭 GOLU: Persona loaded for', userRole);
+
+    // 🧠 NEW: Load conversation memory (7-day context)
+    let memoryContext = '';
+    let memorySummary = {
+      hasMemory: false,
+      totalConversations: 0,
+      importantFacts: [] as string[],
+      lastInteraction: null as Date | null,
+    };
+
+    if (user?.userId) {
+      try {
+        // Load recent memories
+        memoryContext = await loadConversationMemory({
+          userId: user.userId,
+          sessionId,
+          limit: 5, // Last 5 conversations
+        });
+
+        // Get memory summary
+        memorySummary = await getMemorySummary(user.userId);
+
+        if (memorySummary.hasMemory) {
+          console.log(`🧠 GOLU Memory: Loaded ${memorySummary.totalConversations} past conversations`);
+          
+          // 🧠 INJECT MEMORY into persona prompt
+          const systemPrompt = getSystemPrompt();
+          const enrichedPrompt = injectMemoryIntoPrompt(
+            systemPrompt + '\n\n' + personaPrompt,
+            memoryContext,
+            memorySummary
+          );
+          personaPrompt = enrichedPrompt;
+          
+          console.log('🧠 GOLU Memory: Injected into system prompt');
+        }
+      } catch (memError) {
+        console.error('⚠️  GOLU Memory: Failed to load, continuing without memory:', memError);
+      }
+    }
 
     // Detect command category
     const category = detectCommandCategory(workingQuery) as CommandCategory;
@@ -359,6 +406,24 @@ export async function POST(req: NextRequest) {
     if (shouldCache(query) && wasSuccessful && !errorMessage) {
       setCachedReply(query, responseInUserLanguage, userRole);
       console.log('💾 GOLU: Response cached for future use');
+    }
+
+    // 🧠 NEW: Save conversation to memory (7-day storage)
+    if (user?.userId && userName && wasSuccessful) {
+      try {
+        await saveConversationMemory({
+          userId: user.userId,
+          sessionId,
+          userName,
+          userRole,
+          query,
+          response: responseInUserLanguage,
+          category,
+        });
+        console.log('🧠 GOLU Memory: Conversation saved successfully');
+      } catch (memError) {
+        console.error('⚠️  GOLU Memory: Failed to save, continuing:', memError);
+      }
     }
 
     const processingTimeMs = Date.now() - startTime;
