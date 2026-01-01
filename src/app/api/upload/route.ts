@@ -3,9 +3,17 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { verifyToken } from '@/lib/auth';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 // Force Node.js runtime for file system operations
 export const runtime = 'nodejs';
+
+// Check if Cloudinary is configured
+const USE_CLOUDINARY = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
 
 export async function POST(req: NextRequest) {
   console.log('📤 ===== UPLOAD REQUEST STARTED =====');
@@ -77,61 +85,83 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     console.log('✅ Buffer created:', buffer.length, 'bytes');
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split('.').pop() || 'jpg';
-    const filename = `${timestamp}-${randomStr}.${extension}`;
+    let url: string;
+    let filename: string;
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    console.log('📁 Uploads directory:', uploadsDir);
-    console.log('📁 Current working directory:', process.cwd());
-    
-    try {
-      if (!existsSync(uploadsDir)) {
-        console.log('⚠️  Directory does not exist, creating...');
-        mkdirSync(uploadsDir, { recursive: true });
-        console.log('✅ Created uploads directory:', uploadsDir);
-      } else {
-        console.log('✅ Directory already exists');
+    // Use Cloudinary if configured, otherwise use local storage
+    if (USE_CLOUDINARY) {
+      console.log('☁️  Using Cloudinary for upload...');
+      try {
+        const result = await uploadToCloudinary(buffer, '8rupiya-shops');
+        url = result.secureUrl;
+        filename = result.publicId;
+        console.log('✅ Cloudinary upload successful:', url);
+      } catch (cloudinaryError: any) {
+        console.error('❌ Cloudinary upload failed:', cloudinaryError);
+        return NextResponse.json({ 
+          error: `Cloudinary upload failed: ${cloudinaryError.message || 'Unknown error'}`,
+        }, { status: 500 });
       }
-    } catch (dirError: any) {
-      console.error('❌ Upload: Directory creation error:', dirError);
-      return NextResponse.json({ error: 'Failed to create upload directory' }, { status: 500 });
-    }
-
-    // Save file
-    const filepath = join(uploadsDir, filename);
-    try {
-      console.log('📝 Attempting to write file:', filepath);
-      console.log('📊 Buffer size:', buffer.length, 'bytes');
-      await writeFile(filepath, buffer);
-      console.log('✅ File uploaded successfully:', filename);
+    } else {
+      console.log('💾 Using local storage (Cloudinary not configured)...');
       
-      // Verify file was created
-      if (existsSync(filepath)) {
-        console.log('✅ File verified on disk:', filepath);
-      } else {
-        console.error('❌ File not found after write:', filepath);
-      }
-    } catch (writeError: any) {
-      console.error('❌ Upload: File write error:', writeError);
-      console.error('❌ Error code:', writeError.code);
-      console.error('❌ Error message:', writeError.message);
-      console.error('❌ File path:', filepath);
-      console.error('❌ Uploads dir:', uploadsDir);
-      console.error('❌ Full error:', writeError);
-      return NextResponse.json({ 
-        error: `Failed to save file: ${writeError.message || 'Unknown error'}`,
-        details: writeError.code || 'WRITE_ERROR'
-      }, { status: 500 });
-    }
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 15);
+      const extension = file.name.split('.').pop() || 'jpg';
+      filename = `${timestamp}-${randomStr}.${extension}`;
 
-    // Return public URL
-    const url = `/uploads/${filename}`;
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = join(process.cwd(), 'public', 'uploads');
+      console.log('📁 Uploads directory:', uploadsDir);
+      console.log('📁 Current working directory:', process.cwd());
+      
+      try {
+        if (!existsSync(uploadsDir)) {
+          console.log('⚠️  Directory does not exist, creating...');
+          mkdirSync(uploadsDir, { recursive: true });
+          console.log('✅ Created uploads directory:', uploadsDir);
+        } else {
+          console.log('✅ Directory already exists');
+        }
+      } catch (dirError: any) {
+        console.error('❌ Upload: Directory creation error:', dirError);
+        return NextResponse.json({ error: 'Failed to create upload directory' }, { status: 500 });
+      }
+
+      // Save file
+      const filepath = join(uploadsDir, filename);
+      try {
+        console.log('📝 Attempting to write file:', filepath);
+        console.log('📊 Buffer size:', buffer.length, 'bytes');
+        await writeFile(filepath, buffer);
+        console.log('✅ File uploaded successfully:', filename);
+        
+        // Verify file was created
+        if (existsSync(filepath)) {
+          console.log('✅ File verified on disk:', filepath);
+        } else {
+          console.error('❌ File not found after write:', filepath);
+        }
+      } catch (writeError: any) {
+        console.error('❌ Upload: File write error:', writeError);
+        console.error('❌ Error code:', writeError.code);
+        console.error('❌ Error message:', writeError.message);
+        console.error('❌ File path:', filepath);
+        console.error('❌ Uploads dir:', uploadsDir);
+        console.error('❌ Full error:', writeError);
+        return NextResponse.json({ 
+          error: `Failed to save file: ${writeError.message || 'Unknown error'}`,
+          details: writeError.code || 'WRITE_ERROR'
+        }, { status: 500 });
+      }
+
+      // Return public URL
+      url = `/uploads/${filename}`;
+    }
 
     console.log('✅ ===== UPLOAD SUCCESSFUL =====');
+    console.log('✅ Storage type:', USE_CLOUDINARY ? 'Cloudinary' : 'Local');
     console.log('✅ File URL:', url);
     console.log('✅ ===== END =====');
 
@@ -140,6 +170,7 @@ export async function POST(req: NextRequest) {
       url,
       urls: [url],
       filename,
+      storageType: USE_CLOUDINARY ? 'cloudinary' : 'local',
     });
   } catch (error: any) {
     console.error('❌ ===== UPLOAD FAILED =====');
