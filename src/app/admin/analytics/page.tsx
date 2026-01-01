@@ -11,7 +11,7 @@ import {
   FiTablet,
   FiTrendingUp,
   FiMapPin,
-  FiMouse,
+  FiFileText,
   FiCalendar,
   FiDownload,
 } from 'react-icons/fi';
@@ -351,7 +351,7 @@ export default function AnalyticsPage() {
         {/* Top Pages Table */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <FiMouse className="text-blue-600" />
+            <FiFileText className="text-blue-600" />
             Top Pages
           </h3>
           {loading ? (
