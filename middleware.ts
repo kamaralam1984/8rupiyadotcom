@@ -11,33 +11,43 @@ export async function middleware(req: NextRequest) {
 
     // Admin routes - admin and accountant can access
     if (req.nextUrl.pathname.startsWith('/admin')) {
+      // Allow access to /admin/login without token
+      if (req.nextUrl.pathname === '/admin/login') {
+        return NextResponse.next();
+      }
+      
       if (!token) {
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/admin/login', req.url));
       }
       try {
         const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.ADMIN && payload.role !== UserRole.ACCOUNTANT)) {
-          return NextResponse.redirect(new URL('/login', req.url));
+          return NextResponse.redirect(new URL('/admin/login', req.url));
         }
       } catch (error) {
         console.error('Middleware error verifying admin token:', error);
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/admin/login', req.url));
       }
     }
 
     // Agent routes - only agent and admin can access
     if (req.nextUrl.pathname.startsWith('/agent')) {
+      // Allow access to /agent/login without token
+      if (req.nextUrl.pathname === '/agent/login') {
+        return NextResponse.next();
+      }
+      
       if (!token) {
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/agent/login', req.url));
       }
       try {
         const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.AGENT && payload.role !== UserRole.ADMIN)) {
-          return NextResponse.redirect(new URL('/login', req.url));
+          return NextResponse.redirect(new URL('/agent/login', req.url));
         }
       } catch (error) {
         console.error('Middleware error verifying agent token:', error);
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/agent/login', req.url));
       }
     }
 
@@ -75,17 +85,22 @@ export async function middleware(req: NextRequest) {
 
     // Shopper routes - only shopper and admin can access
     if (req.nextUrl.pathname.startsWith('/shopper')) {
+      // Allow access to /shopper/login without token
+      if (req.nextUrl.pathname === '/shopper/login') {
+        return NextResponse.next();
+      }
+      
       if (!token) {
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/shopper/login', req.url));
       }
       try {
         const payload = await verifyTokenEdge(token);
         if (!payload || (payload.role !== UserRole.SHOPPER && payload.role !== UserRole.ADMIN)) {
-          return NextResponse.redirect(new URL('/login', req.url));
+          return NextResponse.redirect(new URL('/shopper/login', req.url));
         }
       } catch (error) {
         console.error('Middleware error verifying shopper token:', error);
-        return NextResponse.redirect(new URL('/login', req.url));
+        return NextResponse.redirect(new URL('/shopper/login', req.url));
       }
     }
 

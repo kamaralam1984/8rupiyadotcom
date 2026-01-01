@@ -4,13 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiMail, FiLock, FiShoppingBag, FiUser, FiShield, FiUsers, FiMoon, FiSun, FiEye, FiEyeOff } from 'react-icons/fi';
-
-type LoginRole = 'admin' | 'agent' | 'operator' | 'shopper' | 'all';
+import { FiMail, FiLock, FiMoon, FiSun, FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function LoginClient() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<LoginRole>('all');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,22 +61,6 @@ export default function LoginClient() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const getRedirectPath = (role: string): string => {
-    switch (role) {
-      case 'admin':
-        return '/admin';
-      case 'agent':
-        return '/agent';
-      case 'operator':
-        return '/operator';
-      case 'accountant':
-        return '/accountant';
-      case 'shopper':
-        return '/shopper';
-      default:
-        return '/';
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,28 +98,35 @@ export default function LoginClient() {
       }
 
       if (response.ok && data.success && data.token) {
-        if (selectedRole !== 'all' && data.user?.role !== selectedRole) {
-          setError(`This account is not registered as ${selectedRole}. Please select the correct role or use "All Roles".`);
+        const userRole = data.user?.role || 'user';
+        
+        // Homepage login is ONLY for regular users
+        if (userRole !== 'user') {
+          let loginPage = '';
+          let roleDisplay = '';
+          
+          if (userRole === 'admin' || userRole === 'accountant') {
+            loginPage = '/admin/login';
+            roleDisplay = 'Admin/Accountant';
+          } else if (userRole === 'agent') {
+            loginPage = '/agent/login';
+            roleDisplay = 'Agent';
+          } else if (userRole === 'shopper') {
+            loginPage = '/shopper/login';
+            roleDisplay = 'Shopper';
+          } else if (userRole === 'operator') {
+            loginPage = '/operator/login';
+            roleDisplay = 'Operator';
+          }
+          
+          setError(`❌ Access Denied!\n\nThis login is for regular users only.\n\nYou are registered as ${roleDisplay}.\nPlease use your dedicated login page: ${loginPage}`);
           setLoading(false);
           return;
         }
 
+        // User role - allow login
         localStorage.setItem('token', data.token);
-        const userRole = data.user?.role || 'user';
-        const redirectPath = getRedirectPath(userRole);
-        
-        // Ensure proper redirects for each role
-        if (userRole === 'agent') {
-          window.location.href = '/agent';
-        } else if (userRole === 'operator') {
-          window.location.href = '/operator';
-        } else if (userRole === 'accountant') {
-          window.location.href = '/accountant';
-        } else if (userRole === 'shopper') {
-          window.location.href = '/shopper';
-        } else {
-          window.location.href = redirectPath;
-        }
+        window.location.href = '/';
       } else {
         const errorMsg = data.error || data.message || 'Login failed';
         setError(errorMsg);
@@ -150,12 +138,6 @@ export default function LoginClient() {
     }
   };
 
-  const roleConfig = {
-    admin: { color: 'blue', icon: FiShield, gradient: 'from-blue-500 to-cyan-500' },
-    agent: { color: 'purple', icon: FiUser, gradient: 'from-purple-500 to-pink-500' },
-    operator: { color: 'green', icon: FiUsers, gradient: 'from-green-500 to-emerald-500' },
-    shopper: { color: 'emerald', icon: FiShoppingBag, gradient: 'from-emerald-500 to-green-600' },
-  };
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${
@@ -355,68 +337,25 @@ export default function LoginClient() {
               >
                 Login to your account
               </motion.p>
-            </div>
-
-            {/* Role Selection */}
-            <div className="mb-6 relative z-10">
-              <label className={`block text-sm font-medium mb-3 ${
-                darkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Login As
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['admin', 'agent', 'operator', 'shopper'] as const).map((role) => {
-                  const config = roleConfig[role];
-                  const Icon = config.icon;
-                  const isSelected = selectedRole === role;
-                  
-                  return (
-                    <motion.button
-                      key={role}
-                      type="button"
-                      onClick={() => setSelectedRole(role)}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all relative overflow-hidden ${
-                        isSelected
-                          ? `border-${config.color}-500 bg-gradient-to-br ${config.gradient} text-white shadow-lg`
-                          : darkMode
-                          ? 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-gray-600'
-                          : 'border-gray-200 bg-white/50 text-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      {isSelected && (
-                        <motion.div
-                          layoutId="selectedRole"
-                          className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-20`}
-                          transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                        />
-                      )}
-                      <Icon className={`text-2xl mb-2 relative z-10 ${isSelected ? 'text-white' : ''}`} />
-                      <span className={`text-xs font-semibold relative z-10 capitalize ${isSelected ? 'text-white' : ''}`}>
-                        {role}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              <motion.button
-                type="button"
-                onClick={() => setSelectedRole('all')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`mt-3 w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  selectedRole === 'all'
-                    ? darkMode
-                      ? 'bg-gradient-to-r from-gray-700 to-gray-800 text-white shadow-lg'
-                      : 'bg-gradient-to-r from-gray-800 to-gray-900 text-white shadow-lg'
-                    : darkMode
-                    ? 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              
+              {/* User Login Notice */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className={`mt-4 p-3 rounded-xl ${
+                  darkMode 
+                    ? 'bg-blue-500/10 border border-blue-500/30 text-blue-300' 
+                    : 'bg-blue-50 border border-blue-200 text-blue-700'
                 }`}
               >
-                All Roles
-              </motion.button>
+                <p className="text-sm font-medium">
+                  🙋‍♂️ This login is for regular users only
+                </p>
+                <p className="text-xs mt-1 opacity-90">
+                  Admin, Agent, Shopper? Use your dedicated login page
+                </p>
+              </motion.div>
             </div>
 
             {/* Error Message */}
