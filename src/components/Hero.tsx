@@ -400,7 +400,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
               className="max-w-7xl mx-auto mb-12"
             >
               {/* Center Hero Shop - Fixed Size */}
-              <div className="mx-auto w-full" style={{ maxWidth: '800px' }}>
+              <div className="mx-auto w-full" style={{ maxWidth: '1200px' }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`${currentShopIndex}-${currentStyle}`}
