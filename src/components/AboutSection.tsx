@@ -258,19 +258,6 @@ export default function AboutSection() {
             </motion.div>
           ))}
         </motion.div>
-
-        {/* Additional Info */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-4xl mx-auto leading-relaxed">
-            <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> sirf ek website nahi hai - yeh ek movement hai jo India ke local businesses ko empower kar raha hai. Chahe aap ek customer ho jo trusted services dhundh raha hai, ya ek shopkeeper ho jo apne business ko online le jana chahta hai - <strong className="text-blue-600 dark:text-blue-400">8rupiya.com aapke liye hai</strong>. Join karein India ke sabse growing local business community ko aur baniye iss digital revolution ka hissa!
-          </p>
-        </motion.div>
       </div>
 
       <style jsx>{`

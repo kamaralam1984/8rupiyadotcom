@@ -1,9 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiStar } from 'react-icons/fi';
-import AdSlot from './AdSlot';
-import AdvertisementBanner from './AdvertisementBanner';
+import { FiTrendingUp, FiStar, FiUsers, FiZap } from 'react-icons/fi';
 
 interface RightRailProps {
   topRatedShops?: any[];
@@ -80,24 +78,62 @@ export default function RightRail({ topRatedShops = [], trendingShops = [] }: Ri
         </div>
       </motion.div>
 
-      {/* Ad Space 1 - Homepage Ads */}
+      {/* Movement Section - Modern Design */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.4 }}
+        className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl shadow-2xl overflow-hidden border border-purple-400/20"
       >
-        <AdSlot slot="homepage" />
-        <AdvertisementBanner slot="sidebar-right" uniqueId="rightrail-1" />
-      </motion.div>
-
-      {/* Ad Space 2 - Homepage Ads */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <AdSlot slot="homepage" />
-        <AdvertisementBanner slot="sidebar-right" uniqueId="rightrail-2" />
+        <div className="p-5 sm:p-6 relative">
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-400/20 rounded-full blur-xl"></div>
+          
+          <div className="relative z-10">
+            {/* Icon */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-full">
+                <FiZap className="text-3xl text-white" />
+              </div>
+            </div>
+            
+            {/* Heading */}
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 text-center">
+              Ek Movement Hai
+            </h3>
+            
+            {/* Content */}
+            <p className="text-sm sm:text-base text-white/95 leading-relaxed text-center mb-4">
+              <strong className="text-white font-semibold">8rupiya.com</strong> sirf ek website nahi hai - yeh ek <strong className="text-yellow-300">movement</strong> hai jo India ke local businesses ko empower kar raha hai.
+            </p>
+            
+            <div className="space-y-3 mb-4">
+              <div className="flex items-start gap-2">
+                <FiUsers className="text-white/90 text-lg mt-0.5 flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
+                  Chahe aap ek <strong className="text-white">customer</strong> ho jo trusted services dhundh raha hai
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <FiTrendingUp className="text-white/90 text-lg mt-0.5 flex-shrink-0" />
+                <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
+                  Ya ek <strong className="text-white">shopkeeper</strong> ho jo apne business ko online le jana chahta hai
+                </p>
+              </div>
+            </div>
+            
+            {/* CTA */}
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
+              <p className="text-xs sm:text-sm text-white text-center font-semibold">
+                <strong className="text-yellow-300">8rupiya.com aapke liye hai!</strong>
+              </p>
+              <p className="text-xs text-white/90 text-center mt-2 leading-relaxed">
+                Join karein India ke sabse growing local business community ko aur baniye iss <strong className="text-white">digital revolution</strong> ka hissa!
+              </p>
+            </div>
+          </div>
+        </div>
       </motion.div>
     </aside>
   );
