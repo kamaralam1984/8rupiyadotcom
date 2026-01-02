@@ -772,6 +772,45 @@ export default function HomepageClient() {
         </div>
       </motion.header>
 
+      {/* Top CTA Section - Shuru karein apna local business journey! */}
+      <motion.section
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 py-6 md:py-8 shadow-lg"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">
+              Shuru karein apna local business journey!
+            </h2>
+            <p className="text-base md:text-lg text-blue-100 mb-6 md:mb-8 max-w-2xl mx-auto">
+              Apne area ki best shops discover karein ya apna business list karein - dono bilkul free hai!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <motion.a
+                href="#main-content"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white text-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
+              >
+                <FiSearch className="text-lg sm:text-xl" />
+                Shops Explore Karein
+              </motion.a>
+              <motion.a
+                href="/add-shop"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-yellow-400 text-gray-900 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
+              >
+                <FiShoppingBag className="text-lg sm:text-xl" />
+                Apna Business Add Karein
+              </motion.a>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Hero Section */}
       {homepageLayout?.sections.hero.enabled !== false && (
         <Hero 
