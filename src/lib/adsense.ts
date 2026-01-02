@@ -41,6 +41,24 @@ export function initializeAd(
         return;
       }
 
+      // Check if element already has adsbygoogle property (from previous initialization)
+      if ((element as any).adsbygoogle) {
+        devLog('✅ Ad already initialized (has adsbygoogle property)');
+        element.setAttribute('data-ads-initialized', 'true');
+        adCache.markInitialized(element);
+        resolve();
+        return;
+      }
+
+      // Check if this element already has ads loaded (AdSense internal check)
+      if (element.querySelector && element.querySelector('.adsbygoogle[data-ads-loaded="true"]')) {
+        devLog('✅ Ad already has ads loaded');
+        element.setAttribute('data-ads-initialized', 'true');
+        adCache.markInitialized(element);
+        resolve();
+        return;
+      }
+
       // Check if AdSense script is loaded
       if (!isBrowser() || !window.adsbygoogle) {
         // Check max retries
@@ -63,8 +81,17 @@ export function initializeAd(
       // Initialize adsbygoogle array
       window.adsbygoogle = window.adsbygoogle || [];
 
-      // Mark as initialized
+      // Double-check: Make sure this element hasn't been initialized by another process
+      if ((element as any).adsbygoogle || element.hasAttribute('data-ads-initialized')) {
+        devLog('✅ Ad already initialized (double-check passed)');
+        adCache.markInitialized(element);
+        resolve();
+        return;
+      }
+
+      // Mark as initialized BEFORE pushing to prevent duplicate pushes
       element.setAttribute('data-ads-initialized', 'true');
+      (element as any).adsbygoogle = true;
 
       // Push to AdSense queue with error handling
       try {
@@ -75,10 +102,19 @@ export function initializeAd(
         
         devLog('✅ AdSense ad initialized successfully');
         resolve();
-      } catch (pushError) {
+      } catch (pushError: any) {
+        // Check if error is about already having ads
+        if (pushError?.message?.includes('already have ads')) {
+          devLog('⚠️ Ad already has ads - marking as initialized');
+          adCache.markInitialized(element);
+          resolve();
+          return;
+        }
+        
         safeError('❌ AdSense push error:', pushError);
         // Remove initialization mark on failure
         element.removeAttribute('data-ads-initialized');
+        delete (element as any).adsbygoogle;
         adCache.remove(element);
         // Resolve instead of reject - fail gracefully
         resolve();

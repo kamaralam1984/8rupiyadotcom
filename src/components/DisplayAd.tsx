@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useId } from 'react';
 import { usePathname } from 'next/navigation';
 import { initializeAd, waitForAdSense, cleanupAd } from '@/lib/adsense';
 
@@ -12,6 +12,7 @@ export default function DisplayAd({ className = '' }: DisplayAdProps) {
   const pathname = usePathname();
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
+  const uniqueId = useId();
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || 'ca-pub-4472734290958984';
   const adSlot = '3350299981';
 
@@ -27,32 +28,44 @@ export default function DisplayAd({ className = '' }: DisplayAdProps) {
   }
 
   useEffect(() => {
-    if (initializedRef.current || !adRef.current) {
+    const element = adRef.current;
+    if (!element || initializedRef.current) {
       return;
     }
 
-    const element = adRef.current;
+    // Check if already initialized (double-check)
+    if (element.hasAttribute('data-ads-initialized') || (element as any).adsbygoogle) {
+      initializedRef.current = true;
+      return;
+    }
 
     // Initialize ad (now handles retries internally)
-    const init = async () => {
+    const initAd = async () => {
       // Wait for AdSense script (resolves gracefully if timeout)
       await waitForAdSense();
       
-      // Initialize the ad (resolves gracefully if fails)
-      await initializeAd(element);
+      // Double-check before initializing
+      const currentElement = adRef.current;
+      if (!currentElement || currentElement.hasAttribute('data-ads-initialized')) {
+        initializedRef.current = true;
+        return;
+      }
       
+      // Initialize the ad (resolves gracefully if fails)
+      await initializeAd(currentElement);
       initializedRef.current = true;
     };
 
-    init();
+    initAd();
 
     // Cleanup on unmount
     return () => {
-      if (element) {
-        cleanupAd(element);
+      const currentElement = adRef.current;
+      if (currentElement) {
+        cleanupAd(currentElement);
       }
     };
-  }, []);
+  }, [uniqueId]);
 
   if (!adsenseId) {
     return null;
@@ -63,6 +76,7 @@ export default function DisplayAd({ className = '' }: DisplayAdProps) {
       {/* 8rupididplay */}
       <ins
         ref={adRef}
+        id={`display-ad-${uniqueId}`}
         className="adsbygoogle"
         style={{ display: 'block' }}
         data-ad-client={adsenseId}
@@ -73,4 +87,3 @@ export default function DisplayAd({ className = '' }: DisplayAdProps) {
     </div>
   );
 }
-
