@@ -1,21 +1,29 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useRouter, usePathname } from 'next/navigation';
 import { FiGlobe, FiChevronDown } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { locales, localeNames, type Locale } from '@/i18n/config';
+import { removeLocaleFromPath, addLocaleToPath } from '@/i18n/routing';
 
 export default function LanguageSwitcher() {
-  const { language, setLanguage } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const languages = [
-    { code: 'en' as const, name: 'English', native: 'English' },
-    { code: 'hi' as const, name: 'Hindi', native: 'हिंदी' },
-  ];
+  // Get current locale from pathname
+  const currentLocale = pathname.split('/')[1] as Locale;
+  const locale = (locales.includes(currentLocale) ? currentLocale : 'en') as Locale;
 
-  const currentLanguage = languages.find((lang) => lang.code === language) || languages[0];
+  const languages = locales.map(code => ({
+    code,
+    name: localeNames[code],
+    native: code === 'en' ? 'English' : 'हिंदी',
+  }));
+
+  const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,8 +39,44 @@ export default function LanguageSwitcher() {
     };
   }, []);
 
-  const handleLanguageChange = (langCode: 'en' | 'hi') => {
-    setLanguage(langCode);
+  const handleLanguageChange = async (newLocale: Locale) => {
+    if (newLocale === locale) {
+      setIsOpen(false);
+      return;
+    }
+
+    // Remove current locale from pathname
+    const pathWithoutLocale = removeLocaleFromPath(pathname);
+    
+    // Add new locale to pathname
+    const newPath = addLocaleToPath(pathWithoutLocale, newLocale);
+    
+    // Save to MongoDB if user is logged in
+    try {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1];
+      
+      if (token) {
+        await fetch('/api/user/language', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ language: newLocale }),
+        });
+      }
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+    }
+    
+    // Set cookie
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
+    
+    // Navigate to new locale path
+    router.push(newPath);
     setIsOpen(false);
   };
 
@@ -78,7 +122,7 @@ export default function LanguageSwitcher() {
                   type="button"
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
-                    language === lang.code
+                    locale === lang.code
                       ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-semibold'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -88,7 +132,7 @@ export default function LanguageSwitcher() {
                     <span className="font-medium">{lang.native}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">{lang.name}</span>
                   </div>
-                  {language === lang.code && (
+                  {locale === lang.code && (
                     <span className="text-blue-600 dark:text-blue-400">✓</span>
                   )}
                 </button>

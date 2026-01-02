@@ -2,9 +2,55 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyTokenEdge } from '@/lib/auth-edge';
 import { UserRole } from '@/types/user';
+import { getLocaleFromRequest, addLocaleToPath, removeLocaleFromPath } from './src/i18n/routing';
+import { defaultLocale, isValidLocale } from './src/i18n/config';
 
 export async function middleware(req: NextRequest) {
   try {
+    const pathname = req.nextUrl.pathname;
+    
+    // Skip i18n routing for API routes, admin routes, static files, etc.
+    const shouldSkipI18n = 
+      pathname.startsWith('/api/') ||
+      pathname.startsWith('/admin/') ||
+      pathname.startsWith('/agent/') ||
+      pathname.startsWith('/operator/') ||
+      pathname.startsWith('/accountant/') ||
+      pathname.startsWith('/shopper/') ||
+      pathname.startsWith('/user/') ||
+      pathname.startsWith('/_next/') ||
+      pathname.startsWith('/favicon') ||
+      pathname.includes('.') ||
+      pathname.match(/^\/[a-z]{2}\//); // Already has locale
+    
+    // Handle i18n routing for public pages
+    if (!shouldSkipI18n) {
+      const locale = getLocaleFromRequest(req);
+      const pathWithoutLocale = removeLocaleFromPath(pathname);
+      
+      // If pathname doesn't have locale, redirect to locale version
+      if (!pathname.match(/^\/[a-z]{2}(\/|$)/)) {
+        const newUrl = req.nextUrl.clone();
+        newUrl.pathname = addLocaleToPath(pathWithoutLocale, locale);
+        
+        // Set locale cookie
+        const response = NextResponse.redirect(newUrl);
+        response.cookies.set('NEXT_LOCALE', locale, {
+          maxAge: 60 * 60 * 24 * 365, // 1 year
+          path: '/',
+        });
+        return response;
+      }
+      
+      // If locale is invalid, redirect to default locale
+      const currentLocale = pathname.split('/')[1];
+      if (currentLocale && !isValidLocale(currentLocale)) {
+        const newUrl = req.nextUrl.clone();
+        newUrl.pathname = addLocaleToPath(pathWithoutLocale, defaultLocale);
+        return NextResponse.redirect(newUrl);
+      }
+    }
+    
     // Get token from Authorization header or cookie
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '') || req.cookies.get('token')?.value;
@@ -152,11 +198,14 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/agent/:path*',
-    '/operator/:path*',
-    '/accountant/:path*',
-    '/user/:path*',
-    '/shopper/:path*',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public folder)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|admin|agent|operator|accountant|user|shopper).*)',
   ],
 };
