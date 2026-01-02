@@ -87,8 +87,6 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
   }, []);
 
   const currentStyle = heroSettings?.centerEffect || 'card';
-  const leftStyle = heroSettings?.leftEffect || '3d';
-  const rightStyle = heroSettings?.rightEffect || 'glass';
 
   // Filter and sort: Paid shops first, then featured
   const heroShops = [...shops]
@@ -100,10 +98,6 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
       return (b.rating || 0) - (a.rating || 0);
     })
     .slice(0, 10); // Top 10 shops for rotation
-
-  // Get left and right shops
-  const leftShop = heroShops.length > 0 ? heroShops[(currentShopIndex + 1) % heroShops.length] : null;
-  const rightShop = heroShops.length > 0 ? heroShops[(currentShopIndex + 2) % heroShops.length] : null;
 
   // Rotate shop based on settings
   useEffect(() => {
@@ -386,35 +380,6 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     }
   };
 
-  const renderLeftShop = (shop: Shop) => {
-    switch (leftStyle) {
-      case '3d':
-        return render3DStyle(shop);
-      case 'glass':
-        return renderGlassStyle(shop);
-      case 'highlighted':
-        return renderHighlightedStyle(shop);
-      case 'spotlight':
-        return renderSpotlightStyle(shop);
-      default:
-        return renderCardStyle(shop);
-    }
-  };
-
-  const renderRightShop = (shop: Shop) => {
-    switch (rightStyle) {
-      case '3d':
-        return render3DStyle(shop);
-      case 'glass':
-        return renderGlassStyle(shop);
-      case 'highlighted':
-        return renderHighlightedStyle(shop);
-      case 'spotlight':
-        return renderSpotlightStyle(shop);
-      default:
-        return renderCardStyle(shop);
-    }
-  };
 
   return (
     <section className="relative py-8 sm:py-12 md:py-16 lg:py-20 overflow-hidden" aria-label="Featured shops hero section">
@@ -434,78 +399,28 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
               transition={{ delay: 0.8, duration: heroSettings?.animationSpeed || 0.6 }}
               className="max-w-7xl mx-auto mb-12"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 items-stretch">
-                {/* Left Shop */}
-                {leftShop && heroSettings?.showLeftShop && (
+              {/* Center Hero Shop - Full Width */}
+              <div className="max-w-4xl mx-auto">
+                <AnimatePresence mode="wait">
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.9, duration: heroSettings?.animationSpeed || 0.6 }}
-                    className="hidden lg:block"
+                    key={`${currentShopIndex}-${currentStyle}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: heroSettings?.animationSpeed || 0.5, ease: 'easeInOut' }}
+                    className="h-full"
                   >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={`left-${currentShopIndex}-${leftStyle}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: heroSettings?.animationSpeed || 0.5, ease: 'easeInOut' }}
-                        onClick={() => onShopClick?.(leftShop)}
-                        className="cursor-pointer h-full"
-                      >
-                        {renderLeftShop(leftShop)}
-                      </motion.div>
-                    </AnimatePresence>
-                  </motion.div>
-                )}
-
-                {/* Center Hero Shop */}
-                <div className="lg:col-span-1">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`${currentShopIndex}-${currentStyle}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: heroSettings?.animationSpeed || 0.5, ease: 'easeInOut' }}
-                      className="h-full"
+                    <div 
+                      onClick={() => onShopClick?.(currentShop)}
+                      className="cursor-pointer h-full"
                     >
-                      <div 
-                        onClick={() => onShopClick?.(currentShop)}
-                        className="cursor-pointer h-full"
-                      >
-                        {renderHeroShop(currentShop)}
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                  <div className="mt-4 text-center text-sm text-gray-500">
-                    Shop {currentShopIndex + 1} of {heroShops.length} • Changes every {heroSettings ? (heroSettings.rotationSpeed / 1000) : 5} seconds
-                  </div>
-                </div>
-
-                {/* Right Shop */}
-                {rightShop && heroSettings?.showRightShop && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.9, duration: heroSettings?.animationSpeed || 0.6 }}
-                    className="hidden lg:block"
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={`right-${currentShopIndex}-${rightStyle}`}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.5, ease: 'easeInOut' }}
-                        onClick={() => onShopClick?.(rightShop)}
-                        className="cursor-pointer h-full"
-                      >
-                        {renderRightShop(rightShop)}
-                      </motion.div>
-                    </AnimatePresence>
+                      {renderHeroShop(currentShop)}
+                    </div>
                   </motion.div>
-                )}
+                </AnimatePresence>
+                <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Shop {currentShopIndex + 1} of {heroShops.length} • Changes every {heroSettings ? (heroSettings.rotationSpeed / 1000) : 5} seconds
+                </div>
               </div>
             </motion.div>
           )}
