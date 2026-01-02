@@ -11,11 +11,13 @@ export async function GET(req: NextRequest) {
     if (!settings) {
       // Return default settings if none exist
       settings = {
+        backgroundImage: '',
         centerEffect: 'card',
         leftEffect: '3d',
         rightEffect: 'glass',
         rotationSpeed: 5000,
         animationSpeed: 0.5,
+        transitionDuration: 0.5,
         primaryColor: '#3B82F6',
         secondaryColor: '#8B5CF6',
         accentColor: '#EC4899',

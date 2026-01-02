@@ -87,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Agents', icon: FiUserCheck, href: '/admin/agents', badge: null },
     { name: 'Operators', icon: FiUsers, href: '/admin/operators', badge: null },
     { name: 'Homepage', icon: FiGrid, href: '/admin/homepage-builder', badge: null },
+    { name: 'Hero Settings', icon: FiImage, href: '/admin/hero-settings', badge: null },
     { name: 'Advertisements', icon: FiImage, href: '/admin/advertisements', badge: null },
     { name: 'AI & Golu', icon: FiCpu, href: '/admin/ai', badge: null },
     { name: 'Jyotish', icon: FiStar, href: '/admin/jyotish', badge: null },
