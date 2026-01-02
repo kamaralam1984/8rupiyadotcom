@@ -20,12 +20,12 @@ export default function Nearby({ shops, title = 'Nearby Shops', onShopClick, use
   }
 
   return (
-    <section className="relative w-full py-12" style={{ paddingLeft: '10px', paddingRight: '0' }}>
+    <section className="relative w-full py-6 md:py-8" style={{ paddingLeft: '10px', paddingRight: '0' }}>
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
-        className="flex items-center justify-between mb-8 px-4 sm:px-6"
+        className="flex items-center justify-between mb-4 md:mb-6 px-4 sm:px-6"
       >
         <div className="flex items-center gap-3">
           <FiMapPin className="text-3xl text-blue-600 dark:text-blue-400" />
@@ -38,7 +38,7 @@ export default function Nearby({ shops, title = 'Nearby Shops', onShopClick, use
         )}
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4 px-4 sm:px-6">
         {shops.flatMap((shop, index) => {
           const items: React.ReactNode[] = [];
           

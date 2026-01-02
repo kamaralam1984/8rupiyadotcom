@@ -864,7 +864,7 @@ export default function HomepageClient() {
           )}
 
           {/* Main Content */}
-          <div className="flex-1 space-y-4 sm:space-y-6 md:space-y-8 order-1 lg:order-2 min-w-0">
+          <div className="flex-1 space-y-3 sm:space-y-4 md:space-y-5 order-1 lg:order-2 min-w-0">
             {/* Featured Shops */}
             {homepageLayout?.sections.featuredShops.enabled !== false && featuredShops.length > 0 && (
               <section>
@@ -872,12 +872,12 @@ export default function HomepageClient() {
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"
                   aria-label="Featured Shops"
                 >
                   {homepageLayout?.sections.featuredShops.title || t('shop.featured')}
                 </motion.h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4">
                   {featuredShops.flatMap((shop, index) => {
                     const items: React.ReactNode[] = [
                       <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
@@ -913,12 +913,12 @@ export default function HomepageClient() {
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6"
+                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"
                   aria-label="Premium Shops"
                 >
                   {homepageLayout?.sections.paidShops.title || t('shop.premium')}
                 </motion.h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4">
                   {paidShops.flatMap((shop, index) => {
                     const items: React.ReactNode[] = [
                       <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
