@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiStar, FiUsers, FiZap } from 'react-icons/fi';
+import { FiTrendingUp, FiStar } from 'react-icons/fi';
+import AdSlot from './AdSlot';
+import AdvertisementBanner from './AdvertisementBanner';
 
 interface RightRailProps {
   topRatedShops?: any[];
@@ -9,6 +12,25 @@ interface RightRailProps {
 }
 
 export default function RightRail({ topRatedShops = [], trendingShops = [] }: RightRailProps) {
+  const [adContents, setAdContents] = useState<any[]>([]);
+
+  // Fetch ad space content for right rail
+  useEffect(() => {
+    const fetchAdContents = async () => {
+      try {
+        const response = await fetch('/api/ad-space-content?rail=right');
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          setAdContents(data.contents || []);
+        }
+      } catch (error) {
+        console.error('Error fetching ad contents:', error);
+      }
+    };
+
+    fetchAdContents();
+  }, []);
   return (
     <aside className="w-full lg:w-64 space-y-4 sm:space-y-6">
       {/* Top Rated Section */}
@@ -78,63 +100,67 @@ export default function RightRail({ topRatedShops = [], trendingShops = [] }: Ri
         </div>
       </motion.div>
 
-      {/* Movement Section - Modern Design */}
+      {/* Ad Space 1 - Homepage Ads */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl shadow-2xl overflow-hidden border border-purple-400/20"
       >
-        <div className="p-5 sm:p-6 relative">
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-400/20 rounded-full blur-xl"></div>
-          
-          <div className="relative z-10">
-            {/* Icon */}
-            <div className="flex items-center justify-center mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-full">
-                <FiZap className="text-3xl text-white" />
-              </div>
-            </div>
-            
-            {/* Heading */}
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 text-center">
-              Ek Movement Hai
-            </h3>
-            
-            {/* Content */}
-            <p className="text-sm sm:text-base text-white/95 leading-relaxed text-center mb-4">
-              <strong className="text-white font-semibold">8rupiya.com</strong> sirf ek website nahi hai - yeh ek <strong className="text-yellow-300">movement</strong> hai jo India ke local businesses ko empower kar raha hai.
-            </p>
-            
-            <div className="space-y-3 mb-4">
-              <div className="flex items-start gap-2">
-                <FiUsers className="text-white/90 text-lg mt-0.5 flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
-                  Chahe aap ek <strong className="text-white">customer</strong> ho jo trusted services dhundh raha hai
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <FiTrendingUp className="text-white/90 text-lg mt-0.5 flex-shrink-0" />
-                <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
-                  Ya ek <strong className="text-white">shopkeeper</strong> ho jo apne business ko online le jana chahta hai
-                </p>
-              </div>
-            </div>
-            
-            {/* CTA */}
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
-              <p className="text-xs sm:text-sm text-white text-center font-semibold">
-                <strong className="text-yellow-300">8rupiya.com aapke liye hai!</strong>
-              </p>
-              <p className="text-xs text-white/90 text-center mt-2 leading-relaxed">
-                Join karein India ke sabse growing local business community ko aur baniye iss <strong className="text-white">digital revolution</strong> ka hissa!
-              </p>
-            </div>
-          </div>
-        </div>
+        <AdSlot slot="homepage" />
+        <AdvertisementBanner slot="sidebar-right" uniqueId="rightrail-1" />
       </motion.div>
+
+      {/* Ad Space 2 - Homepage Ads */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <AdSlot slot="homepage" />
+        <AdvertisementBanner slot="sidebar-right" uniqueId="rightrail-2" />
+      </motion.div>
+
+      {/* Ad Space Text Content */}
+      {adContents.map((content, index) => (
+        <motion.div
+          key={content._id || index}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: (0.6 + index * 0.1) }}
+          className={`bg-white dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/50 ${content.margin || 'mb-4'}`}
+          style={{
+            backgroundColor: content.showBackground ? (content.backgroundColor || '#FFFFFF') : 'transparent',
+            borderColor: content.showBorder ? (content.borderColor || '#E5E7EB') : 'transparent',
+            borderWidth: content.showBorder ? '1px' : '0',
+          }}
+        >
+          <div className={content.padding || 'p-4'}>
+            {content.title && (
+              <h4 
+                className="text-base font-semibold text-gray-900 dark:text-white mb-2"
+                style={{ color: content.textColor || '#1F2937' }}
+              >
+                {content.title}
+              </h4>
+            )}
+            <div
+              className={`text-sm text-gray-700 dark:text-gray-300 ${content.textAlign === 'center' ? 'text-center' : content.textAlign === 'right' ? 'text-right' : 'text-left'}`}
+              style={{ color: content.textColor || '#1F2937' }}
+              dangerouslySetInnerHTML={{ __html: content.content }}
+            />
+            {content.linkUrl && (
+              <a
+                href={content.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-blue-600 dark:text-blue-400 hover:underline text-sm"
+              >
+                {content.linkText || 'Learn more →'}
+              </a>
+            )}
+          </div>
+        </motion.div>
+      ))}
     </aside>
   );
 }

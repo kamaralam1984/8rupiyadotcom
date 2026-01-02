@@ -97,6 +97,7 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [categorySearchText, setCategorySearchText] = useState('');
+  const [adContents, setAdContents] = useState<any[]>([]);
   
   // Fetch categories from database (linked with agent panel)
   useEffect(() => {
@@ -121,6 +122,24 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
     };
 
     fetchCategories();
+  }, []);
+
+  // Fetch ad space content for left rail
+  useEffect(() => {
+    const fetchAdContents = async () => {
+      try {
+        const response = await fetch('/api/ad-space-content?rail=left');
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          setAdContents(data.contents || []);
+        }
+      } catch (error) {
+        console.error('Error fetching ad contents:', error);
+      }
+    };
+
+    fetchAdContents();
   }, []);
 
   // Update local state when prop changes
@@ -260,6 +279,48 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
           <PopularCitiesDropdown cities={popularCities} onCityChange={onCityChange} />
         </div>
       </motion.div>
+
+      {/* Ad Space Text Content */}
+      {adContents.map((content, index) => (
+        <motion.div
+          key={content._id || index}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: index * 0.1 }}
+          className={`bg-white dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/50 ${content.margin || 'mb-4'}`}
+          style={{
+            backgroundColor: content.showBackground ? (content.backgroundColor || '#FFFFFF') : 'transparent',
+            borderColor: content.showBorder ? (content.borderColor || '#E5E7EB') : 'transparent',
+            borderWidth: content.showBorder ? '1px' : '0',
+          }}
+        >
+          <div className={content.padding || 'p-4'}>
+            {content.title && (
+              <h4 
+                className="text-base font-semibold text-gray-900 dark:text-white mb-2"
+                style={{ color: content.textColor || '#1F2937' }}
+              >
+                {content.title}
+              </h4>
+            )}
+            <div
+              className={`text-sm text-gray-700 dark:text-gray-300 ${content.textAlign === 'center' ? 'text-center' : content.textAlign === 'right' ? 'text-right' : 'text-left'}`}
+              style={{ color: content.textColor || '#1F2937' }}
+              dangerouslySetInnerHTML={{ __html: content.content }}
+            />
+            {content.linkUrl && (
+              <a
+                href={content.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-blue-600 dark:text-blue-400 hover:underline text-sm"
+              >
+                {content.linkText || 'Learn more →'}
+              </a>
+            )}
+          </div>
+        </motion.div>
+      ))}
     </aside>
   );
 }
