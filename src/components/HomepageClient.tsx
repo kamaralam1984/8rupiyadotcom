@@ -576,6 +576,45 @@ export default function HomepageClient() {
       
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
 
+      {/* Top CTA Section - Shuru karein apna local business journey! */}
+      <motion.section
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 py-4 md:py-6 shadow-lg relative z-40"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">
+              Shuru karein apna local business journey!
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-blue-100 mb-4 md:mb-6 max-w-2xl mx-auto">
+              Apne area ki best shops discover karein ya apna business list karein - dono bilkul free hai!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+              <motion.a
+                href="#main-content"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white text-purple-600 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
+              >
+                <FiSearch className="text-base sm:text-lg md:text-xl" />
+                Shops Explore Karein
+              </motion.a>
+              <motion.a
+                href="/add-shop"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-yellow-400 text-gray-900 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
+              >
+                <FiShoppingBag className="text-base sm:text-lg md:text-xl" />
+                Apna Business Add Karein
+              </motion.a>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
@@ -771,45 +810,6 @@ export default function HomepageClient() {
           </div>
         </div>
       </motion.header>
-
-      {/* Top CTA Section - Shuru karein apna local business journey! */}
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 py-6 md:py-8 shadow-lg"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">
-              Shuru karein apna local business journey!
-            </h2>
-            <p className="text-base md:text-lg text-blue-100 mb-6 md:mb-8 max-w-2xl mx-auto">
-              Apne area ki best shops discover karein ya apna business list karein - dono bilkul free hai!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <motion.a
-                href="#main-content"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-white text-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
-              >
-                <FiSearch className="text-lg sm:text-xl" />
-                Shops Explore Karein
-              </motion.a>
-              <motion.a
-                href="/add-shop"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-yellow-400 text-gray-900 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
-              >
-                <FiShoppingBag className="text-lg sm:text-xl" />
-                Apna Business Add Karein
-              </motion.a>
-            </div>
-          </div>
-        </div>
-      </motion.section>
 
       {/* Hero Section */}
       {homepageLayout?.sections.hero.enabled !== false && (
