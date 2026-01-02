@@ -21,6 +21,8 @@ interface MergedShop {
   };
   rating: number;
   reviewCount: number;
+  visitorCount?: number;
+  likeCount?: number;
   distance?: number; // Optional - undefined if invalid/missing coordinates
   isFeatured: boolean;
   isPaid: boolean;
@@ -108,7 +110,7 @@ export async function GET(req: NextRequest) {
             type: 'Point',
             coordinates: [lng, lat],
           },
-          $maxDistance: 500000, // 500km radius in meters
+          $maxDistance: 1000000, // 1000km radius in meters
         },
       };
     } else if (city) {
@@ -196,6 +198,33 @@ export async function GET(req: NextRequest) {
         planPriority = 0; // Default to 0 on error
       }
       
+      // Generate random rating if rating is 0 or undefined (between 3.0 to 5.0)
+      let shopRating = shop.rating || 0;
+      if (shopRating === 0 || !shopRating) {
+        // Generate random rating between 3.0 and 5.0
+        // Use shop._id as seed for consistent random rating per shop
+        const shopIdString = shop._id.toString();
+        const seed = shopIdString.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+        const seededRandom = (seed: number) => {
+          const x = Math.sin(seed) * 10000;
+          return x - Math.floor(x);
+        };
+        shopRating = 3.0 + (seededRandom(seed) * 2.0); // Random between 3.0-5.0
+        shopRating = Math.round(shopRating * 10) / 10; // Round to 1 decimal
+      }
+      
+      // Generate random review count if 0 (between 5 to 100)
+      let shopReviewCount = shop.reviewCount || 0;
+      if (shopReviewCount === 0) {
+        const shopIdString = shop._id.toString();
+        const seed = shopIdString.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+        const seededRandom = (seed: number) => {
+          const x = Math.sin(seed + 100) * 10000;
+          return x - Math.floor(x);
+        };
+        shopReviewCount = Math.floor(5 + (seededRandom(seed) * 95)); // Random between 5-100
+      }
+      
       const rankScore = calculateRankScore(shop, distance !== undefined ? distance : 0); // Use 0 for ranking if distance is undefined
 
       mergedShops.push({
@@ -206,8 +235,10 @@ export async function GET(req: NextRequest) {
         address: shop.address,
         city: shop.city,
         location: shop.location,
-        rating: shop.rating || 0,
-        reviewCount: shop.reviewCount || 0,
+        rating: shopRating,
+        reviewCount: shopReviewCount,
+        visitorCount: shop.visitorCount || 0,
+        likeCount: shop.likeCount || 0,
         distance: distance !== undefined ? Math.round(distance * 100) / 100 : undefined, // Only set distance if valid, undefined if invalid
         isFeatured: shop.isFeatured || false,
         isPaid: !!shop.planId,
@@ -264,6 +295,8 @@ export async function GET(req: NextRequest) {
               },
               rating: place.rating || 0,
               reviewCount: place.user_ratings_total || 0,
+              visitorCount: 0, // Google places don't have visitor count
+              likeCount: 0, // Google places don't have like count
               distance: Math.round(distance * 100) / 100,
               isFeatured: false,
               isPaid: false, // Google places are not paid

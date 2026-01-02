@@ -67,23 +67,44 @@ export async function PUT(
     }
 
     // Handle contact information (phone and email are direct fields in Shop model)
+    // Support both contact object and direct phone/email fields
     if (updates.contact) {
-      console.log('📞 Updating contact info:', updates.contact);
+      console.log('📞 Updating contact info from contact object:', updates.contact);
       if (updates.contact.phone) {
         shop.phone = updates.contact.phone;
       }
       if (updates.contact.email) {
         shop.email = updates.contact.email;
       }
+    }
+    
+    // Also handle direct phone and email fields
+    if (updates.phone !== undefined) {
+      console.log('📞 Updating phone from direct field:', updates.phone);
+      shop.phone = updates.phone;
+    }
+    if (updates.email !== undefined) {
+      console.log('📧 Updating email from direct field:', updates.email);
+      shop.email = updates.email;
+    }
+    
+    if (updates.phone || updates.email || updates.contact) {
       console.log('✅ Contact updated - Phone:', shop.phone, 'Email:', shop.email);
     }
 
     await shop.save();
 
+    // Return shop with contact object for backward compatibility
+    const shopResponse = shop.toObject();
+    (shopResponse as any).contact = {
+      phone: shop.phone || '',
+      email: shop.email || '',
+    };
+
     return NextResponse.json({
       success: true,
       message: 'Shop updated successfully',
-      shop,
+      shop: shopResponse,
     });
   } catch (error: any) {
     console.error('Error updating shop:', error);

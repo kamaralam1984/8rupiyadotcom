@@ -43,6 +43,7 @@ export interface IShop extends Document {
   rating: number;
   reviewCount: number;
   visitorCount: number; // Total visitors/views
+  likeCount: number; // Total likes
   // Plan-based fields
   photos: string[]; // Array of photo URLs
   offers: Array<{
@@ -104,6 +105,7 @@ const ShopSchema = new Schema<IShop>(
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
     visitorCount: { type: Number, default: 0 },
+    likeCount: { type: Number, default: 0 },
     // Plan-based fields
     photos: [{ type: String }],
     offers: [{

@@ -1,36 +1,463 @@
-import Link from 'next/link';
+'use client';
 
-export const metadata = {
-  title: "About Us - 8rupiya.com",
-};
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { useEffect } from 'react';
+import { 
+  FiShoppingBag, 
+  FiMapPin, 
+  FiUsers, 
+  FiTrendingUp, 
+  FiCheckCircle, 
+  FiStar,
+  FiSearch,
+  FiShield,
+  FiArrowLeft
+} from 'react-icons/fi';
 
 export default function About() {
+  // Set page title dynamically
+  useEffect(() => {
+    document.title = "About Us - 8rupiya.com";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', "Learn about 8rupiya.com - India's most trusted local business discovery platform. Find verified shops, restaurants, doctors, and services near you.");
+    }
+  }, []);
+  const features = [
+    {
+      icon: FiMapPin,
+      title: 'Local Business Discovery',
+      description: 'Find verified shops, restaurants, hotels, and doctors from every corner of your city',
+      color: 'from-blue-600 to-cyan-600'
+    },
+    {
+      icon: FiCheckCircle,
+      title: 'Verified & Trusted',
+      description: 'Every business is verified to ensure you get trusted services',
+      color: 'from-green-600 to-emerald-600'
+    },
+    {
+      icon: FiUsers,
+      title: 'Community Powered',
+      description: 'Find the best businesses through real user reviews and ratings',
+      color: 'from-purple-600 to-pink-600'
+    },
+    {
+      icon: FiTrendingUp,
+      title: 'Digital Empowerment',
+      description: 'Help small shops grow by providing them with a digital platform',
+      color: 'from-orange-600 to-red-600'
+    }
+  ];
+
+  const stats = [
+    { number: '10,000+', label: 'Verified Businesses', icon: FiShoppingBag },
+    { number: '50,000+', label: 'Happy Users', icon: FiUsers },
+    { number: '100+', label: 'Cities Covered', icon: FiMapPin },
+    { number: '4.8/5', label: 'Average Rating', icon: FiStar }
+  ];
+
+  const benefits = [
+    {
+      icon: FiCheckCircle,
+      title: 'Bilkul Free Hai',
+      description: 'Platform completely free hai users ke liye. Koi hidden charges nahi, koi subscription fees nahi.',
+      color: 'text-green-600 dark:text-green-400'
+    },
+    {
+      icon: FiStar,
+      title: 'Real Reviews & Ratings',
+      description: 'Har business ki authentic reviews aur ratings real customers se. Genuine feedback se informed decisions lo.',
+      color: 'text-yellow-600 dark:text-yellow-400'
+    },
+    {
+      icon: FiSearch,
+      title: 'Smart Search System',
+      description: 'Category, location, ratings, ya specific services se filter karo. Quick aur easy search experience.',
+      color: 'text-blue-600 dark:text-blue-400'
+    },
+    {
+      icon: FiShield,
+      title: 'Complete Business Info',
+      description: 'Photos, contact details, operating hours, aur customer reviews - sab kuch ek jagah.',
+      color: 'text-purple-600 dark:text-purple-400'
+    },
+    {
+      icon: FiMapPin,
+      title: 'Mobile Friendly',
+      description: 'Mobile, tablet, ya desktop - har device par perfect experience. Kahi bhi, kabhi bhi access karo.',
+      color: 'text-pink-600 dark:text-pink-400'
+    },
+    {
+      icon: FiTrendingUp,
+      title: 'Support Local Businesses',
+      description: 'Local shopkeepers aur businesses ko support karo. Unhe digital age mein grow karne mein help karo.',
+      color: 'text-blue-600 dark:text-blue-400'
+    },
+    {
+      icon: FiUsers,
+      title: 'Regular Updates',
+      description: 'New businesses, updated information, aur latest reviews regularly add hote rahte hain.',
+      color: 'text-cyan-600 dark:text-cyan-400'
+    },
+    {
+      icon: FiShield,
+      title: 'Safe & Secure',
+      description: 'Your data safe hai. Secure platform jo privacy aur security ko priority deta hai.',
+      color: 'text-indigo-600 dark:text-indigo-400'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="max-w-4xl mx-auto p-6 py-12">
-        {/* Back to Home Link */}
+      {/* Back to Home Link */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <Link 
           href="/" 
-          className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mb-6 font-medium"
+          className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors group"
         >
-          ← Back to Home
+          <FiArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Home</span>
         </Link>
-
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-gray-800 dark:text-gray-200">
-          <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">About 8rupiya.com</h1>
-
-          <p className="mb-6 text-lg">
-            8rupiya.com is India's smart local business discovery platform. We help
-            people find nearby shops and services easily.
-          </p>
-
-          <p className="text-lg">
-            Our mission is to support local businesses and make shopping simple for
-            everyone.
-          </p>
-        </div>
       </div>
+
+      {/* Hero Section */}
+      <section className="relative py-16 md:py-24 overflow-hidden">
+        {/* Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20"></div>
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-72 h-72 bg-purple-300 dark:bg-purple-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-300 dark:bg-yellow-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-pink-300 dark:bg-pink-600 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Main Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12 md:mb-16"
+          >
+            <motion.h1 
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              About 8rupiya.com
+            </motion.h1>
+            <motion.p 
+              className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto font-medium"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              India's most trusted and fastest growing local business discovery platform
+            </motion.p>
+          </motion.div>
+
+          {/* Main Content */}
+          <div className="grid lg:grid-cols-2 gap-12 mb-16">
+            {/* Left Column - Main Description */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="space-y-6"
+            >
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                  <FiShoppingBag className="text-blue-600 dark:text-blue-400" />
+                  What is 8rupiya.com?
+                </h2>
+                <div className="space-y-4 text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
+                  <p>
+                    <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> is a local business discovery platform where users can easily find verified shops, restaurants, hotels, doctors, and services in their city. We provide a digital platform for small and large businesses across every city and village in India.
+                  </p>
+                  <p>
+                    In today's digital age, every business needs an online presence. However, many small shopkeepers don't have the time and resources to build their own website. <strong className="text-blue-600 dark:text-blue-400">This is the problem 8rupiya.com solves</strong> - we list local businesses for free and connect them to millions of customers.
+                  </p>
+                  <p>
+                    Whether you're looking for the best restaurant nearby, a reliable doctor, or want to explore trusted shops in your area - <strong className="text-purple-600 dark:text-purple-400">you'll find everything on 8rupiya.com</strong>. Every business is verified, ratings and reviews are from real users, and contact information is completely accurate.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Features */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="space-y-6"
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
+                Why choose 8rupiya.com?
+              </h2>
+              
+              {features.map((feature, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-300"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-br ${feature.color} shadow-lg`}>
+                      <feature.icon className="text-2xl text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Stats Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16"
+          >
+            {stats.map((stat, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -10 }}
+                className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 text-center"
+              >
+                <stat.icon className="text-4xl text-blue-600 dark:text-blue-400 mx-auto mb-3" />
+                <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium">
+                  {stat.label}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="relative py-16 md:py-24 bg-white dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Platform ke <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">Key Benefits</span>
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Kya kya features aur benefits milte hain 8rupiya.com par
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((benefit, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-300"
+              >
+                <benefit.icon className={`text-3xl ${benefit.color} mb-4`} />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                  {benefit.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {benefit.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Detailed Content Section */}
+      <section className="relative py-16 md:py-24" style={{ backgroundColor: '#800000' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="bg-white/10 dark:bg-white/5 backdrop-blur-lg rounded-2xl p-8 md:p-12 shadow-xl border border-white/20 dark:border-white/10"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Discover Nearby Shops and Services on 8rupiya.com
+            </h2>
+            
+            <div className="prose prose-lg max-w-none text-white space-y-6">
+              <p className="text-lg leading-relaxed text-white/90">
+                <strong className="text-white">8rupiya.com</strong> is India's premier local business discovery platform, designed to connect users with trusted shops, services, and businesses in their neighborhood. Whether you're searching for nearby shops, doctors, teachers, technicians, or any local service provider, our platform makes it easy to find exactly what you need, right where you are.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 my-8">
+                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <FiMapPin className="text-2xl text-blue-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Location-Based Discovery</h3>
+                    <p className="text-white/80">
+                      Our smart location system helps you discover businesses based on your current location. Simply enter your area or allow location access, and instantly see verified shops, restaurants, hotels, and service providers nearby.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <FiSearch className="text-2xl text-purple-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Comprehensive Directory</h3>
+                    <p className="text-white/80">
+                      From jewelry stores and furniture shops to doctors, teachers, and technicians, our directory covers every type of local business. Find everything from daily essentials to specialized services in one convenient platform.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                The digital directory plays a crucial role in modern business discovery. In today's fast-paced world, people need quick access to reliable local services. <strong className="text-white">8rupiya.com bridges the gap</strong> between local businesses and customers, creating a seamless connection that benefits both parties.
+              </p>
+
+              <h3 className="text-2xl font-bold text-white mt-8 mb-4">Why Choose 8rupiya.com for Local Business Discovery?</h3>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <FiShield className="text-xl text-green-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Verified Businesses Only</h4>
+                    <p className="text-white/80">
+                      Every business listed on our platform undergoes a verification process. We ensure that contact information, addresses, and business details are accurate and up-to-date, giving you confidence in your choices.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <FiUsers className="text-xl text-blue-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Real User Reviews</h4>
+                    <p className="text-white/80">
+                      Our community-driven platform features authentic reviews and ratings from real customers. Read genuine experiences from people who have used these services, helping you make informed decisions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <FiTrendingUp className="text-xl text-purple-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Supporting Local Economy</h4>
+                    <p className="text-white/80">
+                      By using 8rupiya.com, you're directly supporting local businesses and shopkeepers. We help small and medium enterprises gain online visibility, reach more customers, and grow their businesses in the digital age.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-lg leading-relaxed mt-6 text-white/90">
+                Whether you're looking for a nearby restaurant for dinner, a reliable doctor for a health checkup, a skilled technician for home repairs, or a trusted teacher for your child's education, <strong className="text-white">8rupiya.com has you covered</strong>. Our platform serves as your comprehensive guide to local businesses, making it easier than ever to discover and connect with services in your area.
+              </p>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                The platform's user-friendly interface and powerful search capabilities ensure that finding what you need is quick and effortless. Filter by category, location, ratings, or specific services to narrow down your search. With detailed business profiles including photos, contact information, operating hours, and customer reviews, you have all the information needed to make the right choice.
+              </p>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                Join thousands of satisfied users who trust 8rupiya.com for their local business discovery needs. Experience the convenience of having a complete directory of verified local businesses at your fingertips, and discover how easy it is to find the best shops and services in your neighborhood.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-center"
+          >
+            <div className="bg-blue-600 rounded-3xl p-8 md:p-12 shadow-2xl">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Join India's Digital Revolution
+              </h2>
+              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                <strong className="text-white">8rupiya.com</strong> is not just a website - it's a movement that's empowering local businesses across India. Whether you're a customer looking for trusted services, or a shopkeeper wanting to take your business online - <strong className="text-white">8rupiya.com is for you</strong>.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/"
+                  className="bg-white text-blue-600 px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+                >
+                  <FiSearch />
+                  <span>Explore Shops</span>
+                </Link>
+                <Link
+                  href="/add-shop"
+                  className="bg-white/10 backdrop-blur-lg text-white border-2 border-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-white/20 transition-all hover:scale-105 flex items-center justify-center gap-2"
+                >
+                  <FiShoppingBag />
+                  <span>Add Your Business</span>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
-  

@@ -26,6 +26,7 @@ import {
   FiImage,
   FiUpload,
   FiPlus,
+  FiHeart,
 } from 'react-icons/fi';
 
 interface Shop {
@@ -76,6 +77,8 @@ interface Shop {
   isFeatured: boolean;
   homepagePriority: number;
   visitors: number;
+  visitorCount?: number; // Total visitors/views
+  likeCount?: number; // Total likes
   rating: number;
   reviewCount: number;
   createdAt: string;
@@ -83,6 +86,9 @@ interface Shop {
   location?: {
     coordinates: [number, number];
   };
+  distance?: number; // Distance in km
+  phone?: string; // Direct phone field from database
+  email?: string; // Direct email field from database
 }
 
 export default function ShopManagementPage() {
@@ -115,6 +121,8 @@ export default function ShopManagementPage() {
     homepagePriority: 0,
     rating: 0,
     reviewCount: 0,
+    visitorCount: 0,
+    likeCount: 0,
     status: 'pending' as 'pending' | 'approved' | 'rejected' | 'active',
   });
   const [editLoading, setEditLoading] = useState(false);
@@ -300,20 +308,26 @@ export default function ShopManagementPage() {
 
   const handleEditShop = (shop: Shop) => {
     setSelectedShop(shop);
+    // Fetch phone and email from database - check both direct fields and contact object
+    const phoneFromDB = (shop as any).phone || shop.contact?.phone || '';
+    const emailFromDB = (shop as any).email || shop.contact?.email || '';
+    
     setEditFormData({
       name: shop.name || '',
       category: shop.category || '',
       address: shop.address || '',
       city: shop.city || '',
       pincode: shop.pincode || '',
-      phone: shop.contact?.phone || '',
-      email: shop.contact?.email || '',
+      phone: phoneFromDB, // From database phone field or contact.phone
+      email: emailFromDB, // From database email field or contact.email
       // Keywords from SEO keywords (database linked)
       keywords: (shop as any).seoKeywords || shop.keywords || '',
       isFeatured: shop.isFeatured || false,
       homepagePriority: shop.homepagePriority || 0,
       rating: shop.rating || 0,
       reviewCount: shop.reviewCount || 0,
+      visitorCount: shop.visitorCount || 0,
+      likeCount: shop.likeCount || 0,
       status: shop.status || 'pending',
     });
     // Set images from database (images or photos array)
@@ -440,6 +454,9 @@ export default function ShopManagementPage() {
             email: editFormData.email,
             // WhatsApp removed as per requirement
           },
+          // Also update direct phone and email fields in database (from Shop model)
+          phone: editFormData.phone,
+          email: editFormData.email,
           keywords: editFormData.keywords,
           seoKeywords: editFormData.keywords, // Save to SEO keywords as well
           images: allImages,
@@ -451,6 +468,16 @@ export default function ShopManagementPage() {
       });
 
       if (response.ok) {
+        // Update rating separately if changed
+        if (editFormData.rating !== (selectedShop.rating || 0) || editFormData.reviewCount !== (selectedShop.reviewCount || 0)) {
+          await handleUpdateRating(selectedShop._id, editFormData.rating, editFormData.reviewCount);
+        }
+
+        // Update visitor and like counts separately if changed
+        if (editFormData.visitorCount !== (selectedShop.visitorCount || 0) || editFormData.likeCount !== (selectedShop.likeCount || 0)) {
+          await handleUpdateVisitorsLikes(selectedShop._id, editFormData.visitorCount, editFormData.likeCount);
+        }
+
         // Clean up preview URLs
         imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
         
@@ -493,6 +520,33 @@ export default function ShopManagementPage() {
     } catch (error) {
       console.error('Error updating rating:', error);
       alert('Failed to update rating. Please try again.');
+      return false;
+    }
+  };
+
+  const handleUpdateVisitorsLikes = async (shopId: string, visitorCount: number, likeCount: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/shops/${shopId}/visitors-likes`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ visitorCount, likeCount }),
+      });
+
+      if (response.ok) {
+        await fetchShops();
+        return true;
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update visitors/likes');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating visitors/likes:', error);
+      alert('Failed to update visitors/likes. Please try again.');
       return false;
     }
   };
@@ -753,17 +807,22 @@ export default function ShopManagementPage() {
                       </div>
                     </td>
 
-                    {/* Shop Details Column */}
+                    {/* Shop Details Column - All Information Together */}
                     <td className="px-4 py-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-gray-900 dark:text-white">{shop.name}</p>
-                          {shop.isFeatured && (
-                            <FiStar className="text-yellow-500 fill-yellow-500" title="Featured" />
-                          )}
+                      <div className="space-y-2">
+                        {/* Shop Name & Category */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-gray-900 dark:text-white">{shop.name}</p>
+                            {shop.isFeatured && (
+                              <FiStar className="text-yellow-500 fill-yellow-500" title="Featured" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{shop.category}</p>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{shop.category}</p>
-                        <div className="flex items-center gap-2 mt-2">
+
+                        {/* Status Badges */}
+                        <div className="flex items-center gap-2">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(shop.status)}`}>
                             {shop.status}
                           </span>
@@ -772,24 +831,78 @@ export default function ShopManagementPage() {
                               Expired
                             </span>
                           )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          <div className="flex items-center gap-1">
-                            <FiEye className="text-gray-400" />
-                            <span>{shop.visitors || 0} visitors</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <FiStar className={`${shop.rating >= 4.0 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
-                            <span className={`font-semibold ${shop.rating >= 4.0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                              {shop.rating.toFixed(1)}
-                            </span>
-                            <span className="text-gray-400">({shop.reviewCount})</span>
-                          </div>
-                        </div>
-                        {shop.rating >= 4.0 && (
-                          <div className="mt-2">
+                          {shop.rating >= 4.0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
                               🏆 Top Rated
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Phone Number */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiPhone className="text-green-600 text-xs flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {shop.contact?.phone || shop.phone || 'No phone'}
+                          </span>
+                        </div>
+
+                        {/* Email ID */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiMail className="text-blue-600 text-xs flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={shop.contact?.email || shop.email || ''}>
+                            {shop.contact?.email || shop.email || 'No email'}
+                          </span>
+                        </div>
+
+                        {/* Plan */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiPackage className="text-purple-600 text-xs flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            {shop.planId?.name || 'N/A'} - ₹{shop.planId?.price?.toLocaleString('en-IN') || 0}
+                          </span>
+                        </div>
+
+                        {/* Plan Expiry Date */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiClock className={`text-xs flex-shrink-0 ${
+                            getDaysRemaining(shop.planExpiry) < 7 
+                              ? 'text-red-500' 
+                              : getDaysRemaining(shop.planExpiry) < 30
+                              ? 'text-yellow-500'
+                              : 'text-green-500'
+                          }`} />
+                          <span className="text-gray-700 dark:text-gray-300">
+                            Expires: {new Date(shop.planExpiry).toLocaleDateString('en-IN', { 
+                              day: '2-digit', 
+                              month: 'short',
+                              year: 'numeric'
+                            })} ({getDaysRemaining(shop.planExpiry)}d)
+                          </span>
+                        </div>
+
+                        {/* Visitor Count */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiEye className="text-blue-500 text-xs flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            {shop.visitors || shop.visitorCount || 0} visitors
+                          </span>
+                        </div>
+
+                        {/* Rating & Reviews */}
+                        <div className="flex items-center gap-2 text-xs">
+                          <FiStar className={`text-xs flex-shrink-0 ${shop.rating >= 4.0 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
+                          <span className={`font-semibold ${shop.rating >= 4.0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {shop.rating.toFixed(1)}
+                          </span>
+                          <span className="text-gray-400">({shop.reviewCount || 0} reviews)</span>
+                        </div>
+
+                        {/* Distance (if available) */}
+                        {(shop as any).distance !== undefined && (shop as any).distance !== null && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <FiMapPin className="text-red-500 text-xs flex-shrink-0" />
+                            <span className="text-gray-700 dark:text-gray-300">
+                              {Number((shop as any).distance).toFixed(1)} km away
                             </span>
                           </div>
                         )}
@@ -1736,6 +1849,98 @@ export default function ShopManagementPage() {
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-sm text-gray-700 dark:text-gray-300">
                       <strong>💡 Tip:</strong> Shops with rating ≥ 4.0 stars will automatically display a "Top Rated" badge on shop cards and detail pages.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Visitor & Like Count Management */}
+                <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <FiEye className="text-blue-500" />
+                      Visitor & Like Count Management
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (selectedShop && await handleUpdateVisitorsLikes(selectedShop._id, editFormData.visitorCount, editFormData.likeCount)) {
+                          alert('Visitor and like counts updated successfully!');
+                        }
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm"
+                    >
+                      <FiEye className="text-white" />
+                      Update Counts
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Visitor Count Input */}
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FiEye className="text-blue-500" />
+                        Visitor Count
+                        <span className="text-xs text-gray-500">(Total visitors)</span>
+                      </label>
+                      <div className="space-y-3">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={editFormData.visitorCount}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            if (value >= 0) {
+                              setEditFormData({ ...editFormData, visitorCount: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
+                          placeholder="Enter visitor count"
+                        />
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <FiEye className="text-blue-500" />
+                          <span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">{editFormData.visitorCount}</span> visitors
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Like Count Input */}
+                    <div className="bg-gradient-to-br from-pink-50 to-red-50 dark:from-pink-900/20 dark:to-red-900/20 p-6 rounded-xl border border-pink-200 dark:border-pink-800">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FiHeart className="text-red-500" />
+                        Like Count
+                        <span className="text-xs text-gray-500">(Total likes)</span>
+                      </label>
+                      <div className="space-y-3">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={editFormData.likeCount}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            if (value >= 0) {
+                              setEditFormData({ ...editFormData, likeCount: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-pink-300 dark:border-pink-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 text-lg font-semibold"
+                          placeholder="Enter like count"
+                        />
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <FiHeart className="text-red-500" />
+                          <span>
+                            <span className="font-bold text-red-600 dark:text-red-400 text-lg">{editFormData.likeCount}</span> likes
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>💡 Tip:</strong> Visitor count shows how many people have viewed this shop. Like count shows how many people have liked this shop. These counts are displayed on shop cards.
                     </p>
                   </div>
                 </div>

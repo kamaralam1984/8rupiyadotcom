@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin, FiShoppingBag, FiMail, FiGlobe, FiClock } from 'react-icons/fi';
+import { FiX, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin, FiShoppingBag, FiMail, FiGlobe, FiClock, FiEdit3 } from 'react-icons/fi';
 import AdSlot from './AdSlot';
 import DisplayAd from './DisplayAd';
 
@@ -39,6 +39,11 @@ interface ShopPopupProps {
 }
 
 export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopPopupProps) {
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   // Close on ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -64,6 +69,50 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!shop._id) {
+      alert('Shop ID not available');
+      return;
+    }
+
+    if (reviewComment.trim().length < 10) {
+      alert('Please write at least 10 characters in your review');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const response = await fetch(`/api/shops/${shop._id}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating: reviewRating,
+          comment: reviewComment.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Review submitted successfully!');
+        setShowReviewForm(false);
+        setReviewComment('');
+        setReviewRating(5);
+        // Reload page to show updated rating
+        window.location.reload();
+      } else {
+        alert(data.error || 'Failed to submit review. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Failed to submit review. Please try again.');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -189,11 +238,99 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                   </div>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <FiStar className="text-yellow-500 fill-yellow-500 text-xl" />
-                    <span className="text-xl font-bold text-gray-900">{shop.rating.toFixed(1)}</span>
-                    <span className="text-sm text-gray-500">({shop.reviewCount} reviews)</span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <FiStar className="text-yellow-500 fill-yellow-500 text-xl" />
+                      <span className="text-xl font-bold text-gray-900">{shop.rating.toFixed(1)}</span>
+                      <span className="text-sm text-gray-500">({shop.reviewCount} reviews)</span>
+                    </div>
+                    <button
+                      onClick={() => setShowReviewForm(!showReviewForm)}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-semibold"
+                    >
+                      <FiEdit3 className="text-sm" />
+                      {showReviewForm ? 'Cancel Review' : 'Write Review'}
+                    </button>
                   </div>
+
+                  {/* Review Form */}
+                  {showReviewForm && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800"
+                    >
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <FiStar className="text-yellow-500" />
+                        Write a Review
+                      </h3>
+                      
+                      {/* Star Rating */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Rating
+                        </label>
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              className="focus:outline-none"
+                            >
+                              <FiStar
+                                className={`text-3xl transition-colors ${
+                                  star <= reviewRating
+                                    ? 'text-yellow-500 fill-yellow-500'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          <span className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            {reviewRating}.0
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Review Comment */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Your Review
+                        </label>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="Share your experience with this shop..."
+                          rows={4}
+                          className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {reviewComment.length} / 500 characters (minimum 10)
+                        </p>
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={submittingReview || reviewComment.trim().length < 10}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {submittingReview ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <FiStar className="text-sm" />
+                            Submit Review
+                          </>
+                        )}
+                      </button>
+                    </motion.div>
+                  )}
 
                   {/* Description */}
                   {shop.description && (

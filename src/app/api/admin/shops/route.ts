@@ -63,11 +63,20 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .lean();
 
+    // Add contact object for backward compatibility (from phone and email fields)
+    const shopsWithContact = shops.map((shop: any) => ({
+      ...shop,
+      contact: {
+        phone: shop.phone || '',
+        email: shop.email || '',
+      },
+    }));
+
     const total = await Shop.countDocuments(query);
 
     return NextResponse.json({
       success: true,
-      shops,
+      shops: shopsWithContact,
       pagination: {
         page,
         limit,

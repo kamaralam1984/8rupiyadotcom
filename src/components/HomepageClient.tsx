@@ -9,6 +9,8 @@ import Hero from './Hero';
 import AboutSection from './AboutSection';
 import SEOTextSection from './SEOTextSection';
 import TextBreakSection from './TextBreakSection';
+import MixedContentSection from './MixedContentSection';
+import WhatMakesSpecialSection from './WhatMakesSpecialSection';
 import LeftRail from './LeftRail';
 import RightRail from './RightRail';
 import Nearby from './Nearby';
@@ -19,7 +21,6 @@ import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLog
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
-import LanguageSwitcher from './LanguageSwitcher';
 import AdStatusIndicator from './AdStatusIndicator';
 
 // ⚡ Dynamic imports for heavy components (lazy load for better performance)
@@ -87,14 +88,24 @@ interface User {
 
 interface HomepageLayout {
   sections: {
+    topCTA: { enabled: boolean; order: number };
     hero: { enabled: boolean; order: number };
     connectionStatus: { enabled: boolean; order: number };
+    aboutSection: { enabled: boolean; order: number };
+    seoTextSection: { enabled: boolean; order: number };
     leftRail: { enabled: boolean; order: number };
     rightRail: { enabled: boolean; order: number };
     featuredShops: { enabled: boolean; order: number; title?: string; limit?: number };
     paidShops: { enabled: boolean; order: number; title?: string; limit?: number };
     topRated: { enabled: boolean; order: number; title?: string; limit?: number };
     nearbyShops: { enabled: boolean; order: number; title?: string; limit?: number };
+    mixedContent1: { enabled: boolean; order: number; variant?: string };
+    mixedContent2: { enabled: boolean; order: number; variant?: string };
+    mixedContent3: { enabled: boolean; order: number; variant?: string };
+    mixedContent4: { enabled: boolean; order: number; variant?: string };
+    displayAd1: { enabled: boolean; order: number };
+    displayAd2: { enabled: boolean; order: number };
+    inFeedAds: { enabled: boolean; order: number };
     stats: { enabled: boolean; order: number };
     footer: { enabled: boolean; order: number };
   };
@@ -535,6 +546,13 @@ export default function HomepageClient() {
     if (selectedCity && !shop.city.toLowerCase().includes(selectedCity.toLowerCase())) {
       return false;
     }
+    // Filter by distance: 0 to 1000km
+    if (shop.distance !== undefined && shop.distance !== null) {
+      const distanceKm = shop.distance;
+      if (distanceKm < 0 || distanceKm > 1000) {
+        return false;
+      }
+    }
     return true;
   });
 
@@ -580,19 +598,20 @@ export default function HomepageClient() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
 
       {/* Top CTA Section - Start your local business journey! */}
+      {homepageLayout?.sections?.topCTA?.enabled !== false && (
       <motion.section
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 py-4 md:py-6 shadow-lg relative z-40"
+        className="w-full bg-blue-600 py-4 md:py-6 shadow-lg relative z-40"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">
-              {t('cta.title')}
+              Start your local business journey!
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-blue-100 mb-4 md:mb-6 max-w-2xl mx-auto">
-              {t('cta.description')}
+              Discover the best shops in your area or list your business - both are completely free!
             </p>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <motion.a
@@ -602,7 +621,7 @@ export default function HomepageClient() {
                 className="bg-white text-purple-600 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
               >
                 <FiSearch className="text-base sm:text-lg md:text-xl" />
-                {t('cta.exploreShops')}
+                Explore Shops
               </motion.a>
               <motion.a
                 href="/add-shop"
@@ -611,12 +630,13 @@ export default function HomepageClient() {
                 className="bg-yellow-400 text-gray-900 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
               >
                 <FiShoppingBag className="text-base sm:text-lg md:text-xl" />
-                {t('cta.addBusiness')}
+                Add Your Business
               </motion.a>
             </div>
           </div>
         </div>
       </motion.section>
+      )}
 
       {/* Header */}
       <motion.header
@@ -664,9 +684,6 @@ export default function HomepageClient() {
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
               {/* Ad Status Indicator */}
               <AdStatusIndicator />
-              
-              {/* Language Switcher */}
-              <LanguageSwitcher />
               
               {/* Theme Toggle */}
               <ThemeToggle />
@@ -818,7 +835,7 @@ export default function HomepageClient() {
       </motion.header>
 
       {/* Hero Section */}
-      {homepageLayout?.sections.hero.enabled !== false && (
+      {homepageLayout?.sections?.hero?.enabled !== false && (
         <Hero 
           shops={sortedShops} 
           onShopClick={handleShopClick}
@@ -827,37 +844,43 @@ export default function HomepageClient() {
         />
       )}
 
-      {/* About Section - Detailed Information about 8rupiya.com */}
-      <AboutSection />
+      {/* About Section - Moved to /about page */}
+      {/* {homepageLayout?.sections?.aboutSection?.enabled !== false && (
+        <AboutSection />
+      )} */}
 
-      {/* SEO Text Section - 600-800 words for AdSense optimization */}
-      <SEOTextSection />
+      {/* SEO Text Section - Moved to /about page */}
+      {/* {homepageLayout?.sections?.seoTextSection?.enabled !== false && (
+        <SEOTextSection />
+      )} */}
 
       {/* Display Ad - Below SEO Section (AdSense-Safe Zone) */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
-        <DisplayAd />
-      </div>
+      {homepageLayout?.sections?.displayAd1?.enabled !== false && (
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+          <DisplayAd />
+        </div>
+      )}
 
       {/* Main Content with Sidebars */}
       <main id="main-content" className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8" role="main">
         {/* Main Page Heading - h1 for SEO */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 px-4 sm:px-6">
-          {selectedCity ? `${t('shops.bestInCity')} ${selectedCity}` : t('shops.bestNearYou')}
+          {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
         </h1>
         
-        {/* Human-written Explanation for AdSense (80-120 words) */}
+        {/* Brief description - Detailed content moved to /about page */}
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
         >
-          {t('shops.explanation')}
+          Discover trusted nearby shops and services in your area. Find verified businesses with accurate contact information, real customer reviews, and detailed profiles. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
         </motion.p>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Rail */}
-          {homepageLayout?.sections.leftRail.enabled !== false && (
+          {homepageLayout?.sections?.leftRail?.enabled !== false && (
             <aside className="w-full lg:w-64 flex-shrink-0 order-2 lg:order-1" aria-label="Filters and categories">
               <LeftRail
                 onCategoryChange={handleCategoryChange}
@@ -867,95 +890,165 @@ export default function HomepageClient() {
             </aside>
           )}
 
-          {/* Main Content */}
-          <div className="flex-1 space-y-3 sm:space-y-4 md:space-y-5 order-1 lg:order-2 min-w-0">
-            {/* Featured Shops */}
-            {homepageLayout?.sections.featuredShops.enabled !== false && featuredShops.length > 0 && (
-              <section>
-                <motion.h2
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"
-                  aria-label="Featured Shops"
-                >
-                  {homepageLayout?.sections.featuredShops.title || t('shop.featured')}
-                </motion.h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4">
-                  {featuredShops.flatMap((shop, index) => {
-                    const items: React.ReactNode[] = [
-                      <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
-                    ];
-                    
-                    // Add in-feed ad after every 2 shop cards
-                    if ((index + 1) % 2 === 0 && (index + 1) < featuredShops.length) {
-                      items.push(
-                        <div key={`ad-featured-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
-                          <InFeedAd />
-                        </div>
-                      );
-                    }
-                    
-                    return items;
-                  })}
+          {/* Main Content - Modern Mixed Layout */}
+          <div className="flex-1 order-1 lg:order-2 min-w-0">
+            {/* Modern Mixed Content Sections */}
+            <div className="space-y-0">
+              {/* Section 1: Text + Featured Shops (Left) */}
+              {homepageLayout?.sections?.mixedContent1?.enabled !== false && homepageLayout?.sections?.featuredShops?.enabled !== false && featuredShops.length > 0 && (
+                <>
+                  <MixedContentSection
+                    variant={(homepageLayout?.sections?.mixedContent1?.variant as any) || "text-left"}
+                    shops={featuredShops.slice(0, 2)}
+                    onShopClick={handleShopClick}
+                    userLocation={location}
+                    ShopCardComponent={ShopCard}
+                    index={0}
+                  />
+                  
+                  {/* Featured Shops Grid */}
+                  <motion.section
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="py-8 md:py-12"
+                  >
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <motion.h2
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
+                        aria-label="Featured Shops"
+                      >
+                        {homepageLayout?.sections?.featuredShops?.title || t('shop.featured')}
+                      </motion.h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {featuredShops.flatMap((shop, index) => {
+                          const items: React.ReactNode[] = [
+                            <ShopCard key={`featured-${shop._id || shop.place_id || index}`} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                          ];
+                          
+                          // Add in-feed ad after every 2 shop cards
+                          if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < featuredShops.length) {
+                            items.push(
+                              <div key={`ad-featured-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                                <InFeedAd />
+                              </div>
+                            );
+                          }
+                          
+                          return items;
+                        })}
+                      </div>
+                    </div>
+                  </motion.section>
+                </>
+              )}
+
+              {/* Ad Space - Between Featured and Paid Shops (AdSense-Safe Zone) */}
+              {homepageLayout?.sections?.displayAd2?.enabled !== false && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AdSlot slot="homepage" />
                 </div>
-              </section>
-            )}
+              )}
 
-            {/* Text Break - After Featured Shops */}
-            {homepageLayout?.sections.featuredShops.enabled !== false && featuredShops.length > 0 && (
-              <TextBreakSection variant="reviews" />
-            )}
+              {/* What Makes 8rupiya.com Special Section - Before Premium Shops */}
+              <WhatMakesSpecialSection />
 
-            {/* Ad Space - Between Featured and Paid Shops (AdSense-Safe Zone) */}
-            <AdSlot slot="homepage" className="my-8" />
+              {/* Section 2: Paid Shops + Text (Right) */}
+              {homepageLayout?.sections?.mixedContent2?.enabled !== false && homepageLayout?.sections?.paidShops?.enabled !== false && paidShops.length > 0 && (
+                <>
+                  <MixedContentSection
+                    variant={(homepageLayout?.sections?.mixedContent2?.variant as any) || "text-right"}
+                    shops={paidShops.slice(0, 2)}
+                    onShopClick={handleShopClick}
+                    userLocation={location}
+                    ShopCardComponent={ShopCard}
+                    index={1}
+                  />
+                  
+                  {/* Paid Shops Grid */}
+                  <motion.section
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="py-8 md:py-12"
+                  >
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <motion.h2
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
+                        aria-label="Premium Shops"
+                      >
+                        {homepageLayout?.sections?.paidShops?.title || t('shop.premium')}
+                      </motion.h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {paidShops.flatMap((shop, index) => {
+                          const items: React.ReactNode[] = [
+                            <ShopCard key={`paid-${shop._id || shop.place_id || index}`} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                          ];
+                          
+                          // Add in-feed ad after every 2 shop cards
+                          if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < paidShops.length) {
+                            items.push(
+                              <div key={`ad-paid-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                                <InFeedAd />
+                              </div>
+                            );
+                          }
+                          
+                          return items;
+                        })}
+                      </div>
+                    </div>
+                  </motion.section>
+                </>
+              )}
 
-            {/* Paid Shops */}
-            {homepageLayout?.sections.paidShops.enabled !== false && paidShops.length > 0 && (
-              <section>
-                <motion.h2
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4"
-                  aria-label="Premium Shops"
-                >
-                  {homepageLayout?.sections.paidShops.title || t('shop.premium')}
-                </motion.h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4">
-                  {paidShops.flatMap((shop, index) => {
-                    const items: React.ReactNode[] = [
-                      <ShopCard key={shop._id || index} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
-                    ];
-                    
-                    // Add in-feed ad after every 2 shop cards
-                    if ((index + 1) % 2 === 0 && (index + 1) < paidShops.length) {
-                      items.push(
-                        <div key={`ad-paid-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
-                          <InFeedAd />
-                        </div>
-                      );
-                    }
-                    
-                    return items;
-                  })}
+              {/* Section 3: Text Center + Shops Grid */}
+              {homepageLayout?.sections?.mixedContent3?.enabled !== false && (() => {
+                // Combine shops and remove duplicates
+                const combinedShops = [...featuredShops.slice(2, 5), ...paidShops.slice(2, 5)].filter(Boolean);
+                const uniqueShops = combinedShops.filter((shop, index, self) => 
+                  index === self.findIndex((s) => (s._id && s._id === shop._id) || (s.place_id && s.place_id === shop.place_id))
+                );
+                return (
+                  <MixedContentSection
+                    variant={(homepageLayout?.sections?.mixedContent3?.variant as any) || "text-center"}
+                    shops={uniqueShops}
+                    onShopClick={handleShopClick}
+                    userLocation={location}
+                    ShopCardComponent={ShopCard}
+                    index={2}
+                  />
+                );
+              })()}
+
+              {/* Ad Space - After Mixed Sections (AdSense-Safe Zone) */}
+              {homepageLayout?.sections?.displayAd2?.enabled !== false && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AdSlot slot="homepage" />
+                  <AdvertisementBanner slot="homepage" className="my-8" uniqueId="homepage-main" />
                 </div>
-              </section>
-            )}
+              )}
 
-            {/* Text Break - After Paid Shops */}
-            {homepageLayout?.sections.paidShops.enabled !== false && paidShops.length > 0 && (
-              <TextBreakSection variant="how-it-works" />
-            )}
-
-            {/* Ad Space - After Paid Shops (AdSense-Safe Zone) */}
-            <AdSlot slot="homepage" className="my-8" />
-            <AdvertisementBanner slot="homepage" className="my-8" uniqueId="homepage-main" />
-
+              {/* Section 4: Text Only */}
+              {homepageLayout?.sections?.mixedContent4?.enabled !== false && (
+                <MixedContentSection
+                  variant={(homepageLayout?.sections?.mixedContent4?.variant as any) || "text-only"}
+                  index={3}
+                />
+              )}
+            </div>
           </div>
 
           {/* Right Rail */}
-          {homepageLayout?.sections.rightRail.enabled !== false && (
+          {homepageLayout?.sections?.rightRail?.enabled !== false && (
             <aside className="w-full lg:w-64 flex-shrink-0 order-3" aria-label="Top rated and trending shops">
               <RightRail
                 topRatedShops={topRatedShops}
@@ -965,27 +1058,34 @@ export default function HomepageClient() {
           )}
         </div>
 
-        {/* Top Rated Shops Section - Full Width from 10px left */}
-        {homepageLayout?.sections.topRated.enabled !== false && (
+        {/* Top Rated Shops Section - Modern Mixed Layout */}
+        {homepageLayout?.sections?.topRated?.enabled !== false && (
           <>
+            {/* Text Section Before Top Rated */}
+            {homepageLayout?.sections?.mixedContent4?.enabled !== false && (
+              <MixedContentSection
+                variant="text-only"
+                title="Why Reviews Matter"
+                content="Customer reviews and ratings help you understand the quality and reliability of local businesses. Our platform ensures all reviews are from verified users, giving you authentic insights to make better decisions when choosing shops and services in your area."
+                index={4}
+              />
+            )}
             <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
-            {/* Text Break - After Top Rated Shops */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <TextBreakSection variant="reviews" />
-            </div>
           </>
         )}
 
         {/* Homepage Ad - Between sections (AdSense-Safe Zone) */}
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-          <AdSlot slot="homepage" />
-        </div>
+        {homepageLayout?.sections?.displayAd2?.enabled !== false && (
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+            <AdSlot slot="homepage" />
+          </div>
+        )}
 
         {/* All Shops Section - Full Width from 10px left */}
-        {homepageLayout?.sections.nearbyShops.enabled !== false && (
+        {homepageLayout?.sections?.nearbyShops?.enabled !== false && (
           <Nearby 
-            shops={filteredShops} 
-            title={homepageLayout?.sections.nearbyShops.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : t('shop.allShops'))} 
+            shops={filteredShops.slice(0, 6)} 
+            title={homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'Best Shops Near You')} 
             onShopClick={handleShopClick} 
             userLocation={location} 
           />
@@ -1024,7 +1124,7 @@ export default function HomepageClient() {
       )}
 
       {/* Stats Section */}
-      {homepageLayout?.sections.stats.enabled !== false && (
+      {homepageLayout?.sections?.stats?.enabled !== false && (
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1058,7 +1158,7 @@ export default function HomepageClient() {
       </div>
 
       {/* Footer */}
-      {homepageLayout?.sections.footer.enabled !== false && (
+      {homepageLayout?.sections?.footer?.enabled !== false && (
       <motion.footer
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -1071,28 +1171,28 @@ export default function HomepageClient() {
           <div className="flex flex-wrap justify-center gap-6 mb-8">
             <Link 
               href="/privacy-policy" 
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors font-medium hover:underline"
             >
               Privacy Policy
             </Link>
             <span className="text-gray-400 dark:text-gray-600">|</span>
             <Link 
               href="/terms" 
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+              className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors font-medium hover:underline"
             >
               Terms & Conditions
             </Link>
             <span className="text-gray-400 dark:text-gray-600">|</span>
             <Link 
               href="/about" 
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium hover:underline"
             >
               About Us
             </Link>
             <span className="text-gray-400 dark:text-gray-600">|</span>
             <Link 
               href="/contact" 
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+              className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 transition-colors font-medium hover:underline"
             >
               Contact Us
             </Link>

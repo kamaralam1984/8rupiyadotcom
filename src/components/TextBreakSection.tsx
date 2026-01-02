@@ -2,12 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { FiInfo, FiHelpCircle } from 'react-icons/fi';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TextBreakSectionProps {
   title?: string;
   content?: string;
-  variant?: 'info' | 'how-it-works' | 'reviews';
+  variant?: 'info' | 'how-it-works';
 }
 
 export default function TextBreakSection({ 
@@ -15,20 +14,14 @@ export default function TextBreakSection({
   content,
   variant = 'info' 
 }: TextBreakSectionProps) {
-  const { t } = useLanguage();
-  
   const defaultContent = {
     info: {
-      title: t('textBreak.howItWorks'),
-      text: t('textBreak.howItWorksText')
+      title: "How 8rupiya.com Works",
+      text: "Our platform makes it easy to discover and connect with local businesses. Simply browse through verified shops, read authentic customer reviews, and contact businesses directly. All listings are verified for accuracy, ensuring you get reliable information every time."
     },
     'how-it-works': {
-      title: t('textBreak.findingRight'),
-      text: t('textBreak.findingRightText')
-    },
-    reviews: {
-      title: t('textBreak.reviewsMatter'),
-      text: t('textBreak.reviewsMatterText')
+      title: "Finding the Right Business for You",
+      text: "Use our smart filters to narrow down your search by category, location, ratings, or specific services. Each business profile includes photos, contact details, operating hours, and customer reviews to help you make the best choice for your needs."
     }
   };
 
@@ -49,8 +42,6 @@ export default function TextBreakSection({
         <div className="flex items-start gap-4">
           {variant === 'info' ? (
             <FiInfo className="text-2xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
-          ) : variant === 'reviews' ? (
-            <FiInfo className="text-2xl text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
           ) : (
             <FiHelpCircle className="text-2xl text-purple-600 dark:text-purple-400 flex-shrink-0 mt-1" />
           )}

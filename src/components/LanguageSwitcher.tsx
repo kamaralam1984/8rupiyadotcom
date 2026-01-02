@@ -1,29 +1,21 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { FiGlobe, FiChevronDown } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { locales, localeNames, type Locale } from '@/i18n/config';
-import { removeLocaleFromPath, addLocaleToPath } from '@/i18n/routing';
 
 export default function LanguageSwitcher() {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { language, setLanguage } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get current locale from pathname
-  const currentLocale = pathname.split('/')[1] as Locale;
-  const locale = (locales.includes(currentLocale) ? currentLocale : 'en') as Locale;
+  const languages = [
+    { code: 'en' as const, name: 'English', native: 'English' },
+    { code: 'hi' as const, name: 'Hindi', native: 'हिंदी' },
+  ];
 
-  const languages = locales.map(code => ({
-    code,
-    name: localeNames[code],
-    native: code === 'en' ? 'English' : 'हिंदी',
-  }));
-
-  const currentLanguage = languages.find((lang) => lang.code === locale) || languages[0];
+  const currentLanguage = languages.find((lang) => lang.code === language) || languages[0];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,44 +31,8 @@ export default function LanguageSwitcher() {
     };
   }, []);
 
-  const handleLanguageChange = async (newLocale: Locale) => {
-    if (newLocale === locale) {
-      setIsOpen(false);
-      return;
-    }
-
-    // Remove current locale from pathname
-    const pathWithoutLocale = removeLocaleFromPath(pathname);
-    
-    // Add new locale to pathname
-    const newPath = addLocaleToPath(pathWithoutLocale, newLocale);
-    
-    // Save to MongoDB if user is logged in
-    try {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('token='))
-        ?.split('=')[1];
-      
-      if (token) {
-        await fetch('/api/user/language', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ language: newLocale }),
-        });
-      }
-    } catch (error) {
-      console.error('Error saving language preference:', error);
-    }
-    
-    // Set cookie
-    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
-    
-    // Navigate to new locale path
-    router.push(newPath);
+  const handleLanguageChange = (langCode: 'en' | 'hi') => {
+    setLanguage(langCode);
     setIsOpen(false);
   };
 
@@ -85,20 +41,17 @@ export default function LanguageSwitcher() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/10 dark:bg-gray-800/80 backdrop-blur-sm border border-white/20 dark:border-gray-700 hover:bg-white/20 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/80 backdrop-blur-sm border border-gray-700 hover:bg-gray-800 transition-all shadow-sm hover:shadow-md"
         aria-label="Change language"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <FiGlobe className="text-base sm:text-lg text-white" />
-        <span className="text-xs sm:text-sm font-medium text-white hidden sm:inline">
+        <FiGlobe className="text-lg text-white" />
+        <span className="text-sm font-medium text-white hidden sm:inline">
           {currentLanguage.native}
         </span>
-        <span className="text-xs sm:text-sm font-medium text-white sm:hidden">
-          {currentLanguage.code.toUpperCase()}
-        </span>
         <FiChevronDown 
-          className={`text-xs sm:text-sm text-white/80 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-sm text-gray-300 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -122,7 +75,7 @@ export default function LanguageSwitcher() {
                   type="button"
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
-                    locale === lang.code
+                    language === lang.code
                       ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-semibold'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
@@ -132,7 +85,7 @@ export default function LanguageSwitcher() {
                     <span className="font-medium">{lang.native}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">{lang.name}</span>
                   </div>
-                  {locale === lang.code && (
+                  {language === lang.code && (
                     <span className="text-blue-600 dark:text-blue-400">✓</span>
                   )}
                 </button>

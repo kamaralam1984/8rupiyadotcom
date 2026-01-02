@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation } from 'react-icons/fi';
+import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation, FiEye, FiHeart } from 'react-icons/fi';
 import { calculateDistanceAndTime } from '@/utils/distanceCalculation';
 import Analytics from '@/lib/analytics';
 
@@ -19,6 +19,8 @@ interface ShopCardProps {
     photos?: string[]; // Plan-based photos
     rating: number;
     reviewCount: number;
+    visitorCount?: number;
+    likeCount?: number;
     distance?: number;
     location?: {
       coordinates: [number, number]; // [longitude, latitude]
@@ -186,32 +188,6 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 <FiShoppingBag className="text-6xl text-white opacity-50" />
               </div>
             )}
-            {/* Distance Quick View on Image */}
-            {distanceTime.distance && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5"
-              >
-                <FiNavigation className="text-red-400 text-sm" />
-                <span>{distanceTime.distance}</span>
-                <span className="text-blue-300">• {distanceTime.time}</span>
-              </motion.div>
-            )}
-
-            {/* Featured Badge */}
-            {shop.isFeatured && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1"
-                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
-              >
-                <FiStar className="text-sm" />
-                Featured
-              </motion.div>
-            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
 
@@ -255,14 +231,39 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 </motion.div>
               </div>
             )}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            {/* Rating, Visitor, Like Row */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Rating */}
               <div className="flex items-center gap-1">
-                <FiStar className="text-yellow-500 fill-yellow-500" />
+                  <FiStar className="text-yellow-500 fill-yellow-500 text-sm" />
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                   {shop.rating?.toFixed(1) || '0.0'}
                 </span>
                 <span className="text-xs text-gray-600 dark:text-gray-400">({shop.reviewCount || 0})</span>
               </div>
+                
+                {/* Visitor Count */}
+                {(shop.visitorCount !== undefined && shop.visitorCount !== null) && (
+                  <div className="flex items-center gap-1">
+                    <FiEye className="text-blue-500 text-sm" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      {shop.visitorCount >= 1000 ? `${(shop.visitorCount / 1000).toFixed(1)}k` : shop.visitorCount}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Like Count */}
+                {(shop.likeCount !== undefined && shop.likeCount !== null) && (
+                  <div className="flex items-center gap-1">
+                    <FiHeart className="text-red-500 fill-red-500 text-sm" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      {shop.likeCount >= 1000 ? `${(shop.likeCount / 1000).toFixed(1)}k` : shop.likeCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
               <div className="flex gap-2">
                 {shop.isPaid && shop.planId && (
                   <span className="text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-3 py-1 rounded-full font-semibold">

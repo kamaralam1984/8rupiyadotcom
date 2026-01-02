@@ -25,6 +25,7 @@ import {
   FiLayers,
   FiPercent,
   FiPackage,
+  FiLayout,
 } from 'react-icons/fi';
 import ThemeToggle from '../ThemeToggle';
 
@@ -87,6 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Agents', icon: FiUserCheck, href: '/admin/agents', badge: null },
     { name: 'Operators', icon: FiUsers, href: '/admin/operators', badge: null },
     { name: 'Homepage', icon: FiGrid, href: '/admin/homepage-builder', badge: null },
+    { name: 'Content Control', icon: FiLayout, href: '/admin/homepage-content-control', badge: null },
     { name: 'Hero Settings', icon: FiImage, href: '/admin/hero-settings', badge: null },
     { name: 'Ad Space Content', icon: FiFileText, href: '/admin/ad-space-content', badge: null },
     { name: 'Advertisements', icon: FiImage, href: '/admin/advertisements', badge: null },
