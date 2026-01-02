@@ -19,6 +19,7 @@ import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLog
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ThemeToggle from './ThemeToggle';
+import LanguageSwitcher from './LanguageSwitcher';
 import AdStatusIndicator from './AdStatusIndicator';
 
 // ⚡ Dynamic imports for heavy components (lazy load for better performance)
@@ -588,10 +589,10 @@ export default function HomepageClient() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">
-              Start your local business journey!
+              {t('cta.title')}
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-blue-100 mb-4 md:mb-6 max-w-2xl mx-auto">
-              Discover the best shops in your area or list your business - both are completely free!
+              {t('cta.description')}
             </p>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <motion.a
@@ -601,7 +602,7 @@ export default function HomepageClient() {
                 className="bg-white text-purple-600 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
               >
                 <FiSearch className="text-base sm:text-lg md:text-xl" />
-                Explore Shops
+                {t('cta.exploreShops')}
               </motion.a>
               <motion.a
                 href="/add-shop"
@@ -610,7 +611,7 @@ export default function HomepageClient() {
                 className="bg-yellow-400 text-gray-900 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
               >
                 <FiShoppingBag className="text-base sm:text-lg md:text-xl" />
-                Add Your Business
+                {t('cta.addBusiness')}
               </motion.a>
             </div>
           </div>
@@ -663,6 +664,9 @@ export default function HomepageClient() {
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
               {/* Ad Status Indicator */}
               <AdStatusIndicator />
+              
+              {/* Language Switcher */}
+              <LanguageSwitcher />
               
               {/* Theme Toggle */}
               <ThemeToggle />
@@ -838,7 +842,7 @@ export default function HomepageClient() {
       <main id="main-content" className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8" role="main">
         {/* Main Page Heading - h1 for SEO */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 px-4 sm:px-6">
-          {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
+          {selectedCity ? `${t('shops.bestInCity')} ${selectedCity}` : t('shops.bestNearYou')}
         </h1>
         
         {/* Human-written Explanation for AdSense (80-120 words) */}
@@ -848,7 +852,7 @@ export default function HomepageClient() {
           transition={{ duration: 0.5 }}
           className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
         >
-          8rupiya.com helps users discover trusted nearby shops and services based on their location. From jewelry stores and furniture shops to doctors, teachers, and technicians, users can easily explore local businesses that are relevant to their daily needs. Our platform features verified businesses with accurate contact information, real customer reviews, and detailed profiles to help you make informed decisions. Whether you're looking for a specific product or service, our location-based search makes it simple to find the best options in your area.
+          {t('shops.explanation')}
         </motion.p>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
@@ -900,7 +904,7 @@ export default function HomepageClient() {
 
             {/* Text Break - After Featured Shops */}
             {homepageLayout?.sections.featuredShops.enabled !== false && featuredShops.length > 0 && (
-              <TextBreakSection variant="info" />
+              <TextBreakSection variant="reviews" />
             )}
 
             {/* Ad Space - Between Featured and Paid Shops (AdSense-Safe Zone) */}
@@ -967,11 +971,7 @@ export default function HomepageClient() {
             <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
             {/* Text Break - After Top Rated Shops */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <TextBreakSection 
-                variant="info"
-                title="Why Reviews Matter"
-                content="Customer reviews and ratings help you understand the quality and reliability of local businesses. Our platform ensures all reviews are from verified users, giving you authentic insights to make better decisions when choosing shops and services in your area."
-              />
+              <TextBreakSection variant="reviews" />
             </div>
           </>
         )}

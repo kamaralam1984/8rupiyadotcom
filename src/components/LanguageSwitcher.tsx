@@ -41,17 +41,20 @@ export default function LanguageSwitcher() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/80 backdrop-blur-sm border border-gray-700 hover:bg-gray-800 transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/10 dark:bg-gray-800/80 backdrop-blur-sm border border-white/20 dark:border-gray-700 hover:bg-white/20 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow-md"
         aria-label="Change language"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <FiGlobe className="text-lg text-white" />
-        <span className="text-sm font-medium text-white hidden sm:inline">
+        <FiGlobe className="text-base sm:text-lg text-white" />
+        <span className="text-xs sm:text-sm font-medium text-white hidden sm:inline">
           {currentLanguage.native}
         </span>
+        <span className="text-xs sm:text-sm font-medium text-white sm:hidden">
+          {currentLanguage.code.toUpperCase()}
+        </span>
         <FiChevronDown 
-          className={`text-sm text-gray-300 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-xs sm:text-sm text-white/80 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
