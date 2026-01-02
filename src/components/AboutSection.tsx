@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FiShoppingBag, FiMapPin, FiUsers, FiTrendingUp, FiCheckCircle, FiAward, FiSearch, FiStar } from 'react-icons/fi';
+import { FiShoppingBag, FiMapPin, FiUsers, FiTrendingUp, FiCheckCircle, FiSearch, FiStar } from 'react-icons/fi';
 
 export default function AboutSection() {
   const features = [
@@ -102,16 +102,6 @@ export default function AboutSection() {
                   Chahe aapko paas ka best restaurant dhundna ho, reliable doctor find karna ho, ya phir apne area ki trusted shops explore karni ho - <strong className="text-purple-600 dark:text-purple-400">8rupiya.com par sab kuch mil jayega</strong>. Har business verified hai, ratings aur reviews real users ke hain, aur contact information bilkul accurate hai.
                 </p>
               </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 shadow-2xl text-white">
-              <h3 className="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-3">
-                <FiAward className="text-yellow-300" />
-                Hamara Mission
-              </h3>
-              <p className="text-lg leading-relaxed text-blue-50">
-                Hamara goal hai <strong>local dukano ko digital banana</strong> aur users ko <strong>trusted businesses se jodna</strong>. Hum chahte hain ki har chhota shopkeeper bhi online presence create kar sake aur apne business ko grow kar sake. Digital India mein, har business ko equal opportunity milni chahiye - yahi hai hamara vision.
-              </p>
             </div>
           </motion.div>
 

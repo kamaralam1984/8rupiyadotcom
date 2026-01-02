@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiFilter, FiMapPin, FiTag, FiChevronDown, FiSearch } from 'react-icons/fi';
-import AdSlot from './AdSlot';
-import AdvertisementBanner from './AdvertisementBanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LeftRailProps {
@@ -261,36 +259,6 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
           </h4>
           <PopularCitiesDropdown cities={popularCities} onCityChange={onCityChange} />
         </div>
-      </motion.div>
-
-      {/* Ad Space 1 - Category/Homepage Ads */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <AdSlot slot="category" />
-        <AdvertisementBanner slot="sidebar-left" uniqueId="leftrail-1" />
-      </motion.div>
-
-      {/* Ad Space 2 - Category/Homepage Ads */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <AdSlot slot="category" />
-        <AdvertisementBanner slot="sidebar-left" uniqueId="leftrail-2" />
-      </motion.div>
-
-      {/* Ad Space 3 - Homepage Ads */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <AdSlot slot="homepage" />
-        <AdvertisementBanner slot="sidebar-left" uniqueId="leftrail-3" />
       </motion.div>
     </aside>
   );
