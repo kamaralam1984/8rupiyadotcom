@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectionStatus from './ConnectionStatus';
 import Hero from './Hero';
+import AboutSection from './AboutSection';
 import LeftRail from './LeftRail';
 import RightRail from './RightRail';
 import Nearby from './Nearby';
@@ -781,7 +782,10 @@ export default function HomepageClient() {
         />
       )}
 
-      {/* Display Ad - Below Hero Section (Placement 1) */}
+      {/* About Section - Detailed Information about 8rupiya.com */}
+      <AboutSection />
+
+      {/* Display Ad - Below About Section (Placement 1) */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         <DisplayAd />
       </div>
