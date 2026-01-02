@@ -204,7 +204,7 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
                   transition={{ duration: 0.2 }}
                   className="mt-2"
                 >
-                  <div className="w-full h-72 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg scrollbar-hide">
+                  <div className="w-full h-[432px] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg scrollbar-hide">
                     {/* Search Input */}
                     <div className="p-2 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                       <div className="relative">
