@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConnectionStatus from './ConnectionStatus';
 import Hero from './Hero';
 import AboutSection from './AboutSection';
+import SEOTextSection from './SEOTextSection';
+import TextBreakSection from './TextBreakSection';
 import LeftRail from './LeftRail';
 import RightRail from './RightRail';
 import Nearby from './Nearby';
@@ -824,7 +826,10 @@ export default function HomepageClient() {
       {/* About Section - Detailed Information about 8rupiya.com */}
       <AboutSection />
 
-      {/* Display Ad - Below About Section (Placement 1) */}
+      {/* SEO Text Section - 600-800 words for AdSense optimization */}
+      <SEOTextSection />
+
+      {/* Display Ad - Below SEO Section (AdSense-Safe Zone) */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         <DisplayAd />
       </div>
@@ -832,9 +837,20 @@ export default function HomepageClient() {
       {/* Main Content with Sidebars */}
       <main id="main-content" className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8" role="main">
         {/* Main Page Heading - h1 for SEO */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6 px-4 sm:px-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 px-4 sm:px-6">
           {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
         </h1>
+        
+        {/* Human-written Explanation for AdSense (80-120 words) */}
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
+        >
+          8rupiya.com helps users discover trusted nearby shops and services based on their location. From jewelry stores and furniture shops to doctors, teachers, and technicians, users can easily explore local businesses that are relevant to their daily needs. Our platform features verified businesses with accurate contact information, real customer reviews, and detailed profiles to help you make informed decisions. Whether you're looking for a specific product or service, our location-based search makes it simple to find the best options in your area.
+        </motion.p>
+
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Rail */}
           {homepageLayout?.sections.leftRail.enabled !== false && (
@@ -882,7 +898,12 @@ export default function HomepageClient() {
               </section>
             )}
 
-            {/* Ad Space - Between Featured and Paid Shops */}
+            {/* Text Break - After Featured Shops */}
+            {homepageLayout?.sections.featuredShops.enabled !== false && featuredShops.length > 0 && (
+              <TextBreakSection variant="info" />
+            )}
+
+            {/* Ad Space - Between Featured and Paid Shops (AdSense-Safe Zone) */}
             <AdSlot slot="homepage" className="my-8" />
 
             {/* Paid Shops */}
@@ -918,7 +939,12 @@ export default function HomepageClient() {
               </section>
             )}
 
-            {/* Ad Space - After Paid Shops */}
+            {/* Text Break - After Paid Shops */}
+            {homepageLayout?.sections.paidShops.enabled !== false && paidShops.length > 0 && (
+              <TextBreakSection variant="how-it-works" />
+            )}
+
+            {/* Ad Space - After Paid Shops (AdSense-Safe Zone) */}
             <AdSlot slot="homepage" className="my-8" />
             <AdvertisementBanner slot="homepage" className="my-8" uniqueId="homepage-main" />
 
@@ -937,10 +963,20 @@ export default function HomepageClient() {
 
         {/* Top Rated Shops Section - Full Width from 10px left */}
         {homepageLayout?.sections.topRated.enabled !== false && (
-          <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
+          <>
+            <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
+            {/* Text Break - After Top Rated Shops */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <TextBreakSection 
+                variant="info"
+                title="Why Reviews Matter"
+                content="Customer reviews and ratings help you understand the quality and reliability of local businesses. Our platform ensures all reviews are from verified users, giving you authentic insights to make better decisions when choosing shops and services in your area."
+              />
+            </div>
+          </>
         )}
 
-        {/* Homepage Ad - Between sections */}
+        {/* Homepage Ad - Between sections (AdSense-Safe Zone) */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
           <AdSlot slot="homepage" />
         </div>
