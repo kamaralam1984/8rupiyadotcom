@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiFilter, FiMapPin, FiTag, FiChevronDown, FiSearch } from 'react-icons/fi';
+import { FiFilter, FiMapPin, FiTag, FiChevronDown, FiSearch, FiTarget } from 'react-icons/fi';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LeftRailProps {
@@ -258,6 +258,32 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
             Popular Cities
           </h4>
           <PopularCitiesDropdown cities={popularCities} onCityChange={onCityChange} />
+        </div>
+      </motion.div>
+
+      {/* Our Mission Section */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white"
+      >
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <FiTarget className="text-yellow-300 text-2xl" />
+          Our Mission
+        </h3>
+        <div className="space-y-3 text-blue-50">
+          <p className="leading-relaxed">
+            Our goal is to <strong className="text-white">digitally empower local businesses</strong> and connect users with <strong className="text-white">trusted, verified services</strong>.
+          </p>
+          <p className="leading-relaxed">
+            We believe every small shopkeeper deserves an online presence to grow their business. In Digital India, every business should have equal opportunity - that's our vision.
+          </p>
+          <div className="mt-4 pt-4 border-t border-blue-400/30">
+            <p className="text-sm font-semibold text-yellow-200">
+              🎯 Making local businesses digital, one shop at a time
+            </p>
+          </div>
         </div>
       </motion.div>
     </aside>
