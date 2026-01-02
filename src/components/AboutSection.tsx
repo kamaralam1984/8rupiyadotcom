@@ -8,25 +8,25 @@ export default function AboutSection() {
     {
       icon: FiMapPin,
       title: 'Local Business Discovery',
-      description: 'Apne shehar ke har corner ki verified shops, restaurants, hotels aur doctors ko dhundo',
+      description: 'Find verified shops, restaurants, hotels, and doctors from every corner of your city',
       color: 'from-blue-600 to-cyan-600'
     },
     {
       icon: FiCheckCircle,
       title: 'Verified & Trusted',
-      description: 'Har business ko verify kiya jata hai taaki aapko trusted services mile',
+      description: 'Every business is verified to ensure you get trusted services',
       color: 'from-green-600 to-emerald-600'
     },
     {
       icon: FiUsers,
       title: 'Community Powered',
-      description: 'Real users ke reviews aur ratings se best businesses find karo',
+      description: 'Find the best businesses through real user reviews and ratings',
       color: 'from-purple-600 to-pink-600'
     },
     {
       icon: FiTrendingUp,
       title: 'Digital Empowerment',
-      description: 'Chhoti dukano ko digital platform provide karke unhe grow karne me help',
+      description: 'Help small shops grow by providing them with a digital platform',
       color: 'from-orange-600 to-red-600'
     }
   ];
@@ -63,7 +63,7 @@ export default function AboutSection() {
             whileInView={{ scale: 1 }}
             viewport={{ once: true }}
           >
-            8rupiya.com ke bare mein
+            About 8rupiya.com
           </motion.h2>
           <motion.p 
             className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto font-medium"
@@ -72,7 +72,7 @@ export default function AboutSection() {
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
           >
-            India ka sabse trusted aur fastest growing local business discovery platform
+            India's most trusted and fastest growing local business discovery platform
           </motion.p>
         </motion.div>
 
@@ -89,17 +89,17 @@ export default function AboutSection() {
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700">
               <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
                 <FiShoppingBag className="text-blue-600 dark:text-blue-400" />
-                Kya hai 8rupiya.com?
+                What is 8rupiya.com?
               </h3>
               <div className="space-y-4 text-gray-700 dark:text-gray-300 text-lg leading-relaxed">
                 <p>
-                  <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> ek local business discovery platform hai jahan users apne shehar ke verified shops, restaurants, hotels, doctors aur services aasani se dhondh sakte hain. Hum India ke har shehar aur gaon ki chhoti badi dukano ko ek digital platform provide karte hain.
+                  <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> is a local business discovery platform where users can easily find verified shops, restaurants, hotels, doctors, and services in their city. We provide a digital platform for small and large businesses across every city and village in India.
                 </p>
                 <p>
-                  Aaj ke digital zamane mein, har business ko online presence ki zarurat hai. Lekin bahut saare chhote shopkeepers ke paas time aur resources nahi hote apni website banane ke liye. <strong className="text-blue-600 dark:text-blue-400">Yahi problem 8rupiya.com solve karta hai</strong> - hum local businesses ko free mein list karte hain aur unhe millions of customers tak pahunchate hain.
+                  In today's digital age, every business needs an online presence. However, many small shopkeepers don't have the time and resources to build their own website. <strong className="text-blue-600 dark:text-blue-400">This is the problem 8rupiya.com solves</strong> - we list local businesses for free and connect them to millions of customers.
                 </p>
                 <p>
-                  Chahe aapko paas ka best restaurant dhundna ho, reliable doctor find karna ho, ya phir apne area ki trusted shops explore karni ho - <strong className="text-purple-600 dark:text-purple-400">8rupiya.com par sab kuch mil jayega</strong>. Har business verified hai, ratings aur reviews real users ke hain, aur contact information bilkul accurate hai.
+                  Whether you're looking for the best restaurant nearby, a reliable doctor, or want to explore trusted shops in your area - <strong className="text-purple-600 dark:text-purple-400">you'll find everything on 8rupiya.com</strong>. Every business is verified, ratings and reviews are from real users, and contact information is completely accurate.
                 </p>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function AboutSection() {
             className="space-y-6"
           >
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
-              Kyun choose karein 8rupiya.com?
+              Why choose 8rupiya.com?
             </h3>
             
             {features.map((feature, index) => (
@@ -155,7 +155,7 @@ export default function AboutSection() {
         >
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl p-8 md:p-12 shadow-2xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-              8rupiya.com ki khas baat kya hai?
+              What makes 8rupiya.com special?
             </h3>
             
             <div className="grid md:grid-cols-2 gap-8 text-gray-700 dark:text-gray-300">
@@ -163,8 +163,8 @@ export default function AboutSection() {
                 <div className="flex items-start gap-3">
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">Bilkul Free Hai</h4>
-                    <p className="text-base">Users ke liye completely free - koi hidden charges nahi. Shops browse karo, contact karo, reviews padho - sab free.</p>
+                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">Completely Free</h4>
+                    <p className="text-base">Completely free for users - no hidden charges. Browse shops, contact businesses, read reviews - everything is free.</p>
                   </div>
                 </div>
                 
@@ -172,7 +172,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Real Reviews & Ratings</h4>
-                    <p className="text-base">Fake reviews nahi, sirf real users ki authentic feedback. Aap bhi apna experience share kar sakte ho.</p>
+                    <p className="text-base">No fake reviews, only authentic feedback from real users. You can also share your experience.</p>
                   </div>
                 </div>
                 
@@ -180,7 +180,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Smart Search System</h4>
-                    <p className="text-base">Category, location, ratings se filter karo. Jo chahiye wo turant mil jaye - bahut fast aur accurate.</p>
+                    <p className="text-base">Filter by category, location, and ratings. Find what you need instantly - very fast and accurate.</p>
                   </div>
                 </div>
                 
@@ -188,7 +188,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Complete Business Info</h4>
-                    <p className="text-base">Phone number, address, timings, photos - sab kuch ek jagah. Time waste nahi, direct contact karo.</p>
+                    <p className="text-base">Phone number, address, timings, photos - everything in one place. No time wasted, contact directly.</p>
                   </div>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Mobile Friendly</h4>
-                    <p className="text-base">Phone, tablet, computer - kisi pe bhi use karo. Fast loading, smooth experience guaranteed.</p>
+                    <p className="text-base">Use on phone, tablet, or computer - works on any device. Fast loading and smooth experience guaranteed.</p>
                   </div>
                 </div>
                 
@@ -206,7 +206,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Support Local Businesses</h4>
-                    <p className="text-base">Jab aap 8rupiya use karte ho, toh aap apne local shopkeepers ki help karte ho grow karne mein.</p>
+                    <p className="text-base">When you use 8rupiya, you help your local shopkeepers grow their businesses.</p>
                   </div>
                 </div>
                 
@@ -214,7 +214,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Regular Updates</h4>
-                    <p className="text-base">Naye features aate rehte hain. Hum continuously platform ko better banate hain.</p>
+                    <p className="text-base">New features are added regularly. We continuously improve the platform.</p>
                   </div>
                 </div>
                 
@@ -222,7 +222,7 @@ export default function AboutSection() {
                   <FiCheckCircle className="text-green-600 dark:text-green-400 text-xl flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white mb-1">Safe & Secure</h4>
-                    <p className="text-base">Aapki privacy hamari priority hai. Data protection aur security best practices follow karte hain.</p>
+                    <p className="text-base">Your privacy is our priority. We follow data protection and security best practices.</p>
                   </div>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export default function AboutSection() {
           className="mt-16 text-center"
         >
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-4xl mx-auto leading-relaxed">
-            <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> sirf ek website nahi hai - yeh ek movement hai jo India ke local businesses ko empower kar raha hai. Chahe aap ek customer ho jo trusted services dhundh raha hai, ya ek shopkeeper ho jo apne business ko online le jana chahta hai - <strong className="text-blue-600 dark:text-blue-400">8rupiya.com aapke liye hai</strong>. Join karein India ke sabse growing local business community ko aur baniye iss digital revolution ka hissa!
+            <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> is not just a website - it's a movement that's empowering local businesses across India. Whether you're a customer looking for trusted services, or a shopkeeper wanting to take your business online - <strong className="text-blue-600 dark:text-blue-400">8rupiya.com is for you</strong>. Join India's fastest growing local business community and be part of this digital revolution!
           </p>
         </motion.div>
       </div>
