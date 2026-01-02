@@ -118,7 +118,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     
     return (
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 h-full">
-      <div className="relative h-full min-h-[300px] sm:min-h-[400px] md:min-h-[500px]">
+      <div className="relative h-full" style={{ height: '400px' }}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -172,11 +172,11 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     >
       <motion.div
         className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-2xl overflow-hidden h-full"
-        style={{ transformStyle: 'preserve-3d' }}
+        style={{ transformStyle: 'preserve-3d', height: '400px' }}
         animate={{ rotateY: [0, 5, -5, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <div className="relative h-full min-h-[300px] sm:min-h-[400px] md:min-h-[500px]">
+        <div className="relative h-full" style={{ height: '400px' }}>
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -223,7 +223,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     
     return (
     <div className="relative bg-white/20 rounded-2xl shadow-2xl border border-white/30 overflow-hidden h-full">
-      <div className="relative h-full min-h-[300px] sm:min-h-[400px] md:min-h-[500px]">
+      <div className="relative h-full" style={{ height: '400px' }}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -270,7 +270,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     
     return (
     <div className="relative bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-1 overflow-hidden h-full">
-      <div className="bg-white rounded-xl h-full min-h-[500px] relative overflow-hidden">
+      <div className="bg-white rounded-xl h-full relative overflow-hidden" style={{ height: '400px' }}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -318,7 +318,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     return (
     <div className="relative rounded-2xl overflow-hidden shadow-2xl h-full">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 opacity-30" />
-      <div className="relative h-full min-h-[300px] sm:min-h-[400px] md:min-h-[500px]">
+      <div className="relative h-full" style={{ height: '400px' }}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -399,8 +399,8 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
               transition={{ delay: 0.8, duration: heroSettings?.animationSpeed || 0.6 }}
               className="max-w-7xl mx-auto mb-12"
             >
-              {/* Center Hero Shop - Full Width */}
-              <div className="max-w-4xl mx-auto">
+              {/* Center Hero Shop - Fixed Size */}
+              <div className="mx-auto w-full" style={{ maxWidth: '800px' }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`${currentShopIndex}-${currentStyle}`}
@@ -408,7 +408,7 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: heroSettings?.animationSpeed || 0.5, ease: 'easeInOut' }}
-                    className="h-full"
+                    style={{ height: '400px' }}
                   >
                     <div 
                       onClick={() => onShopClick?.(currentShop)}
