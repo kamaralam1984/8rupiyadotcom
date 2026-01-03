@@ -16,6 +16,7 @@ import RightRail from './RightRail';
 import Nearby from './Nearby';
 import TopRated from './TopRated';
 import ShopCard from './ShopCard';
+import OptimizedImage from './OptimizedImage';
 import AdSlot from './AdSlot';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
@@ -168,9 +169,10 @@ export default function HomepageClient() {
 
   const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string, pageNum: number = 1, append: boolean = false) => {
     try {
-      if (!append) {
+      // Don't show loading for initial load - show skeleton instead
+      if (!append && pageNum > 1) {
         setLoading(true);
-      } else {
+      } else if (append) {
         setLoadingMore(true);
       }
       setError(null);
@@ -201,16 +203,17 @@ export default function HomepageClient() {
         params.append('city', useCity);
       }
       
-      // Ultra-fast initial load: only 10 shops
-      // Then load 20 more on each scroll
-      const limit = pageNum === 1 ? 10 : 20;
+      // Ultra-fast initial load: only 5 shops for instant display
+      // Then load 15 more on each scroll
+      const limit = pageNum === 1 ? 5 : 15;
       params.append('limit', limit.toString());
       params.append('page', pageNum.toString());
       params.append('skip', ((pageNum - 1) * limit).toString());
 
       const response = await fetch(`/api/shops/nearby?${params}`, {
-        // Add cache headers for better performance
-        cache: 'default',
+        // Aggressive caching for instant loads
+        cache: 'force-cache',
+        next: { revalidate: 300 }, // Revalidate every 5 minutes
       });
       const data = await response.json();
 
@@ -308,16 +311,44 @@ export default function HomepageClient() {
   useEffect(() => {
     if (!mounted) return;
     
-    // Fetch both in parallel for faster loading
+    // Fetch both in parallel for faster loading with aggressive caching
     const fetchLayout = async () => {
       try {
-        const response = await fetch('/api/homepage-layout');
+        const response = await fetch('/api/homepage-layout', {
+          cache: 'force-cache',
+          next: { revalidate: 3600 }, // Cache for 1 hour
+        });
         const data = await response.json();
         if (data.success && data.layout) {
           setHomepageLayout(data.layout);
         }
       } catch (error) {
         console.error('Failed to fetch homepage layout:', error);
+        // Use default layout if fetch fails
+        setHomepageLayout({
+          sections: {
+            topCTA: { enabled: true, order: 1 },
+            hero: { enabled: true, order: 2 },
+            connectionStatus: { enabled: true, order: 3 },
+            aboutSection: { enabled: false, order: 4 },
+            seoTextSection: { enabled: false, order: 5 },
+            leftRail: { enabled: true, order: 6 },
+            rightRail: { enabled: true, order: 7 },
+            featuredShops: { enabled: true, order: 8 },
+            paidShops: { enabled: true, order: 9 },
+            topRated: { enabled: true, order: 10 },
+            nearbyShops: { enabled: true, order: 11 },
+            mixedContent1: { enabled: true, order: 12 },
+            mixedContent2: { enabled: true, order: 13 },
+            mixedContent3: { enabled: true, order: 14 },
+            mixedContent4: { enabled: true, order: 15 },
+            displayAd1: { enabled: true, order: 16 },
+            displayAd2: { enabled: true, order: 17 },
+            inFeedAds: { enabled: true, order: 18 },
+            stats: { enabled: true, order: 19 },
+            footer: { enabled: true, order: 20 },
+          }
+        });
       }
     };
     
@@ -566,24 +597,8 @@ export default function HomepageClient() {
   const paidShops = sortShopsByPriority(shops.filter((shop) => shop.isPaid))
     .slice(0, 6);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-16 h-16 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
-          />
-          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">{t('common.loading')}</p>
-        </motion.div>
-      </div>
-    );
-  }
+  // Don't block render - show skeleton instead of loading spinner
+  // This allows page to render immediately while data loads
 
   return (
     <>
@@ -599,12 +614,7 @@ export default function HomepageClient() {
 
       {/* Top CTA Section - Start your local business journey! */}
       {homepageLayout?.sections?.topCTA?.enabled !== false && (
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full bg-blue-600 py-4 md:py-6 shadow-lg relative z-40"
-      >
+      <section className="w-full bg-blue-600 py-4 md:py-6 shadow-lg relative z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">
@@ -635,13 +645,11 @@ export default function HomepageClient() {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
       )}
 
       {/* Header */}
-      <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+      <header
         className="relative bg-black/95 backdrop-blur-md shadow-lg border-b border-gray-800/50 sticky top-0 z-50"
         role="banner"
       >
@@ -656,16 +664,15 @@ export default function HomepageClient() {
                 >
                   {!logoError ? (
                     <div className="relative h-12 sm:h-14 md:h-18 w-auto">
-                      <img
+                      <OptimizedImage
                         src="/uploads/logo.png"
                         alt="8rupiya.com Logo"
+                        width={150}
+                        height={60}
                         className="h-full w-auto object-contain"
-                        loading="eager"
-                        decoding="async"
-                        width="150"
-                        height="60"
+                        priority={true}
+                        objectFit="contain"
                         onError={() => setLogoError(true)}
-                        onLoad={() => setLogoError(false)}
                       />
                     </div>
                   ) : (
@@ -832,7 +839,7 @@ export default function HomepageClient() {
             </nav>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Hero Section */}
       {homepageLayout?.sections?.hero?.enabled !== false && (
@@ -869,14 +876,9 @@ export default function HomepageClient() {
         </h1>
         
         {/* Brief description - Detailed content moved to /about page */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
-        >
+        <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed">
           Discover trusted nearby shops and services in your area. Find verified businesses with accurate contact information, real customer reviews, and detailed profiles. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
-        </motion.p>
+        </p>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Rail */}
@@ -892,6 +894,22 @@ export default function HomepageClient() {
 
           {/* Main Content - Modern Mixed Layout */}
           <div className="flex-1 order-1 lg:order-2 min-w-0">
+            {/* Skeleton Loading for Shops */}
+            {loading && shops.length === 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="p-4 space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             {/* Modern Mixed Content Sections */}
             <div className="space-y-0">
               {/* Section 1: Text + Featured Shops (Left) */}
@@ -907,23 +925,14 @@ export default function HomepageClient() {
                   />
                   
                   {/* Featured Shops Grid */}
-                  <motion.section
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="py-8 md:py-12"
-                  >
+                  <section className="py-8 md:py-12">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      <motion.h2
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
+                      <h2
                         className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
                         aria-label="Featured Shops"
                       >
                         {homepageLayout?.sections?.featuredShops?.title || t('shop.featured')}
-                      </motion.h2>
+                      </h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {featuredShops.flatMap((shop, index) => {
                           const items: React.ReactNode[] = [
@@ -943,7 +952,7 @@ export default function HomepageClient() {
                         })}
                       </div>
                     </div>
-                  </motion.section>
+                  </section>
                 </>
               )}
 
@@ -970,23 +979,14 @@ export default function HomepageClient() {
                   />
                   
                   {/* Paid Shops Grid */}
-                  <motion.section
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="py-8 md:py-12"
-                  >
+                  <section className="py-8 md:py-12">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      <motion.h2
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
+                      <h2
                         className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
                         aria-label="Premium Shops"
                       >
                         {homepageLayout?.sections?.paidShops?.title || t('shop.premium')}
-                      </motion.h2>
+                      </h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {paidShops.flatMap((shop, index) => {
                           const items: React.ReactNode[] = [
@@ -1006,7 +1006,7 @@ export default function HomepageClient() {
                         })}
                       </div>
                     </div>
-                  </motion.section>
+                  </section>
                 </>
               )}
 
@@ -1126,29 +1126,22 @@ export default function HomepageClient() {
       {/* Stats Section */}
       {homepageLayout?.sections?.stats?.enabled !== false && (
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             { icon: FiShoppingBag, number: '10K+', label: t('stats.activeShops') },
             { icon: FiTrendingUp, number: '50K+', label: t('stats.happyCustomers') },
             { icon: FiAward, number: '100+', label: t('stats.citiesCovered') },
           ].map((stat, index) => (
-            <motion.div
+            <div
               key={index}
-              whileHover={{ scale: 1.05, y: -5 }}
               className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50"
             >
               <stat.icon className="text-4xl text-blue-600 dark:text-blue-400 mx-auto mb-4" />
               <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{stat.number}</div>
               <div className="text-gray-600 dark:text-gray-300">{stat.label}</div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
       )}
 
@@ -1159,10 +1152,7 @@ export default function HomepageClient() {
 
       {/* Footer */}
       {homepageLayout?.sections?.footer?.enabled !== false && (
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
+      <footer
         className="relative bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white py-12 mt-20"
         role="contentinfo"
       >
@@ -1203,7 +1193,7 @@ export default function HomepageClient() {
             <p className="text-lg">{t('footer.copyright')}</p>
           </div>
         </div>
-      </motion.footer>
+      </footer>
       )}
 
       {/* Shop Popup */}

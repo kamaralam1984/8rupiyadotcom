@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from './SearchBar';
+import OptimizedImage from './OptimizedImage';
 import { FiShoppingBag, FiTrendingUp, FiAward, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin } from 'react-icons/fi';
 
 interface Shop {
@@ -120,26 +121,16 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 h-full">
       <div className="relative h-full" style={{ height: '400px' }}>
         {imageUrl ? (
-          <img
+          <OptimizedImage
             src={imageUrl}
             alt={`${shop.name} - ${shop.category} in ${shop.city}`}
+            width={1200}
+            height={400}
             className="w-full h-full"
-            style={{
-              objectFit: 'cover',
-              objectPosition: 'center',
-              width: '100%',
-              height: '100%',
-              imageRendering: 'auto',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              transform: 'translateZ(0)',
-              WebkitTransform: 'translateZ(0)',
-              filter: 'none',
-              WebkitFilter: 'none',
-            } as any}
-            loading="eager"
-            decoding="async"
+            priority={true}
+            objectFit="cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">
@@ -272,26 +263,16 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
     <div className="relative bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-1 overflow-hidden h-full">
       <div className="bg-white rounded-xl h-full relative overflow-hidden" style={{ height: '400px' }}>
         {imageUrl ? (
-          <img
+          <OptimizedImage
             src={imageUrl}
             alt={`${shop.name} - ${shop.category} in ${shop.city}`}
+            width={1200}
+            height={400}
             className="w-full h-full"
-            style={{
-              objectFit: 'cover',
-              objectPosition: 'center',
-              width: '100%',
-              height: '100%',
-              imageRendering: 'auto',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              transform: 'translateZ(0)',
-              WebkitTransform: 'translateZ(0)',
-              filter: 'none',
-              WebkitFilter: 'none',
-            } as any}
-            loading="eager"
-            decoding="async"
+            priority={true}
+            objectFit="cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">
@@ -320,26 +301,16 @@ export default function Hero({ shops = [], onShopClick, onShowAll, onRefresh }: 
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 opacity-30" />
       <div className="relative h-full" style={{ height: '400px' }}>
         {imageUrl ? (
-          <img
+          <OptimizedImage
             src={imageUrl}
             alt={`${shop.name} - ${shop.category} in ${shop.city}`}
+            width={1200}
+            height={400}
             className="w-full h-full"
-            style={{
-              objectFit: 'cover',
-              objectPosition: 'center',
-              width: '100%',
-              height: '100%',
-              imageRendering: 'auto',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              transform: 'translateZ(0)',
-              WebkitTransform: 'translateZ(0)',
-              filter: 'none',
-              WebkitFilter: 'none',
-            } as any}
-            loading="eager"
-            decoding="async"
+            priority={true}
+            objectFit="cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">

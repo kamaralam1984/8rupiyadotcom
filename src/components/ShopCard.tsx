@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import OptimizedImage from './OptimizedImage';
 import { FiMapPin, FiStar, FiShoppingBag, FiClock, FiNavigation, FiEye, FiHeart } from 'react-icons/fi';
 import { calculateDistanceAndTime } from '@/utils/distanceCalculation';
 import Analytics from '@/lib/analytics';
@@ -171,17 +171,16 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
           {/* Image */}
           <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
             {(shop.images && shop.images.length > 0) || (shop.photos && shop.photos.length > 0) ? (
-              <img
+              <OptimizedImage
                 src={(shop.images && shop.images.length > 0) ? shop.images[0] : (shop.photos && shop.photos.length > 0) ? shop.photos[0] : ''}
                 alt={`${shop.name} - ${shop.category} in ${shop.city}`}
-                className="w-full h-full object-cover transition-opacity duration-300"
-                style={{
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                } as React.CSSProperties}
-                loading="lazy"
-                decoding="async"
+                width={400}
+                height={192}
+                className="w-full h-full transition-opacity duration-300"
+                priority={index < 6} // Priority for first 6 images (above fold)
+                objectFit="cover"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                fallbackIcon={<FiShoppingBag className="text-6xl text-white opacity-50" />}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex items-center justify-center">

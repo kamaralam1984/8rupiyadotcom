@@ -122,14 +122,15 @@ export async function GET(req: NextRequest) {
       mongoQuery.category = { $regex: category, $options: 'i' };
     }
 
-    // Fetch shops with reasonable limit
+    // Fetch shops with reasonable limit - OPTIMIZED: Only select needed fields
     let mongoShops;
     try {
       mongoShops = await Shop.find(mongoQuery)
-        .populate('planId')
-        .populate('shopperId', 'name email phone')
-        .limit(hasValidCoords ? 500 : 100) // Limit to 100 if no location to prevent overload
-        .lean();
+        .select('name category address city location rating reviewCount visitorCount likeCount isFeatured planId images phone email status rankScore')
+        .populate('planId', 'name price') // Only get name and price from plan
+        .limit(hasValidCoords ? 200 : 50) // Reduced limit for faster queries
+        .lean()
+        .sort({ rankScore: -1, isPaid: -1, createdAt: -1 }); // Sort in DB for better performance
     } catch (error: any) {
       // If $near query fails (no geospatial index), try without it
       if (error.message?.includes('index') || error.message?.includes('near')) {
@@ -362,10 +363,13 @@ export async function GET(req: NextRequest) {
       },
     };
 
-    // Cache for 5 minutes
-    await cacheSet(cacheKey, JSON.stringify(result), 300);
+    // Cache for 15 minutes (aggressive caching for speed)
+    await cacheSet(cacheKey, JSON.stringify(result), 900);
 
-    return NextResponse.json(result);
+    // Add HTTP cache headers for browser caching
+    const response = NextResponse.json(result);
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error: any) {
     console.error('Nearby shops error:', error);
     console.error('Error stack:', error.stack);

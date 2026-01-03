@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import HomepageLayout from '@/models/HomepageLayout';
+import { cacheGet, cacheSet } from '@/lib/redis';
 
 // GET - Get active homepage layout (public)
 export async function GET(req: NextRequest) {
   try {
+    // Check cache first
+    const cacheKey = 'homepage:layout:active';
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+      const response = NextResponse.json(JSON.parse(cached));
+      response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=7200');
+      return response;
+    }
+
     await connectDB();
 
-    let layout = await HomepageLayout.findOne({ isActive: true });
+    let layout = await HomepageLayout.findOne({ isActive: true }).lean();
     
     // If no active layout, get default
     if (!layout) {
@@ -64,7 +74,14 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    return NextResponse.json({ success: true, layout });
+    const result = { success: true, layout };
+    
+    // Cache for 1 hour
+    await cacheSet(cacheKey, JSON.stringify(result), 3600);
+    
+    const response = NextResponse.json(result);
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=7200');
+    return response;
   } catch (error: any) {
     console.error('Error fetching homepage layout:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

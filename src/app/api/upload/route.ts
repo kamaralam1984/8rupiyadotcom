@@ -1,9 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import sharp from 'sharp';
 
 // Force Node.js runtime for Cloudinary operations
 export const runtime = 'nodejs';
+
+const MAX_SIZE_KB = 150; // 150KB max
+const MAX_SIZE_BYTES = MAX_SIZE_KB * 1024;
+
+/**
+ * Optimize image: Convert to WebP/AVIF and compress to max 150KB
+ */
+async function optimizeImage(buffer: Buffer): Promise<Buffer> {
+  try {
+    const metadata = await sharp(buffer).metadata();
+    let outputBuffer: Buffer = Buffer.alloc(0);
+    let quality = 85;
+
+    // Try AVIF first (better compression)
+    try {
+      outputBuffer = await sharp(buffer)
+        .resize(1920, 1920, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .avif({ quality })
+        .toBuffer();
+
+      // If AVIF is too large, try reducing quality
+      if (outputBuffer.length > MAX_SIZE_BYTES) {
+        for (quality = 80; quality >= 50 && outputBuffer.length > MAX_SIZE_BYTES; quality -= 10) {
+          outputBuffer = await sharp(buffer)
+            .resize(1920, 1920, {
+              fit: 'inside',
+              withoutEnlargement: true,
+            })
+            .avif({ quality })
+            .toBuffer();
+        }
+      }
+
+      // If still too large, fallback to WebP
+      if (outputBuffer.length > MAX_SIZE_BYTES) {
+        quality = 85;
+        outputBuffer = await sharp(buffer)
+          .resize(1920, 1920, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality })
+          .toBuffer();
+      }
+    } catch (avifError) {
+      // AVIF not supported, use WebP
+      outputBuffer = await sharp(buffer)
+        .resize(1920, 1920, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality })
+        .toBuffer();
+    }
+
+    // Compress WebP if still too large
+    if (outputBuffer.length > MAX_SIZE_BYTES) {
+      for (quality = 80; quality >= 50 && outputBuffer.length > MAX_SIZE_BYTES; quality -= 10) {
+        outputBuffer = await sharp(buffer)
+          .resize(1920, 1920, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality })
+          .toBuffer();
+      }
+    }
+
+    // If still too large, reduce dimensions
+    if (outputBuffer.length > MAX_SIZE_BYTES) {
+      let width = 1600;
+      let height = 1600;
+      
+      while (outputBuffer.length > MAX_SIZE_BYTES && width >= 800) {
+        outputBuffer = await sharp(buffer)
+          .resize(width, height, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .webp({ quality: 70 })
+          .toBuffer();
+        
+        width -= 200;
+        height -= 200;
+      }
+    }
+
+    const sizeKB = (outputBuffer.length / 1024).toFixed(2);
+    console.log(`✅ Image optimized: ${(buffer.length / 1024).toFixed(2)}KB → ${sizeKB}KB`);
+
+    return Buffer.from(outputBuffer);
+  } catch (error) {
+    console.error('Image optimization error, using original:', error);
+    return Buffer.from(buffer); // Return original if optimization fails
+  }
+}
 
 export async function POST(req: NextRequest) {
   console.log('📤 ===== UPLOAD REQUEST STARTED =====');
@@ -72,14 +172,19 @@ export async function POST(req: NextRequest) {
 
     console.log('🔄 Converting file to buffer...');
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    console.log('✅ Buffer created:', buffer.length, 'bytes');
+    const originalBuffer = Buffer.from(bytes);
+    console.log('✅ Buffer created:', originalBuffer.length, 'bytes');
+
+    // Optimize image: Convert to WebP/AVIF and compress to max 150KB
+    console.log('⚡ Optimizing image (converting to WebP/AVIF, max 150KB)...');
+    const optimizedBuffer = await optimizeImage(originalBuffer);
+    console.log('✅ Image optimized:', optimizedBuffer.length, 'bytes');
 
     // Upload to Cloudinary
     console.log('☁️  Uploading to Cloudinary...');
     let result;
     try {
-      result = await uploadToCloudinary(buffer, '8rupiya-shops');
+      result = await uploadToCloudinary(optimizedBuffer, '8rupiya-shops');
       console.log('✅ Cloudinary upload successful:', result.secureUrl);
     } catch (cloudinaryError: any) {
       console.error('❌ Cloudinary upload failed:', cloudinaryError);

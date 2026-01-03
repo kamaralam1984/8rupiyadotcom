@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin, FiShoppingBag, FiMail, FiGlobe, FiClock, FiEdit3 } from 'react-icons/fi';
+import OptimizedImage from './OptimizedImage';
 import AdSlot from './AdSlot';
 import DisplayAd from './DisplayAd';
 
@@ -148,17 +149,23 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                 {/* Left Section - Image */}
                 <div className="relative h-64 md:h-full min-h-[400px] overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400">
                   {shop.images && shop.images.length > 0 ? (
-                    <motion.img
-                      src={shop.images[0]}
-                      alt={shop.name}
-                      className="w-full h-full object-cover"
+                    <motion.div
                       initial={{ scale: 1 }}
                       animate={{ scale: 1.1 }}
                       transition={{ duration: 8, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                      loading="eager"
-                      decoding="async"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                      className="w-full h-full"
+                    >
+                      <OptimizedImage
+                        src={shop.images[0]}
+                        alt={shop.name}
+                        fill
+                        className="object-cover"
+                        priority={true}
+                        objectFit="cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
+                      />
+                    </motion.div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <FiShoppingBag className="text-8xl text-white opacity-50" />
