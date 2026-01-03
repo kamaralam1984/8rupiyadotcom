@@ -35,9 +35,14 @@ interface ShopRecommendation {
 interface AIAssistantProps {
   userLocation?: { lat: number; lng: number } | null;
   userId?: string;
+  userRole?: string; // Add userRole prop
 }
 
-export default function AIAssistant({ userLocation, userId }: AIAssistantProps) {
+export default function AIAssistant({ userLocation, userId, userRole }: AIAssistantProps) {
+  // Only show Golu for admin users
+  if (userRole !== 'admin') {
+    return null;
+  }
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([

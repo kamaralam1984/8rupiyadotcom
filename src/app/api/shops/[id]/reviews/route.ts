@@ -37,13 +37,39 @@ export async function POST(
       );
     }
 
+    // Get user ID from token if available
+    let userId = null;
+    const token = req.headers.get('authorization')?.replace('Bearer ', '') || 
+                 req.cookies.get('token')?.value;
+    
+    if (token) {
+      try {
+        const { verifyToken } = await import('@/lib/auth');
+        const payload = verifyToken(token);
+        if (payload && payload.userId) {
+          userId = payload.userId;
+          
+          // Check if user already reviewed this shop (only for logged-in users)
+          const existingReview = await Review.findOne({ shopId: id, userId });
+          if (existingReview) {
+            return NextResponse.json(
+              { error: 'You have already reviewed this shop' },
+              { status: 400 }
+            );
+          }
+        }
+      } catch (err) {
+        // Token invalid, continue as anonymous
+      }
+    }
+
     // Create review (userId is optional for anonymous reviews)
     const review = await Review.create({
       shopId: id,
+      userId: userId || undefined, // Only set if user is logged in
       rating: parseInt(rating),
       comment: comment.trim(),
       isVerified: false,
-      // userId can be added later for authenticated users
     });
 
     // Calculate new average rating and update shop
@@ -72,6 +98,17 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error creating review:', error);
+    
+    // Handle duplicate key error specifically
+    if (error.code === 11000 || error.message?.includes('duplicate key')) {
+      return NextResponse.json(
+        { 
+          error: 'Database index issue detected. Please contact support or try again later. The database administrator needs to run: db.reviews.dropIndex("shopId_1_userId_1")' 
+        },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to create review' },
       { status: 500 }

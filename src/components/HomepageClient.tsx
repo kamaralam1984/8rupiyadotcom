@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -129,6 +129,7 @@ export default function HomepageClient() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [homepageLayout, setHomepageLayout] = useState<HomepageLayout | null>(null);
   const [logoError, setLogoError] = useState(false);
+  const visitorIncrementedRef = useRef(false);
   
   // Infinite scroll states
   const [page, setPage] = useState(1);
@@ -306,6 +307,31 @@ export default function HomepageClient() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Increment visitor count for all shops when homepage loads (background, non-blocking)
+  // This runs every time the homepage is opened/refreshed
+  useEffect(() => {
+    if (!mounted || visitorIncrementedRef.current) return;
+    
+    // Mark as incremented to prevent duplicate calls
+    visitorIncrementedRef.current = true;
+    
+    // Increment visitor count in background - don't wait for response
+    // Small delay to ensure it doesn't block page load
+    setTimeout(() => {
+      fetch('/api/shops/increment-visitors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch((error) => {
+        // Silently fail - this is a background operation
+        console.error('Failed to increment visitor count:', error);
+        // Reset ref on error so it can retry on next mount
+        visitorIncrementedRef.current = false;
+      });
+    }, 100);
+  }, [mounted]);
 
   // Fetch homepage layout and user info in parallel (non-blocking)
   useEffect(() => {
@@ -1199,8 +1225,8 @@ export default function HomepageClient() {
       {/* Shop Popup */}
       <ShopPopup shop={selectedShop} isOpen={isPopupOpen} onClose={handleClosePopup} userLocation={location} />
       
-      {/* AI Assistant */}
-      <AIAssistant userLocation={location} userId={user?.id} />
+      {/* AI Assistant - Only show for admin */}
+      <AIAssistant userLocation={location} userId={user?.id} userRole={user?.role} />
       </div>
     </>
   );

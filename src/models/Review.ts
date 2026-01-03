@@ -23,7 +23,9 @@ const ReviewSchema = new Schema<IReview>(
 
 ReviewSchema.index({ shopId: 1 });
 ReviewSchema.index({ userId: 1 });
-// Removed unique index to allow anonymous reviews
+// Sparse unique index: Only enforce uniqueness when userId exists
+// This allows multiple anonymous reviews per shop, but logged-in users can only review once
+ReviewSchema.index({ shopId: 1, userId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);
 
