@@ -241,8 +241,8 @@ export default function AddNewShopPage() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 3 * 1024 * 1024) {
-        setError('Maximum size: 3MB');
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Maximum size: 10MB (will be compressed to 150KB when saved)');
         return;
       }
       setFormData({
@@ -1247,7 +1247,7 @@ export default function AddNewShopPage() {
                 <p className="text-lg font-medium text-gray-900 mb-2">
                   Upload Shop Photo (Required)
                 </p>
-                <p className="text-sm text-gray-600 mb-4">Maximum size: 3MB</p>
+                <p className="text-sm text-gray-600 mb-4">Maximum size: 10MB (will be compressed to 150KB when saved)</p>
                 <div className="flex items-center justify-center gap-2 text-yellow-600 mb-6">
                   <FiAlertCircle />
                   <span className="text-sm">

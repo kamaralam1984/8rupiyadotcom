@@ -203,9 +203,9 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                         className="object-cover"
                         priority={true}
                         objectFit="cover"
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                         fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
-                      />
+                    />
                     </motion.div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

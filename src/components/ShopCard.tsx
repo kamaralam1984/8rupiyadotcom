@@ -79,19 +79,10 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
   }, []);
 
   // Calculate distance and time using enhanced utility
+  // Priority: Use shop.distance from API first (most accurate), then calculate from coordinates
   useEffect(() => {
-    if (userLocation && shop.location?.coordinates) {
-      const result = calculateDistanceAndTime(userLocation, shop.location);
-      if (result) {
-        setDistanceTime({
-          distance: result.distance,
-          time: result.time,
-          distanceValue: result.distanceValue
-        });
-      } else {
-        setDistanceTime({});
-      }
-    } else if (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0) {
+    // Priority 1: Use shop's pre-calculated distance from API (most accurate)
+    if (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0) {
       // Fallback to shop's pre-calculated distance
       const distanceKm = Number(shop.distance);
       const distanceText = distanceKm < 1 
@@ -120,7 +111,22 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
         time: timeText,
         distanceValue: distanceKm
       });
-    } else {
+    } 
+    // Priority 2: Calculate from userLocation and shop.location.coordinates
+    else if (userLocation && shop.location?.coordinates) {
+      const result = calculateDistanceAndTime(userLocation, shop.location);
+      if (result) {
+        setDistanceTime({
+          distance: result.distance,
+          time: result.time,
+          distanceValue: result.distanceValue
+        });
+      } else {
+        setDistanceTime({});
+      }
+    } 
+    // No distance available
+    else {
       setDistanceTime({});
     }
   }, [userLocation, shop.location, shop.distance]);

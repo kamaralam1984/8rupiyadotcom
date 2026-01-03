@@ -1083,7 +1083,7 @@ export default function AgentShopsPage() {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Shop Photo: * (Max 1MB)
+                            Shop Photo: * (Max 10MB - Will be compressed to 150KB)
                           </label>
                           <div className="space-y-3">
                             {/* Camera Capture */}
@@ -1094,8 +1094,8 @@ export default function AgentShopsPage() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  if (file.size > 1048576) {
-                                    setError('Image size must be less than 1MB');
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    setError('Image size must be less than 10MB');
                                     return;
                                   }
                                   if (!file.type.startsWith('image/')) {
@@ -1120,9 +1120,9 @@ export default function AgentShopsPage() {
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  // Check file size (1MB = 1048576 bytes)
-                                  if (file.size > 1048576) {
-                                    setError('Image size must be less than 1MB');
+                                  // Check file size (10MB max)
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    setError('Image size must be less than 10MB');
                                     return;
                                   }
                                   // Check file type
@@ -1158,7 +1158,7 @@ export default function AgentShopsPage() {
                               </label>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Max: 1MB. Supported formats: JPG, PNG
+                              Max: 10MB (will be compressed to 150KB when saved). Supported formats: JPG, PNG, WebP
                             </p>
                           </div>
 

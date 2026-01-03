@@ -147,8 +147,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Process MongoDB shops
-    for (const shop of mongoShops) {
+    // Process MongoDB shops - Filter out pending shops (extra safety check)
+    const validShops = mongoShops.filter(shop => 
+      shop.status === ShopStatus.ACTIVE || shop.status === ShopStatus.APPROVED
+    );
+    
+    for (const shop of validShops) {
       // Calculate distance only if we have valid coordinates and shop has coordinates
       let distance: number | undefined = undefined;
       if (hasValidCoords && shop.location?.coordinates && 
@@ -325,27 +329,44 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 3. Sort: Paid shops first, then by rank score
+    // 3. Sort: Distance first (0km se start), then paid shops within same distance range
     mergedShops.sort((a, b) => {
-      // First priority: Paid shops
+      // First priority: Distance (closer is better - 0km se start)
+      // Handle undefined distances - shops with valid distance come first
+      if (a.distance === undefined && b.distance === undefined) {
+        // Both undefined - sort by paid status, then rank
+        if (a.isPaid && !b.isPaid) return -1;
+        if (!a.isPaid && b.isPaid) return 1;
+        if (a.planPriority !== b.planPriority) {
+          return b.planPriority - a.planPriority;
+        }
+        return b.rankScore - a.rankScore;
+      }
+      if (a.distance === undefined) return 1; // Put undefined distances at the end
+      if (b.distance === undefined) return -1;
+      
+      // Round distance to nearest 0.5km for grouping (so shops within same range are grouped)
+      const distanceA = Math.floor(a.distance * 2) / 2; // Round to 0.5km
+      const distanceB = Math.floor(b.distance * 2) / 2;
+      
+      // If shops are in different distance ranges, sort by distance (closer first)
+      if (distanceA !== distanceB) {
+        return a.distance - b.distance;
+      }
+      
+      // Same distance range - prioritize paid shops, then plan priority, then rank score
       if (a.isPaid && !b.isPaid) return -1;
       if (!a.isPaid && b.isPaid) return 1;
-
-      // Second priority: Plan priority (higher is better)
+      
       if (a.planPriority !== b.planPriority) {
         return b.planPriority - a.planPriority;
       }
-
-      // Third priority: Rank score (higher is better)
+      
       if (a.rankScore !== b.rankScore) {
         return b.rankScore - a.rankScore;
       }
-
-      // Fourth priority: Distance (closer is better)
-      // Handle undefined distances - shops with valid distance come first
-      if (a.distance === undefined && b.distance === undefined) return 0;
-      if (a.distance === undefined) return 1; // Put undefined distances at the end
-      if (b.distance === undefined) return -1;
+      
+      // If everything is same, sort by exact distance
       return a.distance - b.distance;
     });
 

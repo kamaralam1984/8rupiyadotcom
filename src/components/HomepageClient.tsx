@@ -77,6 +77,7 @@ interface Shop {
   email?: string;
   website?: string;
   source?: 'mongodb' | 'google';
+  status?: string; // Shop status: 'active', 'approved', 'pending', 'rejected'
 }
 
 interface User {
@@ -561,33 +562,66 @@ export default function HomepageClient() {
     setSelectedShop(null);
   };
 
-  // Sorting function to prioritize selected city/category
+  // Sorting function: Distance first (0km se start), then paid shops within same distance range
   const sortShopsByPriority = (shopList: Shop[]): Shop[] => {
     return [...shopList].sort((a, b) => {
-      // Priority 1: Selected city match
+      // Priority 1: Distance (0km se start - closest first)
+      // Handle undefined distances - shops with valid distance come first
+      if (a.distance === undefined && b.distance === undefined) {
+        // Both undefined - check city/category match, then paid status
+        const aCityMatch = selectedCity && a.city.toLowerCase().includes(selectedCity.toLowerCase());
+        const bCityMatch = selectedCity && b.city.toLowerCase().includes(selectedCity.toLowerCase());
+        if (aCityMatch && !bCityMatch) return -1;
+        if (!aCityMatch && bCityMatch) return 1;
+        
+        const aCategoryMatch = selectedCategory !== 'All Categories' && a.category === selectedCategory;
+        const bCategoryMatch = selectedCategory !== 'All Categories' && b.category === selectedCategory;
+        if (aCategoryMatch && !bCategoryMatch) return -1;
+        if (!aCategoryMatch && bCategoryMatch) return 1;
+        
+        if (a.isPaid && !b.isPaid) return -1;
+        if (!a.isPaid && b.isPaid) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      
+      if (a.distance === undefined) return 1; // Put undefined distances at the end
+      if (b.distance === undefined) return -1;
+      
+      // Round distance to nearest 0.5km for grouping (so shops within same range are grouped)
+      const distanceA = Math.floor(a.distance * 2) / 2; // Round to 0.5km
+      const distanceB = Math.floor(b.distance * 2) / 2;
+      
+      // If shops are in different distance ranges, sort by distance (closer first - 0km se start)
+      if (distanceA !== distanceB) {
+        return a.distance - b.distance;
+      }
+      
+      // Same distance range - prioritize selected city/category, then paid shops
       const aCityMatch = selectedCity && a.city.toLowerCase().includes(selectedCity.toLowerCase());
       const bCityMatch = selectedCity && b.city.toLowerCase().includes(selectedCity.toLowerCase());
-      
       if (aCityMatch && !bCityMatch) return -1;
       if (!aCityMatch && bCityMatch) return 1;
       
-      // Priority 2: Selected category match
       const aCategoryMatch = selectedCategory !== 'All Categories' && a.category === selectedCategory;
       const bCategoryMatch = selectedCategory !== 'All Categories' && b.category === selectedCategory;
-      
       if (aCategoryMatch && !bCategoryMatch) return -1;
       if (!aCategoryMatch && bCategoryMatch) return 1;
       
-      // Priority 3: Paid shops first
+      // Then paid shops within same distance range
       if (a.isPaid && !b.isPaid) return -1;
       if (!a.isPaid && b.isPaid) return 1;
       
-      // Priority 4: Featured shops
+      // Then featured shops
       if (a.isFeatured && !b.isFeatured) return -1;
       if (!a.isFeatured && b.isFeatured) return 1;
       
-      // Priority 5: Rating
-      return (b.rating || 0) - (a.rating || 0);
+      // Then rating
+      if ((b.rating || 0) !== (a.rating || 0)) {
+        return (b.rating || 0) - (a.rating || 0);
+      }
+      
+      // If everything is same, sort by exact distance
+      return a.distance - b.distance;
     });
   };
 
@@ -596,6 +630,11 @@ export default function HomepageClient() {
 
   // Filter shops (if needed for strict filtering)
   const filteredShops = sortedShops.filter((shop) => {
+    // CRITICAL: Exclude pending shops from homepage (extra safety check)
+    if (shop.status === 'pending' || shop.status === 'PENDING') {
+      return false;
+    }
+    
     const allCategoriesText = t('category.all');
     if (selectedCategory !== allCategoriesText && selectedCategory !== 'All Categories' && shop.category !== selectedCategory) {
       return false;
@@ -1107,14 +1146,61 @@ export default function HomepageClient() {
           </div>
         )}
 
-        {/* All Shops Section - Full Width from 10px left */}
-        {homepageLayout?.sections?.nearbyShops?.enabled !== false && (
-          <Nearby 
-            shops={filteredShops.slice(0, 6)} 
-            title={homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'Best Shops Near You')} 
-            onShopClick={handleShopClick} 
-            userLocation={location} 
-          />
+        {/* All Shops Section - Full Width - Sorted by Distance (0km first) */}
+        {homepageLayout?.sections?.nearbyShops?.enabled !== false && filteredShops.length > 0 && (
+          <section className="relative w-full py-6 md:py-8" style={{ paddingLeft: '10px', paddingRight: '0' }}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="flex items-center justify-between mb-4 md:mb-6 px-4 sm:px-6"
+            >
+              <div className="flex items-center gap-3">
+                <FiMapPin className="text-3xl text-blue-600 dark:text-blue-400" />
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-yellow-400 nearby-title">
+                  {homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'Best Shops Near You')}
+                </h2>
+              </div>
+              {filteredShops.length > 0 && (
+                <span className="text-gray-600 bg-white/60 backdrop-blur-md px-4 py-2 rounded-full text-sm font-medium">
+                  {filteredShops.length} shops found
+                </span>
+              )}
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4 px-4 sm:px-6">
+              {filteredShops.flatMap((shop, index) => {
+                const items: React.ReactNode[] = [];
+                
+                // Add shop card
+                items.push(
+                  <ShopCard 
+                    key={shop._id || shop.place_id || index} 
+                    shop={shop} 
+                    index={index} 
+                    onClick={() => handleShopClick(shop)} 
+                    userLocation={location} 
+                  />
+                );
+                
+                // Add in-feed ad after every 2 shop cards
+                if ((index + 1) % 2 === 0 && (index + 1) < filteredShops.length) {
+                  items.push(
+                    <div key={`ad-${index}`} className="col-span-1 md:col-span-2 lg:col-span-3 my-4">
+                      <InFeedAd />
+                    </div>
+                  );
+                }
+                
+                return items;
+              })}
+            </div>
+
+            {/* Ad Space - Search/Category Ads */}
+            <div className="px-4 sm:px-6 mt-8">
+              <AdSlot slot="search" />
+            </div>
+          </section>
         )}
 
         {/* Infinite Scroll Loading Indicator */}
@@ -1139,6 +1225,41 @@ export default function HomepageClient() {
           </div>
         )}
       </main>
+
+      {/* Nearby Panel - 8 Shops (Below "Best Shops Near You") - Outside main for better visibility */}
+      {filteredShops.length > 0 && (
+        <section className="relative w-full py-8 md:py-10 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center justify-between mb-6 md:mb-8"
+            >
+              <div className="flex items-center gap-3">
+                <FiMapPin className="text-4xl text-green-600 dark:text-green-400" />
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Nearby</h2>
+              </div>
+              <span className="text-gray-700 dark:text-gray-300 bg-green-50 dark:bg-green-900/20 backdrop-blur-md px-4 py-2 rounded-full text-sm font-semibold border border-green-200 dark:border-green-700">
+                {Math.min(8, filteredShops.length)} shops
+              </span>
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+              {filteredShops.slice(0, 8).map((shop, index) => (
+                <ShopCard 
+                  key={`nearby-${shop._id || shop.place_id || index}`} 
+                  shop={shop} 
+                  index={index} 
+                  onClick={() => handleShopClick(shop)} 
+                  userLocation={location} 
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Error Message */}
       {error && (
