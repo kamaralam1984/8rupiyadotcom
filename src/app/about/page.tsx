@@ -61,50 +61,50 @@ export default function About() {
   const benefits = [
     {
       icon: FiCheckCircle,
-      title: 'Bilkul Free Hai',
-      description: 'Platform completely free hai users ke liye. Koi hidden charges nahi, koi subscription fees nahi.',
+      title: 'Completely Free',
+      description: 'The platform is completely free for users. No hidden charges, no subscription fees.',
       color: 'text-green-600 dark:text-green-400'
     },
     {
       icon: FiStar,
       title: 'Real Reviews & Ratings',
-      description: 'Har business ki authentic reviews aur ratings real customers se. Genuine feedback se informed decisions lo.',
+      description: 'Authentic reviews and ratings for every business from real customers. Make informed decisions with genuine feedback.',
       color: 'text-yellow-600 dark:text-yellow-400'
     },
     {
       icon: FiSearch,
       title: 'Smart Search System',
-      description: 'Category, location, ratings, ya specific services se filter karo. Quick aur easy search experience.',
+      description: 'Filter by category, location, ratings, or specific services. Quick and easy search experience.',
       color: 'text-blue-600 dark:text-blue-400'
     },
     {
       icon: FiShield,
       title: 'Complete Business Info',
-      description: 'Photos, contact details, operating hours, aur customer reviews - sab kuch ek jagah.',
+      description: 'Photos, contact details, operating hours, and customer reviews - everything in one place.',
       color: 'text-purple-600 dark:text-purple-400'
     },
     {
       icon: FiMapPin,
       title: 'Mobile Friendly',
-      description: 'Mobile, tablet, ya desktop - har device par perfect experience. Kahi bhi, kabhi bhi access karo.',
+      description: 'Mobile, tablet, or desktop - perfect experience on any device. Access anywhere, anytime.',
       color: 'text-pink-600 dark:text-pink-400'
     },
     {
       icon: FiTrendingUp,
       title: 'Support Local Businesses',
-      description: 'Local shopkeepers aur businesses ko support karo. Unhe digital age mein grow karne mein help karo.',
+      description: 'Support local shopkeepers and businesses. Help them grow in the digital age.',
       color: 'text-blue-600 dark:text-blue-400'
     },
     {
       icon: FiUsers,
       title: 'Regular Updates',
-      description: 'New businesses, updated information, aur latest reviews regularly add hote rahte hain.',
+      description: 'New businesses, updated information, and latest reviews are added regularly.',
       color: 'text-cyan-600 dark:text-cyan-400'
     },
     {
       icon: FiShield,
       title: 'Safe & Secure',
-      description: 'Your data safe hai. Secure platform jo privacy aur security ko priority deta hai.',
+      description: 'Your data is safe. A secure platform that prioritizes privacy and security.',
       color: 'text-indigo-600 dark:text-indigo-400'
     }
   ];
@@ -269,10 +269,10 @@ export default function About() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Platform ke <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">Key Benefits</span>
+              Platform's <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">Key Benefits</span>
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Kya kya features aur benefits milte hain 8rupiya.com par
+              Features and benefits available on 8rupiya.com
             </p>
           </motion.div>
 

@@ -78,24 +78,23 @@ export default function AIAnalyticsPage() {
 }
 COMPONENT
 
-# Create other components with similar structure
-for component in JyotishAdminPage ReportsPage DatabasePage SettingsPage; do
-  cat > src/components/admin/${component}.tsx << COMPONENT
+# Create JyotishAdminPage.tsx
+cat > src/components/admin/JyotishAdminPage.tsx << 'COMPONENT'
 'use client';
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiRefreshCw } from 'react-icons/fi';
 
-export default function ${component}() {
+export default function JyotishAdminPage() {
   const [loading, setLoading] = useState(false);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">${component/Page/}</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and configure settings</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Jyotish Admin</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and configure Jyotish settings</p>
         </div>
         <button
           onClick={() => setLoading(!loading)}
@@ -108,14 +107,124 @@ export default function ${component}() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <p className="text-gray-600 dark:text-gray-400">
-          ${component/Page/} page is ready. Features will be implemented soon.
+          Jyotish Admin page is ready. Features will be implemented soon.
         </p>
       </div>
     </div>
   );
 }
 COMPONENT
-done
+
+# Create ReportsPage.tsx
+cat > src/components/admin/ReportsPage.tsx << 'COMPONENT'
+'use client';
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { FiRefreshCw } from 'react-icons/fi';
+
+export default function ReportsPage() {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">View and manage system reports</p>
+        </div>
+        <button
+          onClick={() => setLoading(!loading)}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-600 dark:text-gray-400">
+          Reports page is ready. Features will be implemented soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+COMPONENT
+
+# Create DatabasePage.tsx
+cat > src/components/admin/DatabasePage.tsx << 'COMPONENT'
+'use client';
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { FiRefreshCw } from 'react-icons/fi';
+
+export default function DatabasePage() {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Database</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage database operations</p>
+        </div>
+        <button
+          onClick={() => setLoading(!loading)}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-600 dark:text-gray-400">
+          Database page is ready. Features will be implemented soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+COMPONENT
+
+# Create SettingsPage.tsx
+cat > src/components/admin/SettingsPage.tsx << 'COMPONENT'
+'use client';
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { FiRefreshCw } from 'react-icons/fi';
+
+export default function SettingsPage() {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and configure system settings</p>
+        </div>
+        <button
+          onClick={() => setLoading(!loading)}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-600 dark:text-gray-400">
+          Settings page is ready. Features will be implemented soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+COMPONENT
 
 echo "✅ All components created successfully!"
 echo "Run: npm run dev to start the server"

@@ -100,7 +100,11 @@ export function initializeAd(
         // Add to cache
         adCache.markInitialized(element);
         
+        // Only log first few initializations to reduce console spam
+        adInitCount++;
+        if (adInitCount <= 3 && process.env.NODE_ENV === 'development') {
         devLog('✅ AdSense ad initialized successfully');
+        }
         resolve();
       } catch (pushError: any) {
         // Check if error is about already having ads
@@ -138,6 +142,11 @@ export function isAdSenseLoaded(): boolean {
   return isBrowser() && Array.isArray(window.adsbygoogle);
 }
 
+// Track if timeout warning has been shown (to prevent spam)
+let timeoutWarningShown = false;
+// Track ad initialization count (to reduce success log spam)
+let adInitCount = 0;
+
 /**
  * Wait for AdSense script to load
  * @param timeout - Maximum time to wait in milliseconds (default: 30000)
@@ -147,7 +156,10 @@ export function waitForAdSense(timeout: number = 30000): Promise<void> {
   return new Promise((resolve) => {
     // Already loaded
     if (isAdSenseLoaded()) {
+      // Only log success in development mode
+      if (process.env.NODE_ENV === 'development') {
       devLog('✅ AdSense script already loaded');
+      }
       resolve();
       return;
     }
@@ -156,12 +168,18 @@ export function waitForAdSense(timeout: number = 30000): Promise<void> {
     const checkInterval = setInterval(() => {
       if (isAdSenseLoaded()) {
         clearInterval(checkInterval);
+        // Only log success in development mode
+        if (process.env.NODE_ENV === 'development') {
         devLog('✅ AdSense script loaded successfully');
+        }
         resolve();
       } else if (Date.now() - startTime > timeout) {
         clearInterval(checkInterval);
-        // Resolve instead of reject - fail gracefully
-        devLog('⚠️ AdSense script load timeout - continuing without ads');
+        // Only show timeout warning once per session and only in development
+        if (!timeoutWarningShown && process.env.NODE_ENV === 'development') {
+          devLog('⚠️ AdSense script load timeout - continuing without ads (this warning will only show once)');
+          timeoutWarningShown = true;
+        }
         resolve();
       }
     }, 200);

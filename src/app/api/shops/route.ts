@@ -225,6 +225,22 @@ export const POST = withAuth(async (req: AuthRequest) => {
     if (body.seoDescription) shopData.seoDescription = body.seoDescription;
     if (body.seoKeywords) shopData.seoKeywords = body.seoKeywords;
 
+    // Generate and add SEO-optimized page content automatically
+    const { generateSEOContent } = await import('@/lib/seoContentGenerator');
+    const seoContent = generateSEOContent({
+      name: shopData.name,
+      category: shopData.category,
+      city: shopData.city,
+      state: shopData.state,
+      area: shopData.area,
+      address: shopData.address,
+      rating: 0, // New shop starts with 0 rating
+      reviewCount: 0, // New shop starts with 0 reviews
+      description: shopData.description,
+    });
+    
+    shopData.pageContent = seoContent;
+
     console.log('📝 Creating shop with data:', {
       name: shopData.name,
       category: shopData.category,

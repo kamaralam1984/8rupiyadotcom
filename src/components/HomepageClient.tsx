@@ -1,23 +1,54 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectionStatus from './ConnectionStatus';
 import Hero from './Hero';
-import AboutSection from './AboutSection';
-import SEOTextSection from './SEOTextSection';
-import TextBreakSection from './TextBreakSection';
-import MixedContentSection from './MixedContentSection';
-import WhatMakesSpecialSection from './WhatMakesSpecialSection';
-import LeftRail from './LeftRail';
-import RightRail from './RightRail';
-import Nearby from './Nearby';
-import TopRated from './TopRated';
 import ShopCard from './ShopCard';
-import OptimizedImage from './OptimizedImage';
 import AdSlot from './AdSlot';
+
+// ⚡ Lazy load heavy sections for better performance
+const AboutSection = dynamic(() => import('./AboutSection'), {
+  ssr: true, // Keep SSR for SEO
+});
+
+const SEOTextSection = dynamic(() => import('./SEOTextSection'), {
+  ssr: true, // Keep SSR for SEO
+});
+
+const TextBreakSection = dynamic(() => import('./TextBreakSection'), {
+  ssr: true,
+});
+
+const MixedContentSection = dynamic(() => import('./MixedContentSection'), {
+  ssr: true,
+});
+
+const WhatMakesSpecialSection = dynamic(() => import('./WhatMakesSpecialSection'), {
+  ssr: true,
+});
+
+const LeftRail = dynamic(() => import('./LeftRail'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const RightRail = dynamic(() => import('./RightRail'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const Nearby = dynamic(() => import('./Nearby'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const TopRated = dynamic(() => import('./TopRated'), {
+  ssr: false,
+  loading: () => null,
+});
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -77,7 +108,6 @@ interface Shop {
   email?: string;
   website?: string;
   source?: 'mongodb' | 'google';
-  status?: string; // Shop status: 'active', 'approved', 'pending', 'rejected'
 }
 
 interface User {
@@ -130,7 +160,14 @@ export default function HomepageClient() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [homepageLayout, setHomepageLayout] = useState<HomepageLayout | null>(null);
   const [logoError, setLogoError] = useState(false);
-  const visitorIncrementedRef = useRef(false);
+  
+  // Featured, Best, and Premium Shops states (from separate API)
+  const [bestShops, setBestShops] = useState<Shop[]>([]);
+  const [featuredShops, setFeaturedShops] = useState<Shop[]>([]);
+  const [premiumShops, setPremiumShops] = useState<Shop[]>([]);
+  const [loadingBestShops, setLoadingBestShops] = useState(false);
+  const [loadingFeaturedShops, setLoadingFeaturedShops] = useState(false);
+  const [loadingPremiumShops, setLoadingPremiumShops] = useState(false);
   
   // Infinite scroll states
   const [page, setPage] = useState(1);
@@ -155,7 +192,13 @@ export default function HomepageClient() {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        // Handle both response formats: { user: {...} } or { success: true, user: {...} }
+        const userData = data.user || data;
+        if (userData && userData.id) {
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
       } else {
         // Token invalid, remove it
         localStorage.removeItem('token');
@@ -171,10 +214,9 @@ export default function HomepageClient() {
 
   const fetchShops = async (lat?: number, lng?: number, category?: string, city?: string, pageNum: number = 1, append: boolean = false) => {
     try {
-      // Don't show loading for initial load - show skeleton instead
-      if (!append && pageNum > 1) {
+      if (!append) {
         setLoading(true);
-      } else if (append) {
+      } else {
         setLoadingMore(true);
       }
       setError(null);
@@ -205,17 +247,17 @@ export default function HomepageClient() {
         params.append('city', useCity);
       }
       
-      // Ultra-fast initial load: only 5 shops for instant display
-      // Then load 15 more on each scroll
-      const limit = pageNum === 1 ? 5 : 15;
+      // ⚡ Ultra-fast initial load: only 5 shops for instant display
+      // Then load 20 more on each scroll
+      const limit = pageNum === 1 ? 5 : 20;
       params.append('limit', limit.toString());
       params.append('page', pageNum.toString());
       params.append('skip', ((pageNum - 1) * limit).toString());
 
       const response = await fetch(`/api/shops/nearby?${params}`, {
-        // Aggressive caching for instant loads
-        cache: 'force-cache',
-        next: { revalidate: 300 }, // Revalidate every 5 minutes
+        // ⚡ Aggressive caching for faster loads
+        cache: pageNum === 1 ? 'force-cache' : 'default', // Cache first page aggressively
+        next: { revalidate: 60 }, // Revalidate every 60 seconds
       });
       const data = await response.json();
 
@@ -303,47 +345,144 @@ export default function HomepageClient() {
     }
   };
 
+  // Fetch Best Shops Near You (10 shops from nearby system)
+  const fetchBestShops = async () => {
+    try {
+      setLoadingBestShops(true);
+      const params = new URLSearchParams();
+      
+      if (location && location.lat && location.lng) {
+        params.append('lat', location.lat.toString());
+        params.append('lng', location.lng.toString());
+      }
+      
+      if (selectedCity) {
+        params.append('city', selectedCity);
+      }
+      
+      if (selectedCategory && selectedCategory !== 'All Categories' && selectedCategory !== t('category.all')) {
+        params.append('category', selectedCategory);
+      }
+      
+      params.append('type', 'best');
+      params.append('google', 'false');
+      
+      const response = await fetch(`/api/shops/featured?${params}`, {
+        cache: 'default',
+      });
+      const data = await response.json();
+      
+      if (data.shops && data.shops.length > 0) {
+        setBestShops(data.shops);
+      } else {
+        setBestShops([]);
+      }
+    } catch (err) {
+      console.error('Fetch best shops error:', err);
+      setBestShops([]);
+    } finally {
+      setLoadingBestShops(false);
+    }
+  };
+
+  // Fetch Featured Shops (10 shops from nearby system)
+  const fetchFeaturedShops = async () => {
+    try {
+      setLoadingFeaturedShops(true);
+      const params = new URLSearchParams();
+      
+      if (location && location.lat && location.lng) {
+        params.append('lat', location.lat.toString());
+        params.append('lng', location.lng.toString());
+      }
+      
+      if (selectedCity) {
+        params.append('city', selectedCity);
+      }
+      
+      if (selectedCategory && selectedCategory !== 'All Categories' && selectedCategory !== t('category.all')) {
+        params.append('category', selectedCategory);
+      }
+      
+      params.append('type', 'featured');
+      params.append('google', 'false');
+      
+      const response = await fetch(`/api/shops/featured?${params}`, {
+        cache: 'default',
+      });
+      const data = await response.json();
+      
+      if (data.shops && data.shops.length > 0) {
+        setFeaturedShops(data.shops);
+      } else {
+        setFeaturedShops([]);
+      }
+    } catch (err) {
+      console.error('Fetch featured shops error:', err);
+      setFeaturedShops([]);
+    } finally {
+      setLoadingFeaturedShops(false);
+    }
+  };
+
+  // Fetch Premium Shops (10 shops from nearby system)
+  const fetchPremiumShops = async () => {
+    try {
+      setLoadingPremiumShops(true);
+      const params = new URLSearchParams();
+      
+      if (location && location.lat && location.lng) {
+        params.append('lat', location.lat.toString());
+        params.append('lng', location.lng.toString());
+      }
+      
+      if (selectedCity) {
+        params.append('city', selectedCity);
+      }
+      
+      if (selectedCategory && selectedCategory !== 'All Categories' && selectedCategory !== t('category.all')) {
+        params.append('category', selectedCategory);
+      }
+      
+      params.append('type', 'premium');
+      params.append('google', 'false');
+      
+      const response = await fetch(`/api/shops/featured?${params}`, {
+        cache: 'default',
+      });
+      const data = await response.json();
+      
+      if (data.shops && data.shops.length > 0) {
+        setPremiumShops(data.shops);
+      } else {
+        setPremiumShops([]);
+      }
+    } catch (err) {
+      console.error('Fetch premium shops error:', err);
+      setPremiumShops([]);
+    } finally {
+      setLoadingPremiumShops(false);
+    }
+  };
+
   // FIX #2: All hooks must run in same order every render
   // Set mounted state first
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Increment visitor count for all shops when homepage loads (background, non-blocking)
-  // This runs every time the homepage is opened/refreshed
-  useEffect(() => {
-    if (!mounted || visitorIncrementedRef.current) return;
-    
-    // Mark as incremented to prevent duplicate calls
-    visitorIncrementedRef.current = true;
-    
-    // Increment visitor count in background - don't wait for response
-    // Small delay to ensure it doesn't block page load
-    setTimeout(() => {
-      fetch('/api/shops/increment-visitors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }).catch((error) => {
-        // Silently fail - this is a background operation
-        console.error('Failed to increment visitor count:', error);
-        // Reset ref on error so it can retry on next mount
-        visitorIncrementedRef.current = false;
-      });
-    }, 100);
-  }, [mounted]);
-
-  // Fetch homepage layout and user info in parallel (non-blocking)
+  // ⚡ OPTIMIZED: Defer non-critical data fetching for faster initial load
   useEffect(() => {
     if (!mounted) return;
     
-    // Fetch both in parallel for faster loading with aggressive caching
+    // ⚡ Priority 1: Load shops immediately (critical for first paint)
+    // Shops are loaded in the location useEffect below
+    
+    // ⚡ Priority 2: Load homepage layout after initial render (deferred)
     const fetchLayout = async () => {
       try {
         const response = await fetch('/api/homepage-layout', {
-          cache: 'force-cache',
-          next: { revalidate: 3600 }, // Cache for 1 hour
+          cache: 'force-cache', // Use cached version if available
         });
         const data = await response.json();
         if (data.success && data.layout) {
@@ -351,37 +490,31 @@ export default function HomepageClient() {
         }
       } catch (error) {
         console.error('Failed to fetch homepage layout:', error);
-        // Use default layout if fetch fails
-        setHomepageLayout({
-          sections: {
-            topCTA: { enabled: true, order: 1 },
-            hero: { enabled: true, order: 2 },
-            connectionStatus: { enabled: true, order: 3 },
-            aboutSection: { enabled: false, order: 4 },
-            seoTextSection: { enabled: false, order: 5 },
-            leftRail: { enabled: true, order: 6 },
-            rightRail: { enabled: true, order: 7 },
-            featuredShops: { enabled: true, order: 8 },
-            paidShops: { enabled: true, order: 9 },
-            topRated: { enabled: true, order: 10 },
-            nearbyShops: { enabled: true, order: 11 },
-            mixedContent1: { enabled: true, order: 12 },
-            mixedContent2: { enabled: true, order: 13 },
-            mixedContent3: { enabled: true, order: 14 },
-            mixedContent4: { enabled: true, order: 15 },
-            displayAd1: { enabled: true, order: 16 },
-            displayAd2: { enabled: true, order: 17 },
-            inFeedAds: { enabled: true, order: 18 },
-            stats: { enabled: true, order: 19 },
-            footer: { enabled: true, order: 20 },
-          }
-        });
       }
     };
     
-    // Run both fetches in parallel (don't await - non-blocking)
-    fetchLayout();
-    fetchUser();
+    // ⚡ Priority 3: Load user info after page is interactive (deferred)
+    const loadUserData = () => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        // Use requestIdleCallback if available (browser is idle)
+        (window as any).requestIdleCallback(() => {
+          fetchUser();
+        }, { timeout: 2000 });
+      } else {
+        // Fallback: Load after 500ms
+        setTimeout(() => {
+          fetchUser();
+        }, 500);
+      }
+    };
+    
+    // Defer layout fetch slightly (100ms) to prioritize shops
+    setTimeout(() => {
+      fetchLayout();
+    }, 100);
+    
+    // Defer user fetch even more (not critical for initial render)
+    loadUserData();
   }, [mounted]);
 
   // Update selectedCategory when language changes
@@ -443,7 +576,9 @@ export default function HomepageClient() {
         (position) => {
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
+          if (process.env.NODE_ENV === 'development') {
           console.log('📍 User location obtained:', { lat: userLat, lng: userLng });
+          }
           setLocation({
             lat: userLat,
             lng: userLng,
@@ -452,19 +587,51 @@ export default function HomepageClient() {
           fetchShops(userLat, userLng, selectedCategory, selectedCity);
         },
         (error) => {
+          // Only log in development mode to reduce console noise
+          if (process.env.NODE_ENV === 'development') {
           console.warn('⚠️ Location access denied or failed:', error.message);
+          }
           // Location denied, continue without it - shops already loaded
         },
         {
-          enableHighAccuracy: true,
-          timeout: 5000,
+          enableHighAccuracy: false, // Reduced accuracy for faster response
+          timeout: 10000, // Increased timeout to 10 seconds
           maximumAge: 300000, // 5 minutes cache
         }
       );
     } else {
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
       console.warn('⚠️ Geolocation not supported by browser');
+      }
     }
   }, [mounted]); // Only run when mounted changes
+
+  // ⚡ OPTIMIZED: Defer Best/Featured/Premium shops - load after initial shops are visible
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Defer these fetches until after initial render (not critical for first paint)
+    const loadSecondaryShops = () => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        // Use requestIdleCallback if available
+        (window as any).requestIdleCallback(() => {
+          fetchBestShops();
+          fetchFeaturedShops();
+          fetchPremiumShops();
+        }, { timeout: 1000 });
+      } else {
+        // Fallback: Load after 300ms (after initial shops are shown)
+        setTimeout(() => {
+          fetchBestShops();
+          fetchFeaturedShops();
+          fetchPremiumShops();
+        }, 300);
+      }
+    };
+    
+    loadSecondaryShops();
+  }, [location, selectedCity, selectedCategory, mounted]);
 
   // Fetch shops when category or city changes (don't wait for location)
   useEffect(() => {
@@ -562,66 +729,33 @@ export default function HomepageClient() {
     setSelectedShop(null);
   };
 
-  // Sorting function: Distance first (0km se start), then paid shops within same distance range
+  // Sorting function to prioritize selected city/category
   const sortShopsByPriority = (shopList: Shop[]): Shop[] => {
     return [...shopList].sort((a, b) => {
-      // Priority 1: Distance (0km se start - closest first)
-      // Handle undefined distances - shops with valid distance come first
-      if (a.distance === undefined && b.distance === undefined) {
-        // Both undefined - check city/category match, then paid status
-        const aCityMatch = selectedCity && a.city.toLowerCase().includes(selectedCity.toLowerCase());
-        const bCityMatch = selectedCity && b.city.toLowerCase().includes(selectedCity.toLowerCase());
-        if (aCityMatch && !bCityMatch) return -1;
-        if (!aCityMatch && bCityMatch) return 1;
-        
-        const aCategoryMatch = selectedCategory !== 'All Categories' && a.category === selectedCategory;
-        const bCategoryMatch = selectedCategory !== 'All Categories' && b.category === selectedCategory;
-        if (aCategoryMatch && !bCategoryMatch) return -1;
-        if (!aCategoryMatch && bCategoryMatch) return 1;
-        
-        if (a.isPaid && !b.isPaid) return -1;
-        if (!a.isPaid && b.isPaid) return 1;
-        return (b.rating || 0) - (a.rating || 0);
-      }
-      
-      if (a.distance === undefined) return 1; // Put undefined distances at the end
-      if (b.distance === undefined) return -1;
-      
-      // Round distance to nearest 0.5km for grouping (so shops within same range are grouped)
-      const distanceA = Math.floor(a.distance * 2) / 2; // Round to 0.5km
-      const distanceB = Math.floor(b.distance * 2) / 2;
-      
-      // If shops are in different distance ranges, sort by distance (closer first - 0km se start)
-      if (distanceA !== distanceB) {
-        return a.distance - b.distance;
-      }
-      
-      // Same distance range - prioritize selected city/category, then paid shops
+      // Priority 1: Selected city match
       const aCityMatch = selectedCity && a.city.toLowerCase().includes(selectedCity.toLowerCase());
       const bCityMatch = selectedCity && b.city.toLowerCase().includes(selectedCity.toLowerCase());
+      
       if (aCityMatch && !bCityMatch) return -1;
       if (!aCityMatch && bCityMatch) return 1;
       
+      // Priority 2: Selected category match
       const aCategoryMatch = selectedCategory !== 'All Categories' && a.category === selectedCategory;
       const bCategoryMatch = selectedCategory !== 'All Categories' && b.category === selectedCategory;
+      
       if (aCategoryMatch && !bCategoryMatch) return -1;
       if (!aCategoryMatch && bCategoryMatch) return 1;
       
-      // Then paid shops within same distance range
+      // Priority 3: Paid shops first
       if (a.isPaid && !b.isPaid) return -1;
       if (!a.isPaid && b.isPaid) return 1;
       
-      // Then featured shops
+      // Priority 4: Featured shops
       if (a.isFeatured && !b.isFeatured) return -1;
       if (!a.isFeatured && b.isFeatured) return 1;
       
-      // Then rating
-      if ((b.rating || 0) !== (a.rating || 0)) {
-        return (b.rating || 0) - (a.rating || 0);
-      }
-      
-      // If everything is same, sort by exact distance
-      return a.distance - b.distance;
+      // Priority 5: Rating
+      return (b.rating || 0) - (a.rating || 0);
     });
   };
 
@@ -630,11 +764,6 @@ export default function HomepageClient() {
 
   // Filter shops (if needed for strict filtering)
   const filteredShops = sortedShops.filter((shop) => {
-    // CRITICAL: Exclude pending shops from homepage (extra safety check)
-    if (shop.status === 'pending' || shop.status === 'PENDING') {
-      return false;
-    }
-    
     const allCategoriesText = t('category.all');
     if (selectedCategory !== allCategoriesText && selectedCategory !== 'All Categories' && shop.category !== selectedCategory) {
       return false;
@@ -642,28 +771,47 @@ export default function HomepageClient() {
     if (selectedCity && !shop.city.toLowerCase().includes(selectedCity.toLowerCase())) {
       return false;
     }
-    // Filter by distance: 0 to 1000km
+    // Filter by distance: 0 to 1000km (including 0km)
     if (shop.distance !== undefined && shop.distance !== null) {
       const distanceKm = shop.distance;
+      // Allow shops from 0km to 1000km (inclusive)
       if (distanceKm < 0 || distanceKm > 1000) {
         return false;
       }
+      // Ensure 0km shops are included
+      if (distanceKm === 0) {
+        return true;
     }
+    }
+    // Include shops without distance (undefined/null) - they will be shown at the end
     return true;
   });
 
-  // Get top rated and featured shops (with priority sorting)
+  // Get top rated and paid shops (with priority sorting)
   const topRatedShops = sortShopsByPriority(shops)
     .slice(0, 5);
-
-  const featuredShops = sortShopsByPriority(shops.filter((shop) => shop.isFeatured))
-    .slice(0, 6);
     
   const paidShops = sortShopsByPriority(shops.filter((shop) => shop.isPaid))
     .slice(0, 6);
 
-  // Don't block render - show skeleton instead of loading spinner
-  // This allows page to render immediately while data loads
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-16 h-16 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">{t('common.loading')}</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -679,7 +827,12 @@ export default function HomepageClient() {
 
       {/* Top CTA Section - Start your local business journey! */}
       {homepageLayout?.sections?.topCTA?.enabled !== false && (
-      <section className="w-full bg-blue-600 py-4 md:py-6 shadow-lg relative z-40">
+      <motion.section
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full bg-blue-600 py-4 md:py-6 shadow-lg relative z-40"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">
@@ -710,11 +863,13 @@ export default function HomepageClient() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
       )}
 
       {/* Header */}
-      <header
+      <motion.header
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         className="relative bg-black/95 backdrop-blur-md shadow-lg border-b border-gray-800/50 sticky top-0 z-50"
         role="banner"
       >
@@ -729,15 +884,16 @@ export default function HomepageClient() {
                 >
                   {!logoError ? (
                     <div className="relative h-12 sm:h-14 md:h-18 w-auto">
-                      <OptimizedImage
+                      <img
                         src="/uploads/logo.png"
                         alt="8rupiya.com Logo"
-                        width={150}
-                        height={60}
                         className="h-full w-auto object-contain"
-                        priority={true}
-                        objectFit="contain"
+                        loading="eager"
+                        decoding="async"
+                        width="150"
+                        height="60"
                         onError={() => setLogoError(true)}
+                        onLoad={() => setLogoError(false)}
                       />
                     </div>
                   ) : (
@@ -904,17 +1060,15 @@ export default function HomepageClient() {
             </nav>
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      {/* Hero Section */}
-      {homepageLayout?.sections?.hero?.enabled !== false && (
-        <Hero 
-          shops={sortedShops} 
-          onShopClick={handleShopClick}
-          onShowAll={fetchAllShops}
-          onRefresh={() => fetchShops(location?.lat, location?.lng, selectedCategory, selectedCity)}
-        />
-      )}
+      {/* Hero Section - Render immediately, don't wait for homepageLayout */}
+      <Hero 
+        shops={sortedShops} 
+        onShopClick={handleShopClick}
+        onShowAll={fetchAllShops}
+        onRefresh={() => fetchShops(location?.lat, location?.lng, selectedCategory, selectedCity)}
+      />
 
       {/* About Section - Moved to /about page */}
       {/* {homepageLayout?.sections?.aboutSection?.enabled !== false && (
@@ -941,44 +1095,79 @@ export default function HomepageClient() {
         </h1>
         
         {/* Brief description - Detailed content moved to /about page */}
-        <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
+        >
           Discover trusted nearby shops and services in your area. Find verified businesses with accurate contact information, real customer reviews, and detailed profiles. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
-        </p>
+        </motion.p>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
-          {/* Left Rail */}
-          {homepageLayout?.sections?.leftRail?.enabled !== false && (
-            <aside className="w-full lg:w-64 flex-shrink-0 order-2 lg:order-1" aria-label="Filters and categories">
-              <LeftRail
-                onCategoryChange={handleCategoryChange}
-                onCityChange={handleCityChange}
-                selectedCategory={selectedCategory}
-              />
-            </aside>
-          )}
+          {/* Left Rail - Render immediately, don't wait for homepageLayout */}
+          <aside className="w-full lg:w-64 flex-shrink-0 order-2 lg:order-1" aria-label="Filters and categories">
+            <LeftRail
+              onCategoryChange={handleCategoryChange}
+              onCityChange={handleCityChange}
+              selectedCategory={selectedCategory}
+            />
+          </aside>
 
           {/* Main Content - Modern Mixed Layout */}
           <div className="flex-1 order-1 lg:order-2 min-w-0">
-            {/* Skeleton Loading for Shops */}
-            {loading && shops.length === 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden animate-pulse">
-                    <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="p-4 space-y-3">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+            {/* Modern Mixed Content Sections - Reordered */}
+            <div className="space-y-0">
+              {/* Section 1: Nearby Shops (10 shops) */}
+              {homepageLayout?.sections?.nearbyShops?.enabled !== false && bestShops.length > 0 && (
+                <motion.section
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}
+                  className="py-8 md:py-12"
+                >
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <motion.h2
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
+                      aria-label="Nearby Shops"
+                    >
+                      {homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'Nearby Shops')}
+                    </motion.h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {bestShops.flatMap((shop, index) => {
+                        const items: React.ReactNode[] = [
+                          <ShopCard key={`nearby-${shop._id || shop.place_id || index}`} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                        ];
+                        
+                        // Add in-feed ad after every 2 shop cards
+                        if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < bestShops.length) {
+                          items.push(
+                            <div key={`ad-nearby-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                              <InFeedAd />
+                            </div>
+                          );
+                        }
+                        
+                        return items;
+                      })}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Modern Mixed Content Sections */}
-            <div className="space-y-0">
-              {/* Section 1: Text + Featured Shops (Left) */}
-              {homepageLayout?.sections?.mixedContent1?.enabled !== false && homepageLayout?.sections?.featuredShops?.enabled !== false && featuredShops.length > 0 && (
+                </motion.section>
+              )}
+
+              {/* Ad Space - Between Nearby and Featured Shops */}
+              {homepageLayout?.sections?.displayAd2?.enabled !== false && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <AdSlot slot="homepage" />
+                </div>
+              )}
+
+              {/* Section 2: Featured Shops (10 shops) */}
+              {homepageLayout?.sections?.featuredShops?.enabled !== false && featuredShops.length > 0 && (
                 <>
                   <MixedContentSection
                     variant={(homepageLayout?.sections?.mixedContent1?.variant as any) || "text-left"}
@@ -990,14 +1179,23 @@ export default function HomepageClient() {
                   />
                   
                   {/* Featured Shops Grid */}
-                  <section className="py-8 md:py-12">
+                  <motion.section
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="py-8 md:py-12"
+                  >
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      <h2
+                      <motion.h2
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
                         className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
                         aria-label="Featured Shops"
                       >
                         {homepageLayout?.sections?.featuredShops?.title || t('shop.featured')}
-                      </h2>
+                      </motion.h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {featuredShops.flatMap((shop, index) => {
                           const items: React.ReactNode[] = [
@@ -1017,51 +1215,46 @@ export default function HomepageClient() {
                         })}
                       </div>
                     </div>
-                  </section>
+                  </motion.section>
                 </>
               )}
 
-              {/* Ad Space - Between Featured and Paid Shops (AdSense-Safe Zone) */}
+              {/* Ad Space - Between Featured and Premium Shops */}
               {homepageLayout?.sections?.displayAd2?.enabled !== false && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                   <AdSlot slot="homepage" />
                 </div>
               )}
 
-              {/* What Makes 8rupiya.com Special Section - Before Premium Shops */}
-              <WhatMakesSpecialSection />
-
-              {/* Section 2: Paid Shops + Text (Right) */}
-              {homepageLayout?.sections?.mixedContent2?.enabled !== false && homepageLayout?.sections?.paidShops?.enabled !== false && paidShops.length > 0 && (
-                <>
-                  <MixedContentSection
-                    variant={(homepageLayout?.sections?.mixedContent2?.variant as any) || "text-right"}
-                    shops={paidShops.slice(0, 2)}
-                    onShopClick={handleShopClick}
-                    userLocation={location}
-                    ShopCardComponent={ShopCard}
-                    index={1}
-                  />
-                  
-                  {/* Paid Shops Grid */}
-                  <section className="py-8 md:py-12">
+              {/* Section 3: Premium Shops (10 shops) */}
+              {homepageLayout?.sections?.paidShops?.enabled !== false && premiumShops.length > 0 && (
+                  <motion.section
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="py-8 md:py-12"
+                  >
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      <h2
+                      <motion.h2
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
                         className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center"
                         aria-label="Premium Shops"
                       >
                         {homepageLayout?.sections?.paidShops?.title || t('shop.premium')}
-                      </h2>
+                      </motion.h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {paidShops.flatMap((shop, index) => {
+                      {premiumShops.flatMap((shop, index) => {
                           const items: React.ReactNode[] = [
-                            <ShopCard key={`paid-${shop._id || shop.place_id || index}`} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
+                          <ShopCard key={`premium-${shop._id || shop.place_id || index}`} shop={shop} index={index} onClick={() => handleShopClick(shop)} userLocation={location} />
                           ];
                           
                           // Add in-feed ad after every 2 shop cards
-                          if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < paidShops.length) {
+                        if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < premiumShops.length) {
                             items.push(
-                              <div key={`ad-paid-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
+                            <div key={`ad-premium-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
                                 <InFeedAd />
                               </div>
                             );
@@ -1071,43 +1264,15 @@ export default function HomepageClient() {
                         })}
                       </div>
                     </div>
-                  </section>
-                </>
+                  </motion.section>
               )}
 
-              {/* Section 3: Text Center + Shops Grid */}
-              {homepageLayout?.sections?.mixedContent3?.enabled !== false && (() => {
-                // Combine shops and remove duplicates
-                const combinedShops = [...featuredShops.slice(2, 5), ...paidShops.slice(2, 5)].filter(Boolean);
-                const uniqueShops = combinedShops.filter((shop, index, self) => 
-                  index === self.findIndex((s) => (s._id && s._id === shop._id) || (s.place_id && s.place_id === shop.place_id))
-                );
-                return (
-                  <MixedContentSection
-                    variant={(homepageLayout?.sections?.mixedContent3?.variant as any) || "text-center"}
-                    shops={uniqueShops}
-                    onShopClick={handleShopClick}
-                    userLocation={location}
-                    ShopCardComponent={ShopCard}
-                    index={2}
-                  />
-                );
-              })()}
-
-              {/* Ad Space - After Mixed Sections (AdSense-Safe Zone) */}
+              {/* Ad Space - After Premium Shops (AdSense-Safe Zone) */}
               {homepageLayout?.sections?.displayAd2?.enabled !== false && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                   <AdSlot slot="homepage" />
                   <AdvertisementBanner slot="homepage" className="my-8" uniqueId="homepage-main" />
                 </div>
-              )}
-
-              {/* Section 4: Text Only */}
-              {homepageLayout?.sections?.mixedContent4?.enabled !== false && (
-                <MixedContentSection
-                  variant={(homepageLayout?.sections?.mixedContent4?.variant as any) || "text-only"}
-                  index={3}
-                />
               )}
             </div>
           </div>
@@ -1123,85 +1288,20 @@ export default function HomepageClient() {
           )}
         </div>
 
-        {/* Top Rated Shops Section - Modern Mixed Layout */}
-        {homepageLayout?.sections?.topRated?.enabled !== false && (
-          <>
-            {/* Text Section Before Top Rated */}
-            {homepageLayout?.sections?.mixedContent4?.enabled !== false && (
-              <MixedContentSection
-                variant="text-only"
-                title="Why Reviews Matter"
-                content="Customer reviews and ratings help you understand the quality and reliability of local businesses. Our platform ensures all reviews are from verified users, giving you authentic insights to make better decisions when choosing shops and services in your area."
-                index={4}
-              />
-            )}
-            <TopRated shops={sortedShops} onShopClick={handleShopClick} userLocation={location} />
-          </>
-        )}
-
-        {/* Homepage Ad - Between sections (AdSense-Safe Zone) */}
+        {/* Homepage Ad - Before All Shops (AdSense-Safe Zone) */}
         {homepageLayout?.sections?.displayAd2?.enabled !== false && (
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
             <AdSlot slot="homepage" />
           </div>
         )}
 
-        {/* All Shops Section - Full Width - Sorted by Distance (0km first) */}
-        {homepageLayout?.sections?.nearbyShops?.enabled !== false && filteredShops.length > 0 && (
-          <section className="relative w-full py-6 md:py-8" style={{ paddingLeft: '10px', paddingRight: '0' }}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="flex items-center justify-between mb-4 md:mb-6 px-4 sm:px-6"
-            >
-              <div className="flex items-center gap-3">
-                <FiMapPin className="text-3xl text-blue-600 dark:text-blue-400" />
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-yellow-400 nearby-title">
-                  {homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'Best Shops Near You')}
-                </h2>
-              </div>
-              {filteredShops.length > 0 && (
-                <span className="text-gray-600 bg-white/60 backdrop-blur-md px-4 py-2 rounded-full text-sm font-medium">
-                  {filteredShops.length} shops found
-                </span>
-              )}
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-4 px-4 sm:px-6">
-              {filteredShops.flatMap((shop, index) => {
-                const items: React.ReactNode[] = [];
-                
-                // Add shop card
-                items.push(
-                  <ShopCard 
-                    key={shop._id || shop.place_id || index} 
-                    shop={shop} 
-                    index={index} 
-                    onClick={() => handleShopClick(shop)} 
-                    userLocation={location} 
-                  />
-                );
-                
-                // Add in-feed ad after every 2 shop cards
-                if ((index + 1) % 2 === 0 && (index + 1) < filteredShops.length) {
-                  items.push(
-                    <div key={`ad-${index}`} className="col-span-1 md:col-span-2 lg:col-span-3 my-4">
-                      <InFeedAd />
-                    </div>
-                  );
-                }
-                
-                return items;
-              })}
-            </div>
-
-            {/* Ad Space - Search/Category Ads */}
-            <div className="px-4 sm:px-6 mt-8">
-              <AdSlot slot="search" />
-            </div>
-          </section>
-        )}
+        {/* All Shops Section - Full Width (All shops with infinite scroll) - Render immediately */}
+        <Nearby 
+          shops={filteredShops} 
+          title={homepageLayout?.sections?.nearbyShops?.title || (selectedCity ? `${t('shop.in')} ${selectedCity}` : 'All Shops')} 
+          onShopClick={handleShopClick} 
+          userLocation={location} 
+        />
 
         {/* Infinite Scroll Loading Indicator */}
         {loadingMore && (
@@ -1226,41 +1326,6 @@ export default function HomepageClient() {
         )}
       </main>
 
-      {/* Nearby Panel - 8 Shops (Below "Best Shops Near You") - Outside main for better visibility */}
-      {filteredShops.length > 0 && (
-        <section className="relative w-full py-8 md:py-10 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="flex items-center justify-between mb-6 md:mb-8"
-            >
-              <div className="flex items-center gap-3">
-                <FiMapPin className="text-4xl text-green-600 dark:text-green-400" />
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Nearby</h2>
-              </div>
-              <span className="text-gray-700 dark:text-gray-300 bg-green-50 dark:bg-green-900/20 backdrop-blur-md px-4 py-2 rounded-full text-sm font-semibold border border-green-200 dark:border-green-700">
-                {Math.min(8, filteredShops.length)} shops
-              </span>
-            </motion.div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-              {filteredShops.slice(0, 8).map((shop, index) => (
-                <ShopCard 
-                  key={`nearby-${shop._id || shop.place_id || index}`} 
-                  shop={shop} 
-                  index={index} 
-                  onClick={() => handleShopClick(shop)} 
-                  userLocation={location} 
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Error Message */}
       {error && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1273,22 +1338,29 @@ export default function HomepageClient() {
       {/* Stats Section */}
       {homepageLayout?.sections?.stats?.enabled !== false && (
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
+        >
           {[
             { icon: FiShoppingBag, number: '10K+', label: t('stats.activeShops') },
             { icon: FiTrendingUp, number: '50K+', label: t('stats.happyCustomers') },
             { icon: FiAward, number: '100+', label: t('stats.citiesCovered') },
           ].map((stat, index) => (
-            <div
+            <motion.div
               key={index}
+              whileHover={{ scale: 1.05, y: -5 }}
               className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50"
             >
               <stat.icon className="text-4xl text-blue-600 dark:text-blue-400 mx-auto mb-4" />
               <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{stat.number}</div>
               <div className="text-gray-600 dark:text-gray-300">{stat.label}</div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
       )}
 
@@ -1299,7 +1371,10 @@ export default function HomepageClient() {
 
       {/* Footer */}
       {homepageLayout?.sections?.footer?.enabled !== false && (
-      <footer
+      <motion.footer
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
         className="relative bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white py-12 mt-20"
         role="contentinfo"
       >
@@ -1340,14 +1415,14 @@ export default function HomepageClient() {
             <p className="text-lg">{t('footer.copyright')}</p>
           </div>
         </div>
-      </footer>
+      </motion.footer>
       )}
 
       {/* Shop Popup */}
       <ShopPopup shop={selectedShop} isOpen={isPopupOpen} onClose={handleClosePopup} userLocation={location} />
       
-      {/* AI Assistant - Only show for admin */}
-      <AIAssistant userLocation={location} userId={user?.id} userRole={user?.role} />
+      {/* AI Assistant */}
+      <AIAssistant userLocation={location} userId={user?.id} />
       </div>
     </>
   );

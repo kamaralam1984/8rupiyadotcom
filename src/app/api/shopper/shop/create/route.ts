@@ -7,6 +7,7 @@ import User from '@/models/User';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/models/User';
 import { createCommission } from '@/lib/commission';
+import { generateSEOContent } from '@/lib/seoContentGenerator';
 
 // POST /api/shopper/shop/create - Create shop (online payment only)
 export async function POST(req: NextRequest) {
@@ -139,6 +140,21 @@ export async function POST(req: NextRequest) {
       paymentMode: 'online', // Only online payment for shoppers
       status: ShopStatus.PENDING,
     };
+
+    // Generate and add SEO-optimized page content automatically
+    const seoContent = generateSEOContent({
+      name: shopName.trim(),
+      category: category.trim(),
+      city: city?.trim() || 'Patna',
+      state: state?.trim() || 'Bihar',
+      area: area?.trim(),
+      address: address.trim(),
+      rating: 0, // New shop starts with 0 rating
+      reviewCount: 0, // New shop starts with 0 reviews
+      description: address.trim(),
+    });
+    
+    shopData.pageContent = seoContent;
 
     // Create shop
     const shop = await Shop.create(shopData) as any;

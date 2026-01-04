@@ -37,7 +37,9 @@ export async function PUT(
     const allowedFields = [
       'name',
       'category',
+      'description',
       'address',
+      'area', // Area field
       'city',
       'pincode',
       'keywords',
@@ -45,6 +47,7 @@ export async function PUT(
       'images',
       'photos', // Also update photos array
       'isFeatured',
+      'isPremium', // Premium shop flag (permanent)
       'homepagePriority',
       'status',
       'planExpiry',
@@ -55,6 +58,40 @@ export async function PUT(
         (shop as any)[field] = updates[field];
       }
     });
+
+    // Handle location coordinates (GeoJSON format: { type: 'Point', coordinates: [lng, lat] })
+    // Always preserve or update coordinates (permanent setting)
+    if (updates.location !== undefined) {
+      if (updates.location === null || updates.location === '') {
+        // Don't clear location if explicitly set to null/empty
+        // Keep existing location
+      } else if (updates.location.type === 'Point' && 
+          Array.isArray(updates.location.coordinates) && 
+          updates.location.coordinates.length === 2) {
+        const [lng, lat] = updates.location.coordinates;
+        
+        // Validate coordinates
+        if (typeof lng === 'number' && typeof lat === 'number' &&
+            lat >= -90 && lat <= 90 &&
+            lng >= -180 && lng <= 180) {
+          shop.location = {
+            type: 'Point',
+            coordinates: [lng, lat] // MongoDB GeoJSON: [longitude, latitude]
+          };
+        } else {
+          return NextResponse.json(
+            { error: 'Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.' },
+            { status: 400 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid location format. Expected GeoJSON Point with coordinates [longitude, latitude].' },
+          { status: 400 }
+        );
+      }
+    }
+    // If location not provided, keep existing location (preserve permanently)
 
     // Sync images to photos array if images updated
     if (updates.images) {

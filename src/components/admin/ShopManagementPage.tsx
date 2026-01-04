@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import {
   FiSearch,
   FiFilter,
@@ -75,20 +76,18 @@ interface Shop {
   seoTitle?: string;
   seoDescription?: string;
   isFeatured: boolean;
+  isPremium?: boolean;
   homepagePriority: number;
   visitors: number;
-  visitorCount?: number; // Total visitors/views
-  likeCount?: number; // Total likes
+  visitorCount?: number;
   rating: number;
   reviewCount: number;
+  likeCount?: number;
   createdAt: string;
   updatedAt?: string;
   location?: {
     coordinates: [number, number];
   };
-  distance?: number; // Distance in km
-  phone?: string; // Direct phone field from database
-  email?: string; // Direct email field from database
 }
 
 export default function ShopManagementPage() {
@@ -111,13 +110,18 @@ export default function ShopManagementPage() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     category: '',
+    description: '',
     address: '',
+    area: '',
     city: '',
     pincode: '',
     phone: '',
     email: '',
     keywords: '',
+    latitude: '',
+    longitude: '',
     isFeatured: false,
+    isPremium: false,
     homepagePriority: 0,
     rating: 0,
     reviewCount: 0,
@@ -273,6 +277,27 @@ export default function ShopManagementPage() {
     }
   };
 
+  const togglePremium = async (shopId: string, currentStatus: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/shops/${shopId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isPremium: !currentStatus }),
+      });
+
+      if (response.ok) {
+        fetchShops();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Error toggling premium status:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -312,17 +337,27 @@ export default function ShopManagementPage() {
     const phoneFromDB = (shop as any).phone || shop.contact?.phone || '';
     const emailFromDB = (shop as any).email || shop.contact?.email || '';
     
+    // Extract latitude and longitude from location coordinates
+    // MongoDB GeoJSON format: [longitude, latitude]
+    const latitude = shop.location?.coordinates?.[1]?.toString() || '';
+    const longitude = shop.location?.coordinates?.[0]?.toString() || '';
+    
     setEditFormData({
       name: shop.name || '',
       category: shop.category || '',
+      description: shop.description || '',
       address: shop.address || '',
+      area: (shop as any).area || '', // Load area from database
       city: shop.city || '',
       pincode: shop.pincode || '',
       phone: phoneFromDB, // From database phone field or contact.phone
       email: emailFromDB, // From database email field or contact.email
       // Keywords from SEO keywords (database linked)
       keywords: (shop as any).seoKeywords || shop.keywords || '',
+      latitude: latitude,
+      longitude: longitude,
       isFeatured: shop.isFeatured || false,
+      isPremium: shop.isPremium || false, // Always load premium status
       homepagePriority: shop.homepagePriority || 0,
       rating: shop.rating || 0,
       reviewCount: shop.reviewCount || 0,
@@ -436,6 +471,34 @@ export default function ShopManagementPage() {
       // Combine current images with newly uploaded images
       const allImages = [...currentImages, ...uploadedImageUrls];
 
+      // Prepare location coordinates (MongoDB GeoJSON format: [longitude, latitude])
+      // Always preserve existing coordinates if not changed, or update if provided
+      let locationData = undefined;
+      if (editFormData.latitude && editFormData.longitude) {
+        const lat = parseFloat(editFormData.latitude);
+        const lng = parseFloat(editFormData.longitude);
+        
+        // Validate coordinates
+        if (!isNaN(lat) && !isNaN(lng) && 
+            lat >= -90 && lat <= 90 && 
+            lng >= -180 && lng <= 180) {
+          locationData = {
+            type: 'Point',
+            coordinates: [lng, lat] // MongoDB GeoJSON: [longitude, latitude]
+          };
+        } else {
+          setEditError('Invalid coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180.');
+          setEditLoading(false);
+          return;
+        }
+      } else if (selectedShop.location?.coordinates) {
+        // Preserve existing coordinates if not provided in form
+        locationData = {
+          type: 'Point',
+          coordinates: selectedShop.location.coordinates
+        };
+      }
+
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/admin/shops/${selectedShop._id}`, {
         method: 'PUT',
@@ -446,7 +509,9 @@ export default function ShopManagementPage() {
         body: JSON.stringify({
           name: editFormData.name,
           category: editFormData.category,
+          description: editFormData.description,
           address: editFormData.address,
+          area: editFormData.area, // Always save area field
           city: editFormData.city,
           pincode: editFormData.pincode,
           contact: {
@@ -462,8 +527,14 @@ export default function ShopManagementPage() {
           images: allImages,
           photos: allImages, // Also save to photos array for compatibility
           isFeatured: editFormData.isFeatured,
+          isPremium: editFormData.isPremium, // Always save premium status (permanent)
           homepagePriority: editFormData.homepagePriority,
           status: editFormData.status,
+          // Always update location coordinates (preserve existing or use new)
+          location: locationData || (selectedShop.location ? {
+            type: 'Point',
+            coordinates: selectedShop.location.coordinates
+          } : undefined),
         }),
       });
 
@@ -593,6 +664,13 @@ export default function ShopManagementPage() {
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage all shops, approve, reject, and configure</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/shops/page-content"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            <FiEdit />
+            Edit Page Content
+          </Link>
           <button
             onClick={() => fetchShops()}
             className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
@@ -817,6 +895,9 @@ export default function ShopManagementPage() {
                             {shop.isFeatured && (
                               <FiStar className="text-yellow-500 fill-yellow-500" title="Featured" />
                             )}
+                            {shop.isPremium && (
+                              <FiDollarSign className="text-yellow-600 dark:text-yellow-400" title="Premium Shop" />
+                            )}
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">{shop.category}</p>
                         </div>
@@ -842,15 +923,15 @@ export default function ShopManagementPage() {
                         <div className="flex items-center gap-2 text-xs">
                           <FiPhone className="text-green-600 text-xs flex-shrink-0" />
                           <span className="text-gray-700 dark:text-gray-300">
-                            {shop.contact?.phone || shop.phone || 'No phone'}
+                            {shop.contact?.phone || (shop as any).phone || 'No phone'}
                           </span>
                         </div>
 
                         {/* Email ID */}
                         <div className="flex items-center gap-2 text-xs">
                           <FiMail className="text-blue-600 text-xs flex-shrink-0" />
-                          <span className="text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={shop.contact?.email || shop.email || ''}>
-                            {shop.contact?.email || shop.email || 'No email'}
+                          <span className="text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={shop.contact?.email || (shop as any).email || ''}>
+                            {shop.contact?.email || (shop as any).email || 'No email'}
                           </span>
                         </div>
 
@@ -1069,6 +1150,15 @@ export default function ShopManagementPage() {
                           title="Toggle Featured"
                         >
                           <FiStar className={shop.isFeatured ? 'fill-yellow-500' : ''} />
+                        </button>
+                        <button
+                          onClick={() => togglePremium(shop._id, shop.isPremium || false)}
+                          className={`p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-colors ${
+                            shop.isPremium ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-400'
+                          }`}
+                          title="Toggle Premium Shop"
+                        >
+                          <FiDollarSign className={shop.isPremium ? 'text-yellow-600 dark:text-yellow-400' : ''} />
                         </button>
                         <button
                           onClick={() => handleViewDetails(shop)}
@@ -1564,6 +1654,21 @@ export default function ShopManagementPage() {
                       </select>
                     </div>
 
+                    {/* Description - Database Linked */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Description <span className="text-xs text-gray-500">(From database)</span>
+                      </label>
+                      <textarea
+                        value={editFormData.description}
+                        onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                        rows={4}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                        placeholder="Shop description..."
+                        title="Description from database"
+                      />
+                    </div>
+
                     {/* Keywords (SEO) - Database Linked */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1575,7 +1680,6 @@ export default function ShopManagementPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, keywords: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                         placeholder="Keywords from SEO (comma separated)"
-                        readOnly
                         title="Keywords are linked from database SEO keywords (seoKeywords field)"
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1606,6 +1710,24 @@ export default function ShopManagementPage() {
                       />
                     </div>
 
+                    {/* Area Field - Permanent */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Area <span className="text-xs text-gray-500">(Permanent - From database)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.area}
+                        onChange={(e) => setEditFormData({ ...editFormData, area: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                        placeholder="Enter area/locality"
+                        title="Area field - permanently saved"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        This field is permanently saved and will not be reset
+                      </p>
+                    </div>
+
                     {/* City - Database Linked */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1634,6 +1756,107 @@ export default function ShopManagementPage() {
                         required
                         title="Pincode from database"
                       />
+                    </div>
+                  </div>
+
+                  {/* Coordinates Section - Enhanced */}
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-800 mt-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-blue-600 rounded-lg">
+                        <FiMapPin className="text-white text-xl" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Location Coordinates <span className="text-xs text-gray-500 font-normal">(Permanent)</span></h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Edit Latitude and Longitude for shop location - Settings are permanently saved</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Latitude - Database Linked */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                          <span>Latitude (Lat)</span>
+                          <span className="text-xs text-gray-500 font-normal">(From database location.coordinates[1])</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={editFormData.latitude}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Validate latitude range (-90 to 90)
+                            if (value === '' || (parseFloat(value) >= -90 && parseFloat(value) <= 90)) {
+                              setEditFormData({ ...editFormData, latitude: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                          placeholder="e.g., 25.605713"
+                          title="Latitude from database (range: -90 to 90)"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Valid range: -90 to 90
+                        </p>
+                      </div>
+
+                      {/* Longitude - Database Linked */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                          <span>Longitude (Lng)</span>
+                          <span className="text-xs text-gray-500 font-normal">(From database location.coordinates[0])</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={editFormData.longitude}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Validate longitude range (-180 to 180)
+                            if (value === '' || (parseFloat(value) >= -180 && parseFloat(value) <= 180)) {
+                              setEditFormData({ ...editFormData, longitude: value });
+                            }
+                          }}
+                          className="w-full px-4 py-3 border-2 border-purple-300 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+                          placeholder="e.g., 85.140328"
+                          title="Longitude from database (range: -180 to 180)"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Valid range: -180 to 180
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Current Coordinates Display */}
+                    {editFormData.latitude && editFormData.longitude && 
+                     !isNaN(parseFloat(editFormData.latitude)) && 
+                     !isNaN(parseFloat(editFormData.longitude)) && (
+                      <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Current Coordinates:</p>
+                            <p className="text-sm font-mono text-gray-900 dark:text-white">
+                              Lat: <span className="font-semibold text-blue-600 dark:text-blue-400">{parseFloat(editFormData.latitude).toFixed(6)}</span>, 
+                              Lng: <span className="font-semibold text-purple-600 dark:text-purple-400">{parseFloat(editFormData.longitude).toFixed(6)}</span>
+                            </p>
+                          </div>
+                          <a
+                            href={`https://maps.google.com/?q=${editFormData.latitude},${editFormData.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                          >
+                            <FiMapPin />
+                            View on Google Maps
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Helper Text */}
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-gray-700 dark:text-gray-300">
+                        <strong>💡 Tip:</strong> You can find coordinates from Google Maps by right-clicking on a location and selecting the coordinates. 
+                        The coordinates will be saved in MongoDB GeoJSON format: [longitude, latitude].
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1728,6 +1951,28 @@ export default function ShopManagementPage() {
                             <FiStar className="text-yellow-500" />
                             Featured Shop <span className="text-xs text-gray-500">(From database)</span>
                           </span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Premium Shop - Database Linked */}
+                    <div className="flex items-end">
+                      <label className="flex items-center gap-3 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg cursor-pointer hover:from-yellow-100 hover:to-amber-100 dark:hover:from-yellow-900/30 dark:hover:to-amber-900/30 transition-colors w-full border-2 border-yellow-200 dark:border-yellow-800">
+                        <input
+                          type="checkbox"
+                          checked={editFormData.isPremium}
+                          onChange={(e) => setEditFormData({ ...editFormData, isPremium: e.target.checked })}
+                          className="w-5 h-5 text-yellow-600 dark:text-yellow-400 rounded focus:ring-2 focus:ring-yellow-500"
+                          title="Premium shop status from database"
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <FiDollarSign className="text-yellow-600 dark:text-yellow-400" />
+                            Premium Shop <span className="text-xs text-gray-500">(Permanent - Shows in Premium Shops section)</span>
+                          </span>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            This setting is permanently saved and will not be reset
+                          </p>
                         </div>
                       </label>
                     </div>

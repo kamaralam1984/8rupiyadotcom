@@ -211,7 +211,7 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
             </p>
             
             {/* Distance and Time - Enhanced Display */}
-            {(distanceTime.distance && distanceTime.time) && (
+            {((distanceTime.distance && distanceTime.time) || (shop.distance !== undefined && shop.distance !== null && shop.distance >= 0)) && (
               <div className="flex items-center gap-2 mb-3">
                 {/* Distance Badge */}
                 <motion.div
@@ -220,7 +220,13 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 >
                   <FiNavigation className="text-red-600 dark:text-red-400 text-sm" />
                   <span className="text-red-700 dark:text-red-300 font-bold text-xs sm:text-sm">
-                    {distanceTime.distance}
+                    {distanceTime.distance || (shop.distance !== undefined && shop.distance !== null 
+                      ? (shop.distance < 1 
+                          ? `${Math.round(shop.distance * 1000)} m` 
+                          : shop.distance < 10 
+                          ? `${Number(shop.distance).toFixed(1)} km` 
+                          : `${Math.round(shop.distance)} km`)
+                      : 'N/A')}
                   </span>
                 </motion.div>
 
@@ -231,7 +237,24 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 >
                   <FiClock className="text-blue-600 dark:text-blue-400 text-sm" />
                   <span className="text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm">
-                    {distanceTime.time}
+                    {distanceTime.time || (shop.distance !== undefined && shop.distance !== null 
+                      ? (() => {
+                          const distanceKm = Number(shop.distance);
+                          let timeInMinutes: number;
+                          if (distanceKm < 5) {
+                            timeInMinutes = Math.round((distanceKm / 20) * 60);
+                          } else if (distanceKm < 20) {
+                            timeInMinutes = Math.round((distanceKm / 35) * 60);
+                          } else {
+                            timeInMinutes = Math.round((distanceKm / 50) * 60);
+                          }
+                          return timeInMinutes < 1 
+                            ? '< 1 min'
+                            : timeInMinutes < 60 
+                            ? `${timeInMinutes} min` 
+                            : `${Math.floor(timeInMinutes / 60)}h ${timeInMinutes % 60}m`;
+                        })()
+                      : 'N/A')}
                   </span>
                 </motion.div>
               </div>
@@ -248,15 +271,15 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
                 <span className="text-xs text-gray-600 dark:text-gray-400">({shop.reviewCount || 0})</span>
               </div>
                 
-                {/* Visitor Count */}
-                {(shop.visitorCount !== undefined && shop.visitorCount !== null) && (
+                {/* Visitor Count - Hidden */}
+                {/* {(shop.visitorCount !== undefined && shop.visitorCount !== null) && (
                   <div className="flex items-center gap-1">
                     <FiEye className="text-blue-500 text-sm" />
                     <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
                       {shop.visitorCount >= 1000 ? `${(shop.visitorCount / 1000).toFixed(1)}k` : shop.visitorCount}
                     </span>
                   </div>
-                )}
+                )} */}
                 
                 {/* Like Count */}
                 {(shop.likeCount !== undefined && shop.likeCount !== null) && (
@@ -270,11 +293,12 @@ export default function ShopCard({ shop, index = 0, onClick, userLocation }: Sho
               </div>
               
               <div className="flex gap-2">
-                {shop.isPaid && shop.planId && (
+                {/* Plan Badge - Hidden */}
+                {/* {shop.isPaid && shop.planId && (
                   <span className="text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-3 py-1 rounded-full font-semibold">
                     {shop.planId.name}
                   </span>
-                )}
+                )} */}
                 {shop.source === 'google' && (
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                     Google

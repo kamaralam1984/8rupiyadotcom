@@ -82,6 +82,7 @@ export default function OptimizedImage({
   }
 
   // If using fill, render with fill prop
+  // Note: When using fill, cannot set width/height in style - only objectFit
   if (fill) {
     return (
       <Image
@@ -94,7 +95,7 @@ export default function OptimizedImage({
         style={{ objectFit }}
         onError={handleError}
         placeholder={placeholder}
-        quality={85}
+        quality={75}
       />
     );
   }
@@ -112,7 +113,7 @@ export default function OptimizedImage({
       style={{ objectFit }}
       onError={handleError}
       placeholder={placeholder}
-      quality={85}
+      quality={75}
     />
   );
 }

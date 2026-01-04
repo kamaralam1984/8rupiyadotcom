@@ -226,7 +226,8 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                         Featured
                       </motion.div>
                     )}
-                    {shop.isPaid && shop.planId && (
+                    {/* Plan Badge - Hidden */}
+                    {/* {shop.isPaid && shop.planId && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -235,7 +236,7 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                       >
                         {shop.planId.name}
                       </motion.div>
-                    )}
+                    )} */}
                   </div>
                 </div>
 

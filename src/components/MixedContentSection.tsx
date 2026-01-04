@@ -30,30 +30,30 @@ export default function MixedContentSection({
       title: "Discover Local Businesses Near You",
       content: "8rupiya.com helps you find trusted shops, restaurants, doctors, and services in your neighborhood. Our platform features verified businesses with accurate contact information, real customer reviews, and detailed profiles to help you make informed decisions.",
       icon: FiMapPin,
-      color: "bg-blue-600"
+      color: "from-blue-500 to-cyan-500"
     },
     {
       title: "Why Choose 8rupiya.com?",
       content: "Every business is verified to ensure you get trusted services. Our community-driven platform features authentic reviews from real customers, helping you discover the best local businesses in your area.",
       icon: FiShield,
-      color: "bg-blue-600"
+      color: "from-green-500 to-emerald-500"
     },
     {
       title: "Support Local Businesses",
       content: "By using 8rupiya.com, you're directly supporting local shopkeepers and businesses. We help small and medium enterprises gain online visibility and reach more customers in the digital age.",
       icon: FiTrendingUp,
-      color: "bg-blue-600"
+      color: "from-purple-500 to-pink-500"
     },
     {
       title: "Smart Search & Discovery",
       content: "Filter by category, location, ratings, or specific services. Each business profile includes photos, contact details, operating hours, and customer reviews to help you make the best choice.",
       icon: FiSearch,
-      color: "bg-blue-600"
+      color: "from-orange-500 to-red-500"
     }
   ];
 
   const displayContent = title && content 
-    ? { title, content, icon: FiShield, color: "bg-blue-600" }
+    ? { title, content, icon: FiShield, color: "from-blue-500 to-purple-500" }
     : textContent[index % textContent.length];
 
   if (variant === 'text-only') {
@@ -100,7 +100,7 @@ export default function MixedContentSection({
             {shops.slice(0, 6).map((shop, shopIndex) => (
               ShopCardComponent ? (
                 <ShopCardComponent
-                  key={`mixed-shops-only-${index}-${shopIndex}-${shop._id || shop.place_id || `fallback-${index}-${shopIndex}`}`}
+                  key={shop._id || shopIndex}
                   shop={shop}
                   index={shopIndex}
                   onClick={() => onShopClick?.(shop)}
@@ -134,9 +134,9 @@ export default function MixedContentSection({
               transition={{ duration: 0.6 }}
               className="space-y-6"
             >
-              <div className={`inline-flex items-center gap-3 p-4 rounded-xl ${displayContent.color} mb-4`}>
-                <displayContent.icon className="text-2xl text-white" />
-                <h3 className="text-2xl md:text-3xl font-bold text-white">
+              <div className={`inline-flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br ${displayContent.color} bg-opacity-10 dark:bg-opacity-20 mb-4`}>
+                <displayContent.icon className={`text-2xl bg-gradient-to-br ${displayContent.color} bg-clip-text text-transparent`} />
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                   {displayContent.title}
                 </h3>
               </div>
@@ -156,7 +156,7 @@ export default function MixedContentSection({
               {shops.slice(0, 2).map((shop, shopIndex) => (
                 ShopCardComponent ? (
                   <ShopCardComponent
-                    key={`mixed-text-left-${index}-${shopIndex}-${shop._id || shop.place_id || `fallback-${index}-${shopIndex}`}`}
+                    key={`mixed-text-left-${index}-${shop._id || shop.place_id || shopIndex}`}
                     shop={shop}
                     index={shopIndex}
                     onClick={() => onShopClick?.(shop)}
@@ -193,7 +193,7 @@ export default function MixedContentSection({
               {shops.slice(0, 2).map((shop, shopIndex) => (
                 ShopCardComponent ? (
                   <ShopCardComponent
-                    key={`mixed-text-right-${index}-${shopIndex}-${shop._id || shop.place_id || `fallback-${index}-${shopIndex}`}`}
+                    key={`mixed-text-right-${index}-${shop._id || shop.place_id || shopIndex}`}
                     shop={shop}
                     index={shopIndex}
                     onClick={() => onShopClick?.(shop)}
@@ -211,9 +211,9 @@ export default function MixedContentSection({
               transition={{ duration: 0.6 }}
               className="space-y-6 order-1 lg:order-2"
             >
-              <div className={`inline-flex items-center gap-3 p-4 rounded-xl ${displayContent.color} mb-4`}>
-                <displayContent.icon className="text-2xl text-white" />
-                <h3 className="text-2xl md:text-3xl font-bold text-white">
+              <div className={`inline-flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br ${displayContent.color} bg-opacity-10 dark:bg-opacity-20 mb-4`}>
+                <displayContent.icon className={`text-2xl bg-gradient-to-br ${displayContent.color} bg-clip-text text-transparent`} />
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                   {displayContent.title}
                 </h3>
               </div>
@@ -245,9 +245,9 @@ export default function MixedContentSection({
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <div className={`inline-flex items-center gap-3 p-4 rounded-2xl ${displayContent.color} mb-6`}>
-              <displayContent.icon className="text-3xl text-white" />
-              <h3 className="text-3xl md:text-4xl font-bold text-white">
+            <div className={`inline-flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br ${displayContent.color} bg-opacity-10 dark:bg-opacity-20 mb-6`}>
+              <displayContent.icon className={`text-3xl bg-gradient-to-br ${displayContent.color} bg-clip-text text-transparent`} />
+              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
                 {displayContent.title}
               </h3>
             </div>
@@ -264,20 +264,17 @@ export default function MixedContentSection({
             transition={{ duration: 0.6, delay: 0.2 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {shops.slice(0, 6).map((shop, shopIndex) => {
-              // Create unique key - include index, shopIndex, and shop ID to ensure uniqueness
-              const shopId = shop._id || shop.place_id;
-              const uniqueKey = `mixed-text-center-${index}-${shopIndex}-${shopId || `fallback-${index}-${shopIndex}`}`;
-              return ShopCardComponent ? (
+            {shops.slice(0, 6).map((shop, shopIndex) => (
+              ShopCardComponent ? (
                 <ShopCardComponent
-                  key={uniqueKey}
+                  key={`mixed-text-center-${index}-${shop._id || shop.place_id || shopIndex}`}
                   shop={shop}
                   index={shopIndex}
                   onClick={() => onShopClick?.(shop)}
                   userLocation={userLocation}
                 />
-              ) : null;
-            })}
+              ) : null
+            ))}
           </motion.div>
         </div>
       </motion.section>

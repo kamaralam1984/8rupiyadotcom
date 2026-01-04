@@ -12,5 +12,12 @@ export const metadata: Metadata = generateSEOMetadata({
 
 export default function HomePage() {
   // Schema is already included in layout.tsx to avoid duplication
-  return <HomepageClient />;
+  return (
+    <>
+      {/* ⚡ Prefetch critical API endpoints for faster loading */}
+      <link rel="prefetch" href="/api/shops/nearby?limit=5&page=1" as="fetch" crossOrigin="anonymous" />
+      <link rel="prefetch" href="/api/categories" as="fetch" crossOrigin="anonymous" />
+      <HomepageClient />
+    </>
+  );
 }

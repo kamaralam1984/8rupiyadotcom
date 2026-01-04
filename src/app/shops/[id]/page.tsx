@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Analytics from '@/lib/analytics';
+import { getSEOContent } from '@/lib/seoContentGenerator';
 
 // Lazy load heavy components
 const AIAssistant = dynamic(() => import('@/components/AIAssistant'), {
@@ -65,6 +66,27 @@ interface Shop {
   planId?: {
     name: string;
     features: string[];
+  };
+  pageContent?: {
+    about?: string;
+    whyChoose?: {
+      verified?: string;
+      customerSatisfaction?: string;
+      convenientLocation?: string;
+      qualityAssured?: string;
+    };
+    services?: {
+      intro?: string;
+      paragraph1?: string;
+      paragraph2?: string;
+    };
+    whatMakesSpecial?: string[];
+    seoContent?: {
+      intro?: string;
+      paragraph1?: string;
+      paragraph2?: string;
+      paragraph3?: string;
+    };
   };
 }
 
@@ -180,6 +202,19 @@ export default function ShopDetailPage() {
   const allImages = [...(shop.images || []), ...(shop.photos || [])].filter(Boolean);
   const hasImages = allImages.length > 0;
 
+  // Generate SEO-optimized content automatically
+  const seoContent = getSEOContent({
+    name: shop.name,
+    category: shop.category,
+    city: shop.city,
+    state: shop.state,
+    area: shop.area,
+    address: shop.address,
+    rating: shop.rating,
+    reviewCount: shop.reviewCount,
+    description: shop.description,
+  }, shop.pageContent);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header with Breadcrumbs */}
@@ -289,12 +324,13 @@ export default function ShopDetailPage() {
                       <span className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
                         {shop.category}
                       </span>
-                      {shop.planId && (
+                      {/* Plan Badge - Hidden */}
+                      {/* {shop.planId && (
                         <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full text-sm font-bold shadow-md">
                           <FaAward className="mr-1" />
                           {shop.planId.name} Member
                         </span>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
@@ -308,10 +344,11 @@ export default function ShopDetailPage() {
                       ({shop.reviewCount} reviews)
                     </span>
                   </div>
-                  <div className="flex items-center text-gray-600 dark:text-gray-400">
+                  {/* Visitor Count - Hidden */}
+                  {/* <div className="flex items-center text-gray-600 dark:text-gray-400">
                     <FaEye className="mr-1 text-lg" />
                     <span className="font-medium">{shop.visitorCount.toLocaleString()} views</span>
-                  </div>
+                  </div> */}
                   <div className="flex items-center text-green-600 dark:text-green-400">
                     <FaCheckCircle className="mr-1" />
                     <span className="font-medium text-sm">Verified Business</span>
@@ -325,7 +362,7 @@ export default function ShopDetailPage() {
                     About {shop.name}
                   </h2>
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-                    {shop.description}
+                    {seoContent.about}
                   </p>
                 </div>
 
@@ -387,7 +424,7 @@ export default function ShopDetailPage() {
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-2">Verified & Trusted</h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {shop.name} is a verified business on 8rupiya.com. All information has been authenticated to ensure reliability and trustworthiness.
+                      {seoContent.whyChoose.verified}
                     </p>
                   </div>
                 </div>
@@ -399,7 +436,7 @@ export default function ShopDetailPage() {
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-2">Customer Satisfaction</h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      With a {shop.rating.toFixed(1)} star rating from {shop.reviewCount} real customers, {shop.name} has proven track record of quality service.
+                      {seoContent.whyChoose.customerSatisfaction}
                     </p>
                   </div>
                 </div>
@@ -411,7 +448,7 @@ export default function ShopDetailPage() {
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-2">Convenient Location</h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Located in {shop.city}, {shop.state}, this business is easily accessible and serves the local community with dedication.
+                      {seoContent.whyChoose.convenientLocation}
                     </p>
                   </div>
                 </div>
@@ -423,7 +460,7 @@ export default function ShopDetailPage() {
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-2">Quality Assured</h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      {shop.name} maintains high standards of quality and professionalism in all services provided to customers.
+                      {seoContent.whyChoose.qualityAssured}
                     </p>
                   </div>
                 </div>
@@ -443,36 +480,28 @@ export default function ShopDetailPage() {
               
               <div className="prose dark:prose-invert max-w-none">
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg mb-4">
-                  <strong>{shop.name}</strong> is your trusted destination for quality {shop.category.toLowerCase()} services in {shop.city}. 
-                  We understand the importance of finding reliable local businesses, and that's why we've verified this establishment 
-                  to ensure you get the best experience possible.
+                  {seoContent.services.intro}
                 </p>
                 
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg mb-4">
-                  Whether you're a regular customer or visiting for the first time, {shop.name} offers a comprehensive range of 
-                  services designed to meet your needs. The business is committed to providing excellent customer service and 
-                  maintaining high standards of quality in everything they do.
+                  {seoContent.services.paragraph1}
                 </p>
+
+                {seoContent.services.paragraph2 && (
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg mb-4">
+                    {seoContent.services.paragraph2}
+                  </p>
+                )}
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 my-6 border-l-4 border-blue-500">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">What Makes Us Special</h3>
                   <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                    <li className="flex items-start">
-                      <FaCheckCircle className="text-green-500 mr-2 mt-1 flex-shrink-0" />
-                      <span>Professional and experienced team dedicated to customer satisfaction</span>
-                    </li>
-                    <li className="flex items-start">
-                      <FaCheckCircle className="text-green-500 mr-2 mt-1 flex-shrink-0" />
-                      <span>High-quality products and services at competitive prices</span>
-                    </li>
-                    <li className="flex items-start">
-                      <FaCheckCircle className="text-green-500 mr-2 mt-1 flex-shrink-0" />
-                      <span>Convenient location with easy accessibility</span>
-                    </li>
-                    <li className="flex items-start">
-                      <FaCheckCircle className="text-green-500 mr-2 mt-1 flex-shrink-0" />
-                      <span>Trusted by hundreds of satisfied customers in {shop.city}</span>
-                    </li>
+                    {seoContent.whatMakesSpecial.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <FaCheckCircle className="text-green-500 mr-2 mt-1 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -494,16 +523,11 @@ export default function ShopDetailPage() {
               
               <div className="prose dark:prose-invert max-w-none space-y-4 text-gray-700 dark:text-gray-300">
                 <p className="text-lg leading-relaxed">
-                  Looking for the best <strong>{shop.category.toLowerCase()}</strong> services in <strong>{shop.city}</strong>? 
-                  {shop.name} has been serving the local community with dedication and excellence. Located at {shop.address}, 
-                  this establishment has become a trusted name in the area.
+                  {seoContent.seoContent.intro}
                 </p>
 
                 <p className="text-lg leading-relaxed">
-                  What sets {shop.name} apart is their commitment to quality and customer satisfaction. With a stellar 
-                  {shop.rating.toFixed(1)}-star rating from {shop.reviewCount} verified customers, they have proven their 
-                  reliability time and again. Whether you're a local resident or just visiting {shop.city}, this is the 
-                  place to go for all your {shop.category.toLowerCase()} needs.
+                  {seoContent.seoContent.paragraph1}
                 </p>
 
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 my-6">
@@ -539,17 +563,11 @@ export default function ShopDetailPage() {
                 </div>
 
                 <p className="text-lg leading-relaxed">
-                  The business is conveniently located in {shop.area || shop.city}, making it easily accessible for 
-                  customers from all parts of the city. With {shop.visitorCount.toLocaleString()} people already 
-                  discovering this business through 8rupiya.com, it's clear that {shop.name} is a popular choice 
-                  among locals.
+                  {seoContent.seoContent.paragraph2}
                 </p>
 
                 <p className="text-lg leading-relaxed">
-                  At 8rupiya.com, we verify every business listing to ensure you get accurate and reliable information. 
-                  {shop.name} has been thoroughly vetted, and all contact details, address, and business information 
-                  have been confirmed. You can trust that when you visit or contact this business, you'll receive 
-                  the quality service you expect.
+                  {seoContent.seoContent.paragraph3}
                 </p>
               </div>
             </motion.div>
@@ -664,8 +682,8 @@ export default function ShopDetailPage() {
                 Contact Information
               </h2>
 
-              {/* Address */}
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+              {/* Address - Hidden (only shown in popup) */}
+              {/* <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
                 <div className="flex items-start mb-2">
                   <FaMapMarkerAlt className="text-red-500 mt-1 mr-3 flex-shrink-0 text-xl" />
                   <div>
@@ -682,7 +700,7 @@ export default function ShopDetailPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Get Directions Button */}
               <button

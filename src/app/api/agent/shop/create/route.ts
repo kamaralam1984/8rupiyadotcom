@@ -7,6 +7,7 @@ import User from '@/models/User';
 import { verifyToken } from '@/lib/auth';
 import { UserRole } from '@/models/User';
 import { createCommission } from '@/lib/commission';
+import { generateSEOContent } from '@/lib/seoContentGenerator';
 
 // POST /api/agent/shop/create - Create shop with plan selection
 export async function POST(req: NextRequest) {
@@ -134,6 +135,21 @@ export async function POST(req: NextRequest) {
     
     // Ensure status is always PENDING (override any status that might have been set)
     shopData.status = ShopStatus.PENDING;
+
+    // Generate and add SEO-optimized page content automatically
+    const seoContent = generateSEOContent({
+      name: shopName.trim(),
+      category: category.trim(),
+      city: body.city?.trim() || 'Patna',
+      state: body.state?.trim() || 'Bihar',
+      area: area?.trim(),
+      address: address.trim(),
+      rating: 0, // New shop starts with 0 rating
+      reviewCount: 0, // New shop starts with 0 reviews
+      description: address.trim(),
+    });
+    
+    shopData.pageContent = seoContent;
 
     const shop = await Shop.create(shopData) as any;
 

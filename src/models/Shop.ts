@@ -39,6 +39,7 @@ export interface IShop extends Document {
   rankScore: number; // Calculated rank
   manualRank?: number; // Admin set rank
   isFeatured: boolean;
+  isPremium: boolean; // Premium shop flag (admin can set)
   homepagePriority: number;
   rating: number;
   reviewCount: number;
@@ -62,6 +63,28 @@ export interface IShop extends Document {
   seoTitle?: string;
   seoDescription?: string;
   seoKeywords?: string;
+  // Page Content Fields (Editable by Admin)
+  pageContent?: {
+    about?: string; // Custom about section text
+    whyChoose?: {
+      verified?: string;
+      customerSatisfaction?: string;
+      convenientLocation?: string;
+      qualityAssured?: string;
+    };
+    services?: {
+      intro?: string;
+      paragraph1?: string;
+      paragraph2?: string;
+    };
+    whatMakesSpecial?: string[]; // Array of special features
+    seoContent?: {
+      intro?: string;
+      paragraph1?: string;
+      paragraph2?: string;
+      paragraph3?: string;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,6 +124,7 @@ const ShopSchema = new Schema<IShop>(
     rankScore: { type: Number, default: 0 },
     manualRank: { type: Number },
     isFeatured: { type: Boolean, default: false },
+    isPremium: { type: Boolean, default: false }, // Premium shop flag
     homepagePriority: { type: Number, default: 0 },
     rating: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
@@ -124,6 +148,28 @@ const ShopSchema = new Schema<IShop>(
     seoTitle: { type: String },
     seoDescription: { type: String },
     seoKeywords: { type: String },
+    // Page Content Fields (Editable by Admin)
+    pageContent: {
+      about: { type: String },
+      whyChoose: {
+        verified: { type: String },
+        customerSatisfaction: { type: String },
+        convenientLocation: { type: String },
+        qualityAssured: { type: String },
+      },
+      services: {
+        intro: { type: String },
+        paragraph1: { type: String },
+        paragraph2: { type: String },
+      },
+      whatMakesSpecial: [{ type: String }],
+      seoContent: {
+        intro: { type: String },
+        paragraph1: { type: String },
+        paragraph2: { type: String },
+        paragraph3: { type: String },
+      },
+    },
   },
   { timestamps: true }
 );

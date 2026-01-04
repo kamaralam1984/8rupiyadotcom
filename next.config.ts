@@ -31,11 +31,25 @@ const nextConfig: NextConfig = {
   
   // ⚡ Experimental features for performance
   experimental: {
-    // Enable optimizeCss for faster CSS loading
+    // Enable optimizeCss for faster CSS loading (critters now installed)
     optimizeCss: true,
     
     // Enable optimizePackageImports for smaller bundles
-    optimizePackageImports: ['react-icons', 'framer-motion'],
+    optimizePackageImports: [
+      'react-icons', 
+      'framer-motion',
+      'recharts',
+      'swiper',
+      '@googlemaps/js-api-loader'
+    ],
+    
+    // Optimize server components
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    
+    // Enable partial prerendering for faster initial loads
+    ppr: false, // Can enable later if needed
   },
   
   // ⚡ Compiler optimizations
@@ -45,6 +59,12 @@ const nextConfig: NextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
+  
+  // ⚡ Production optimizations
+  productionBrowserSourceMaps: false, // Disable source maps in production for faster builds
+  
+  // ⚡ PoweredByHeader - Remove for security and performance
+  poweredByHeader: false,
   
   // ⚡ Headers for aggressive caching
   async headers() {
@@ -91,6 +111,24 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, s-maxage=3600, stale-while-revalidate=7200',
+          },
+        ],
+      },
+      {
+        source: '/api/shops/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=120',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/css/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
