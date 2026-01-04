@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiUser, FiMail, FiPhone, FiLock, FiCheck, FiX, FiAlertCircle, FiMoon, FiSun } from 'react-icons/fi';
 import Link from 'next/link';
 import Image from 'next/image';
+import Footer from '@/components/common/Footer';
 
 export default function AddShopPage() {
   const router = useRouter();
@@ -744,6 +745,9 @@ export default function AddShopPage() {
           animation: shimmer 3s infinite;
         }
       `}</style>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

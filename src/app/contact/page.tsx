@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Footer from '@/components/common/Footer';
 
 export const metadata = {
   title: "Contact Us - 8rupiya.com",
@@ -39,6 +40,9 @@ export default function Contact() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

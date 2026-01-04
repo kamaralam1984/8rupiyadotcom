@@ -106,7 +106,7 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.citiesCovered': 'शहर कवर',
     
     // Footer
-    'footer.copyright': '© 2024 8rupiya.com. सभी अधिकार सुरक्षित।',
+    'footer.copyright': '© 2024 8rupiya.com. All rights reserved.',
     
     // Common
     'common.loading': 'लोड हो रहा है...',

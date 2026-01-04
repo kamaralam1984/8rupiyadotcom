@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Analytics from '@/lib/analytics';
 import { getSEOContent } from '@/lib/seoContentGenerator';
+import Footer from '@/components/common/Footer';
 
 // Lazy load heavy components
 const AIAssistant = dynamic(() => import('@/components/AIAssistant'), {
@@ -780,6 +781,9 @@ export default function ShopDetailPage() {
 
       {/* AI Assistant */}
       <AIAssistant userLocation={shop.location?.coordinates ? { lat: shop.location.coordinates[1], lng: shop.location.coordinates[0] } : null} userId={undefined} />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

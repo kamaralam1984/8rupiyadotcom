@@ -31,7 +31,7 @@ const popularCities = [
 
 export default function LeftRail({ onCategoryChange, onCityChange, selectedCategory: propSelectedCategory }: LeftRailProps) {
   const { t } = useLanguage();
-  const [selectedCategory, setSelectedCategory] = useState(propSelectedCategory || t('category.all'));
+  const [selectedCategory, setSelectedCategory] = useState(propSelectedCategory || 'All Categories');
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -94,9 +94,9 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
     if (propSelectedCategory) {
       setSelectedCategory(propSelectedCategory);
     } else {
-      setSelectedCategory(t('category.all'));
+      setSelectedCategory('All Categories');
     }
-  }, [propSelectedCategory, t]);
+  }, [propSelectedCategory]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -171,7 +171,7 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
       >
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2 p-4 sm:p-6 pb-0">
           <FiFilter />
-          {t('common.filter')}
+          Filter
         </h3>
 
         {/* Filter Panel Content - Expands when category or city is opened */}
@@ -227,16 +227,16 @@ export default function LeftRail({ onCategoryChange, onCityChange, selectedCateg
                           </div>
 
                           {/* All Categories Option */}
-                          {(!categorySearchText.trim() || t('category.all').toLowerCase().includes(categorySearchText.toLowerCase())) && (
+                          {(!categorySearchText.trim() || 'All Categories'.toLowerCase().includes(categorySearchText.toLowerCase())) && (
                             <div
-                              onClick={() => handleCategorySelect(t('category.all'))}
+                              onClick={() => handleCategorySelect('All Categories')}
                               className={`p-2 py-2 cursor-pointer hover:bg-blue-400 hover:text-white dark:hover:bg-blue-600 transition-colors ${
-                                selectedCategory === t('category.all') || selectedCategory === 'All Categories'
+                                selectedCategory === 'All Categories' || selectedCategory === t('category.all')
                                   ? 'bg-blue-400 dark:bg-blue-600 text-white font-semibold'
                                   : 'text-gray-800 dark:text-gray-200'
                               }`}
                             >
-                              {t('category.all')}
+                              All Categories
                             </div>
                           )}
 

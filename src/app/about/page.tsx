@@ -14,6 +14,7 @@ import {
   FiShield,
   FiArrowLeft
 } from 'react-icons/fi';
+import Footer from '@/components/common/Footer';
 
 export default function About() {
   // Set page title dynamically
@@ -458,6 +459,9 @@ export default function About() {
           animation-delay: 4s;
         }
       `}</style>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

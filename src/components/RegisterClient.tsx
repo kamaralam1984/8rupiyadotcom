@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiUser, FiMail, FiPhone, FiLock, FiShoppingBag, FiShield, FiRefreshCw } from 'react-icons/fi';
+import Footer from '@/components/common/Footer';
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -471,6 +472,9 @@ export default function RegisterClient() {
           </div>
         </motion.div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

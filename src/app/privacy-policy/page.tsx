@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Footer from '@/components/common/Footer';
 
 export const metadata = {
   title: "Privacy Policy - 8rupiya.com",
@@ -41,6 +42,9 @@ export default function PrivacyPolicy() {
           <p className="text-lg">Email: <a href="mailto:support@8rupiya.com" className="text-blue-600 dark:text-blue-400 hover:underline">support@8rupiya.com</a></p>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

@@ -207,27 +207,28 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleBackdropClick}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4"
           >
             {/* Popup */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 0 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              exit={{ opacity: 0, scale: 0.95, y: 0 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative"
+              className="bg-white dark:bg-gray-800 rounded-none md:rounded-2xl shadow-2xl max-w-4xl w-full h-full md:h-auto md:max-h-[90vh] overflow-hidden relative flex flex-col"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-colors"
+                className="absolute top-4 right-4 z-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white dark:hover:bg-gray-700 transition-colors"
               >
-                <FiX className="text-xl text-gray-700" />
+                <FiX className="text-xl text-gray-700 dark:text-gray-300" />
               </button>
 
-              <div className="grid md:grid-cols-2 gap-0 flex-1">
+              <div className="grid md:grid-cols-2 gap-0 flex-1 overflow-hidden min-h-0">
                 {/* Left Section - Image */}
-                <div className="relative h-64 md:h-full min-h-[400px] overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex-shrink-0">
+                <div className="relative h-64 md:h-full min-h-[300px] md:min-h-[400px] overflow-hidden bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex-shrink-0 order-1 md:order-none">
                   {shop.images && shop.images.length > 0 ? (
                     <motion.div
                       initial={{ scale: 1 }}
@@ -279,13 +280,13 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                 </div>
 
                 {/* Right Section - Details */}
-                <div className="p-6 md:p-8 overflow-y-auto max-h-[90vh] flex-1 min-w-0 relative">
+                <div className="p-4 md:p-6 lg:p-8 overflow-y-auto flex-1 min-w-0 relative h-full md:max-h-[90vh] order-2 md:order-none">
                   {/* Shop Name */}
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{shop.name}</h2>
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3 pr-8">{shop.name}</h2>
 
                   {/* Category */}
-                  <p className="text-lg text-purple-600 font-semibold mb-4 flex items-center gap-2">
-                    <FiShoppingBag className="text-lg" />
+                  <p className="text-base md:text-lg text-purple-600 dark:text-purple-400 font-semibold mb-4 flex items-center gap-2">
+                    <FiShoppingBag className="text-base md:text-lg" />
                     {shop.category}
                   </p>
 
@@ -320,23 +321,23 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                   </div>
 
                   {/* Rating & Write Review Button - Always Visible */}
-                  <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700 shadow-sm">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="mb-4 p-3 md:p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700 shadow-sm">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <FiStar className="text-yellow-500 fill-yellow-500 text-2xl flex-shrink-0" />
+                        <FiStar className="text-yellow-500 fill-yellow-500 text-xl md:text-2xl flex-shrink-0" />
                         <div>
-                          <span className="text-2xl font-bold text-gray-900 dark:text-white block">{shop.rating.toFixed(1)}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">({shop.reviewCount} reviews)</span>
+                          <span className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white block">{shop.rating.toFixed(1)}</span>
+                          <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">({shop.reviewCount} reviews)</span>
                         </div>
                       </div>
                       <button
                         onClick={() => setShowReviewForm(!showReviewForm)}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-base font-bold whitespace-nowrap w-full md:w-auto md:flex-shrink-0 z-20 relative"
+                        className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 active:scale-95 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-sm md:text-base font-bold whitespace-nowrap w-full md:w-auto md:flex-shrink-0 z-20 relative"
                         type="button"
                         aria-label={showReviewForm ? 'Cancel Review' : 'Write Review'}
                         style={{ display: 'flex' }}
                       >
-                        <FiEdit3 className="text-lg flex-shrink-0" />
+                        <FiEdit3 className="text-base md:text-lg flex-shrink-0" />
                         <span className="flex-shrink-0">{showReviewForm ? 'Cancel Review' : 'Write Review'}</span>
                       </button>
                     </div>
@@ -428,7 +429,7 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
 
                   {/* Reviews List */}
                   <div className="mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                       <FiStar className="text-yellow-500" />
                       Customer Reviews ({reviews.length})
                     </h3>
@@ -439,7 +440,7 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                         <p className="text-gray-500 dark:text-gray-400 mt-2">Loading reviews...</p>
                       </div>
                     ) : reviews.length > 0 ? (
-                      <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                      <div className="space-y-4 max-h-64 md:max-h-96 overflow-y-auto pr-2">
                         {reviews.map((review) => (
                           <motion.div
                             key={review._id}
@@ -587,16 +588,16 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 pb-2 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8">
                     {shop.phone && (
                       <>
                         <motion.a
                           href={`tel:${shop.phone}`}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="flex-1 min-w-[120px] bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                          className="flex-1 min-w-full sm:min-w-[120px] bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                         >
-                          <FiPhone className="text-lg" />
+                          <FiPhone className="text-base md:text-lg" />
                           Call
                         </motion.a>
                         <motion.a
@@ -605,9 +606,9 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                           rel="noopener noreferrer"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="flex-1 min-w-[120px] bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                          className="flex-1 min-w-full sm:min-w-[120px] bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                         >
-                          <FiMessageCircle className="text-lg" />
+                          <FiMessageCircle className="text-base md:text-lg" />
                           WhatsApp
                         </motion.a>
                       </>
@@ -616,9 +617,9 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                       href={`/shops/${shop._id || shop.place_id}`}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex-1 min-w-[120px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                      className="flex-1 min-w-full sm:min-w-[120px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                     >
-                      <FiExternalLink className="text-lg" />
+                      <FiExternalLink className="text-base md:text-lg" />
                       Visit
                     </motion.a>
                   </div>

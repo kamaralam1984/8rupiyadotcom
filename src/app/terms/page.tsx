@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Footer from '@/components/common/Footer';
 
 export const metadata = {
   title: "Terms & Conditions - 8rupiya.com",
@@ -37,6 +38,9 @@ export default function Terms() {
           <p className="mb-6">These terms follow Indian law.</p>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

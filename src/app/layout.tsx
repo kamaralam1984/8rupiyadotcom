@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Devanagari } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo";
@@ -21,6 +21,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: 'swap',
   preload: false,
+});
+
+// Hindi/Devanagari font support
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-devanagari",
+  subsets: ["devanagari", "latin"],
+  display: 'swap',
+  preload: true,
+  weight: ['400', '500', '600', '700'],
 });
 
 // ✅ FINAL SAFE FIX (Production Grade)
@@ -54,7 +63,7 @@ export default function RootLayout({
       {/* Step 2: Head section delete kiya (Screenshot ke hisaab se) */}
       {/* Next.js automatically head section generate karega from metadata */}
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${notoSansDevanagari.variable} antialiased`}
         style={{ background: 'var(--bg)', color: 'var(--text)' }}
       >
         {/* Structured Data for Google - Organization Logo */}
