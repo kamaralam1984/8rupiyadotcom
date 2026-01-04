@@ -159,6 +159,99 @@ body,
   text-rendering: optimizeLegibility;
 }
 
+/* ⚡ TEXT VISIBILITY: Ensure all text is visible in both light and dark modes */
+/* Panel containers - ensure proper text color inheritance */
+.agent-panel,
+.shopper-panel,
+.operator-panel,
+.admin-panel,
+.accountant-panel {
+  color: inherit;
+}
+
+/* Light mode - dark text on light backgrounds */
+.light .agent-panel,
+.light .shopper-panel,
+.light .operator-panel,
+.light .admin-panel {
+  color: #0f0f0f;
+}
+
+/* Dark mode - light text on dark backgrounds */
+.dark .agent-panel,
+.dark .shopper-panel,
+.dark .operator-panel,
+.dark .admin-panel,
+html.dark .agent-panel,
+html.dark .shopper-panel,
+html.dark .operator-panel,
+html.dark .admin-panel {
+  color: #ffffff;
+}
+
+/* Table text visibility - ensure proper contrast */
+.dark table th,
+.dark table td,
+html.dark table th,
+html.dark table td {
+  color: #ffffff;
+}
+
+.light table th,
+.light table td {
+  color: #0f0f0f;
+}
+
+/* Cards with white background - ensure text is visible */
+.bg-white {
+  color: #0f0f0f;
+}
+
+.dark .bg-white,
+html.dark .bg-white {
+  color: #ffffff;
+}
+
+/* Cards with gray backgrounds */
+.bg-gray-50,
+.bg-gray-100 {
+  color: #0f0f0f;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+  color: #ffffff;
+}
+
+/* Dark backgrounds - light text */
+.bg-gray-800,
+.bg-gray-900 {
+  color: #ffffff;
+}
+
+.light .bg-gray-800,
+.light .bg-gray-900 {
+  color: #0f0f0f;
+}
+
+/* Mobile specific - ensure text visibility on small screens */
+@media (max-width: 768px) {
+  .agent-panel p,
+  .agent-panel span,
+  .agent-panel div,
+  .agent-panel td,
+  .agent-panel th,
+  .shopper-panel p,
+  .shopper-panel span,
+  .shopper-panel div,
+  .shopper-panel td,
+  .shopper-panel th {
+    color: inherit;
+  }
+}
+
 /* Screen reader only - for accessibility */
 .sr-only {
   position: absolute;

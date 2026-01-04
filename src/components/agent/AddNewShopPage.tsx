@@ -615,10 +615,8 @@ export default function AddNewShopPage() {
                             setPaymentSuccess(true);
                             setPaymentProcessing(false);
                             setLoading(false);
-                            // Redirect after a short delay to show success state
-                            setTimeout(() => {
-                              router.push('/agent/shops?payment=success');
-                            }, 1000);
+                            // ⚡ OPTIMIZATION: Redirect immediately without delay for faster UX
+                            router.push('/agent/shops?payment=success');
                           } else {
                             setError('Payment verification failed. Please contact support.');
                             setPaymentProcessing(false);
@@ -676,10 +674,8 @@ export default function AddNewShopPage() {
             
             if (window.Razorpay) {
               console.log('✅ Razorpay SDK already loaded, opening checkout...');
-              // Razorpay already loaded, open checkout immediately
-              setTimeout(() => {
-                openRazorpayCheckout();
-              }, 100);
+              // ⚡ OPTIMIZATION: Open checkout immediately without delay
+              openRazorpayCheckout();
             } else {
               console.log('⏳ Razorpay SDK not loaded, loading script...');
               

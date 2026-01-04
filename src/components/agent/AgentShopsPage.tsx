@@ -559,7 +559,7 @@ export default function AgentShopsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 agent-panel">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Shops</h1>
@@ -637,7 +637,7 @@ export default function AgentShopsPage() {
                         {shop.planId?.name || shop.planName}
                       </span>
                     ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-300 text-gray-700">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
                         No Plan
                       </span>
                     )}

@@ -122,13 +122,15 @@ export async function GET(req: NextRequest) {
       mongoQuery.category = { $regex: category, $options: 'i' };
     }
 
-    // Fetch shops with reasonable limit
+    // ⚡ MOBILE OPTIMIZATION: Fetch shops with reduced limit for faster response
     let mongoShops;
     try {
+      // For initial page load (limit <= 3), fetch only what's needed
+      const fetchLimit = limit <= 3 ? 10 : (hasValidCoords ? 200 : 50); // Reduced for mobile
       mongoShops = await Shop.find(mongoQuery)
         .populate('planId')
         .populate('shopperId', 'name email phone')
-        .limit(hasValidCoords ? 500 : 100) // Limit to 100 if no location to prevent overload
+        .limit(fetchLimit) // Optimized limit for mobile
         .lean();
     } catch (error: any) {
       // If $near query fails (no geospatial index), try without it

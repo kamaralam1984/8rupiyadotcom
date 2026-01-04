@@ -18,6 +18,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 });
     }
 
+    // ⚡ OPTIMIZATION: Fetch plan first (required for validation)
     const plan = await Plan.findById(planId);
     if (!plan || !plan.isActive) {
       return NextResponse.json({ error: 'Plan not found or inactive' }, { status: 404 });

@@ -94,7 +94,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     : allMenuItems;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 agent-panel">
       {/* Mobile Header */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Agent Panel</h1>
@@ -102,7 +102,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           <ThemeToggle />
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
           >
             {sidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
           </button>
@@ -191,7 +191,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-0">
+        <main className="flex-1 lg:ml-0 agent-panel">
           <div className="p-6">{children}</div>
         </main>
       </div>

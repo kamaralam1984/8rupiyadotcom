@@ -39,9 +39,11 @@ export async function POST(req: NextRequest) {
     payment.paidAt = new Date();
     await payment.save();
 
-    // Update shop with plan
-    const shop = await Shop.findById(payment.shopId);
-    const plan = await Plan.findById(payment.planId);
+    // ⚡ OPTIMIZATION: Fetch shop and plan in parallel for faster processing
+    const [shop, plan] = await Promise.all([
+      Shop.findById(payment.shopId),
+      Plan.findById(payment.planId)
+    ]);
 
     if (shop && plan) {
       shop.planId = plan._id;
@@ -65,14 +67,34 @@ export async function POST(req: NextRequest) {
       await shop.save();
     }
 
-    // Create commission
-    await createCommission(payment._id.toString(), shop!._id.toString());
+    // ⚡ OPTIMIZATION: Return success immediately, process commission and cache in background
+    // This makes payment verification much faster for the user
+    const response = NextResponse.json({ 
+      success: true, 
+      payment,
+      message: 'Payment verified successfully'
+    });
 
-    // Clear cache
-    const { cacheDel } = await import('@/lib/redis');
-    await cacheDel(`shops:nearby:*`);
+    // Process commission and cache clearing in background (non-blocking)
+    Promise.all([
+      createCommission(payment._id.toString(), shop!._id.toString()).catch(err => {
+        console.error('Background commission creation error:', err);
+        // Don't fail the request if commission creation fails
+      }),
+      (async () => {
+        try {
+          const { cacheDel } = await import('@/lib/redis');
+          await cacheDel(`shops:nearby:*`);
+        } catch (err) {
+          console.error('Background cache clearing error:', err);
+          // Don't fail the request if cache clearing fails
+        }
+      })()
+    ]).catch(err => {
+      console.error('Background processing error:', err);
+    });
 
-    return NextResponse.json({ success: true, payment });
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

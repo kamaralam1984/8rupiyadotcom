@@ -60,8 +60,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-IN" suppressHydrationWarning>
-      {/* Step 2: Head section delete kiya (Screenshot ke hisaab se) */}
-      {/* Next.js automatically head section generate karega from metadata */}
+      {/* ⚡ MOBILE PERFORMANCE: Resource hints for faster loading */}
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSansDevanagari.variable} antialiased`}
         style={{ background: 'var(--bg)', color: 'var(--text)' }}
