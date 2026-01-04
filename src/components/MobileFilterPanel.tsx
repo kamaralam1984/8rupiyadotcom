@@ -152,17 +152,17 @@ export default function MobileFilterPanel({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/50"
+        className="bg-white dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/50 text-gray-900 dark:text-gray-100"
       >
         {/* Filter Header - Always Visible */}
         <div className="flex items-center justify-between p-4">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <FiFilter />
+            <FiFilter className="text-gray-900 dark:text-gray-100" />
             Filter
           </h3>
           <button
             onClick={handleToggleFilterPanel}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-400 transition-colors"
             aria-label="Toggle filter panel"
           >
             {isFilterPanelOpen ? <FiX className="text-xl" /> : <FiChevronDown className="text-xl" />}
@@ -185,7 +185,7 @@ export default function MobileFilterPanel({
                   {/* Category Button */}
                   <div
                     onClick={handleCategoryClick}
-                    className="w-full flex justify-between items-center font-semibold cursor-pointer text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    className="w-full flex justify-between items-center font-semibold cursor-pointer text-gray-900 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <span className="flex items-center gap-2">
                       <FiTag />
@@ -208,14 +208,14 @@ export default function MobileFilterPanel({
                           {/* Search Input */}
                           <div className="p-2 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                             <div className="relative">
-                              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
+                              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-500 text-sm" />
                               <input
                                 type="text"
                                 placeholder="Search category..."
                                 value={categorySearchText}
                                 onChange={(e) => setCategorySearchText(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full pl-9 pr-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 autoFocus
                               />
                             </div>
@@ -225,10 +225,10 @@ export default function MobileFilterPanel({
                           {(!categorySearchText.trim() || 'All Categories'.toLowerCase().includes(categorySearchText.toLowerCase())) && (
                             <div
                               onClick={() => handleCategorySelect('All Categories')}
-                              className={`p-2 py-2 cursor-pointer hover:bg-blue-400 hover:text-white dark:hover:bg-blue-600 transition-colors ${
+                              className={`p-2 py-2 cursor-pointer hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 transition-colors ${
                                 selectedCategory === 'All Categories' || selectedCategory === t('category.all')
-                                  ? 'bg-blue-400 dark:bg-blue-600 text-white font-semibold'
-                                  : 'text-gray-800 dark:text-gray-200'
+                                  ? 'bg-blue-500 dark:bg-blue-600 text-white font-semibold'
+                                  : 'text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800'
                               }`}
                             >
                               All Categories
@@ -237,7 +237,7 @@ export default function MobileFilterPanel({
 
                           {/* Database Categories */}
                           {loadingCategories ? (
-                            <div className="p-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="p-2 py-2 text-sm text-gray-700 dark:text-gray-400 font-medium">
                               Loading categories...
                             </div>
                           ) : filteredCategories.length > 0 ? (
@@ -248,10 +248,10 @@ export default function MobileFilterPanel({
                                 <div
                                   key={category._id}
                                   onClick={() => handleCategorySelect(category.name)}
-                                  className={`p-2 py-2 cursor-pointer hover:bg-blue-400 hover:text-white dark:hover:bg-blue-600 transition-colors ${
+                                  className={`p-2 py-2 cursor-pointer hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 transition-colors ${
                                     isSelected
-                                      ? 'bg-blue-400 dark:bg-blue-600 text-white font-semibold'
-                                      : 'text-gray-800 dark:text-gray-200'
+                                      ? 'bg-blue-500 dark:bg-blue-600 text-white font-semibold'
+                                      : 'text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800'
                                   }`}
                                 >
                                   {displayCategory}
@@ -259,7 +259,7 @@ export default function MobileFilterPanel({
                               );
                             })
                           ) : (
-                            <div className="p-2 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
+                            <div className="p-2 py-2 text-sm text-gray-700 dark:text-gray-400 text-center font-medium">
                               {categorySearchText.trim() ? 'No categories found' : 'No categories available'}
                             </div>
                           )}
@@ -276,7 +276,7 @@ export default function MobileFilterPanel({
                   {/* City Button */}
                   <div
                     onClick={handleCityClick}
-                    className="w-full flex justify-between items-center font-semibold cursor-pointer text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    className="w-full flex justify-between items-center font-semibold cursor-pointer text-gray-900 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                   >
                     <span className="flex items-center gap-2">
                       <FiMapPin />
@@ -299,14 +299,14 @@ export default function MobileFilterPanel({
                           {/* Search Input */}
                           <div className="p-2 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                             <div className="relative">
-                              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
+                              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-500 text-sm" />
                               <input
                                 type="text"
                                 placeholder="Search city..."
                                 value={citySearchText}
                                 onChange={(e) => setCitySearchText(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full pl-9 pr-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 autoFocus
                               />
                             </div>
@@ -316,10 +316,10 @@ export default function MobileFilterPanel({
                           {(!citySearchText.trim() || 'All Cities'.toLowerCase().includes(citySearchText.toLowerCase())) && (
                             <div
                               onClick={() => handleCitySelect('')}
-                              className={`p-2 py-2 cursor-pointer hover:bg-blue-400 hover:text-white dark:hover:bg-blue-600 transition-colors ${
+                              className={`p-2 py-2 cursor-pointer hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 transition-colors ${
                                 !selectedCity
-                                  ? 'bg-blue-400 dark:bg-blue-600 text-white font-semibold'
-                                  : 'text-gray-800 dark:text-gray-200'
+                                  ? 'bg-blue-500 dark:bg-blue-600 text-white font-semibold'
+                                  : 'text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800'
                               }`}
                             >
                               All Cities
@@ -334,10 +334,10 @@ export default function MobileFilterPanel({
                                 <div
                                   key={city}
                                   onClick={() => handleCitySelect(city)}
-                                  className={`p-2 py-2 cursor-pointer hover:bg-blue-400 hover:text-white dark:hover:bg-blue-600 transition-colors ${
+                                  className={`p-2 py-2 cursor-pointer hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 transition-colors ${
                                     isSelected
-                                      ? 'bg-blue-400 dark:bg-blue-600 text-white font-semibold'
-                                      : 'text-gray-800 dark:text-gray-200'
+                                      ? 'bg-blue-500 dark:bg-blue-600 text-white font-semibold'
+                                      : 'text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800'
                                   }`}
                                 >
                                   {city}
@@ -345,7 +345,7 @@ export default function MobileFilterPanel({
                               );
                             })
                           ) : (
-                            <div className="p-2 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">
+                            <div className="p-2 py-2 text-sm text-gray-700 dark:text-gray-400 text-center font-medium">
                               {citySearchText.trim() ? 'No cities found' : 'No cities available'}
                             </div>
                           )}
@@ -364,16 +364,16 @@ export default function MobileFilterPanel({
           <div className="px-4 pb-4 flex gap-2 overflow-x-auto scrollbar-hide">
             <button
               onClick={handleCategoryClick}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-semibold text-gray-900 dark:text-gray-300 whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600"
             >
-              <FiTag className="text-sm" />
+              <FiTag className="text-sm text-gray-900 dark:text-gray-300" />
               {selectedCategory}
             </button>
             <button
               onClick={handleCityClick}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-semibold text-gray-900 dark:text-gray-300 whitespace-nowrap hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600"
             >
-              <FiMapPin className="text-sm" />
+              <FiMapPin className="text-sm text-gray-900 dark:text-gray-300" />
               {selectedCity || 'All Cities'}
             </button>
           </div>

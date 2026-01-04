@@ -10,8 +10,11 @@ import {
   FiBarChart2,
   FiSettings,
   FiEye,
+  FiSmartphone,
+  FiClock,
 } from 'react-icons/fi';
 import { FiCalendar, FiDollarSign } from 'react-icons/fi';
+import PayNowButton from '@/components/payments/PayNowButton';
 
 interface DashboardStats {
   totalShops: number;
@@ -36,10 +39,20 @@ interface AgentInfo {
   agentId: string;
 }
 
+interface PendingPayment {
+  shopId: string;
+  shopName: string;
+  planId: string;
+  planName: string;
+  planPrice: number;
+  amount: number;
+}
+
 export default function AgentDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [agent, setAgent] = useState<AgentInfo | null>(null);
   const [recentShops, setRecentShops] = useState<RecentShop[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -101,7 +114,35 @@ export default function AgentDashboard() {
       }
     };
 
+    const fetchPendingPayments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch('/api/agent/payments', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Combine pending payments from both sources
+            const pending = [
+              ...(data.pendingShops || []),
+              ...(data.payments || []).filter((p: any) => p.status === 'pending' && p.shopId && p.planId)
+            ];
+            setPendingPayments(pending);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching pending payments:', err);
+      }
+    };
+
     fetchData();
+    fetchPendingPayments();
   }, []);
 
   if (loading) {
@@ -230,6 +271,95 @@ export default function AgentDashboard() {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Pending Payments - UPI Payment Section */}
+      {pendingPayments.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[#F5F1E8] dark:bg-yellow-900/20 rounded-xl shadow-lg border border-[#D4A574] dark:border-yellow-700 p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-[#F5F1E8] dark:bg-yellow-900/30 rounded-lg border border-[#D4A574] dark:border-yellow-700">
+                <FiClock className="text-2xl text-gray-900 dark:text-yellow-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pending Payments</h2>
+                <p className="text-sm text-gray-700 dark:text-gray-400 font-medium">
+                  {pendingPayments.length} payment{pendingPayments.length > 1 ? 's' : ''} pending
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/agent/payments"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium text-sm"
+            >
+              View All →
+            </Link>
+          </div>
+
+          <div className="mb-4 p-4 bg-gray-100 dark:bg-blue-900/20 rounded-lg border border-blue-500 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <FiSmartphone className="text-xl text-gray-900 dark:text-blue-400 mt-1 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Pay via UPI, Card, Net Banking, or Wallet</h3>
+                <p className="text-sm text-gray-700 dark:text-gray-400">
+                  Use Razorpay to pay securely with <strong className="text-gray-900 dark:text-white">UPI</strong> (Google Pay, PhonePe, Paytm), Credit/Debit Cards, Net Banking, or Wallets.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {pendingPayments.slice(0, 3).map((payment) => (
+              <motion.div
+                key={payment.shopId}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-300 dark:border-gray-700 shadow-sm"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{payment.shopName}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{payment.planName}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                      ₹{payment.amount.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <PayNowButton
+                      shopId={payment.shopId}
+                      planId={payment.planId}
+                      amount={payment.planPrice || payment.amount}
+                      shopName={payment.shopName}
+                      planName={payment.planName}
+                      onSuccess={() => {
+                        window.location.reload();
+                      }}
+                      onError={(error) => {
+                        alert(`Payment failed: ${error}`);
+                      }}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {pendingPayments.length > 3 && (
+            <div className="mt-4 text-center">
+              <Link
+                href="/agent/payments"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium text-sm"
+              >
+                View {pendingPayments.length - 3} more pending payment{pendingPayments.length - 3 > 1 ? 's' : ''} →
+              </Link>
+            </div>
+          )}
+        </motion.div>
       )}
 
       {/* Action Buttons Grid */}

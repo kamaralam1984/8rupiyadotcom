@@ -35,19 +35,47 @@ export async function GET(req: NextRequest) {
     // Get payments for agent's shops
     const payments = await Payment.find({ shopId: { $in: shopIds } })
       .populate('shopId', 'name planId')
-      .populate('planId', 'name')
+      .populate('planId', 'name price')
       .sort({ createdAt: -1 });
+
+    // Also get shops with pending payment status
+    const shopsWithPendingPayment = await Shop.find({ 
+      agentId: agent._id,
+      paymentStatus: 'pending',
+      planId: { $exists: true, $ne: null }
+    })
+      .populate('planId', 'name price')
+      .select('_id name planId paymentStatus')
+      .lean();
+
+    // Create payment records for shops with pending payment but no payment record
+    const existingPaymentShopIds = new Set(payments.map(p => p.shopId.toString()));
+    const shopsNeedingPayment = shopsWithPendingPayment.filter(
+      shop => !existingPaymentShopIds.has(shop._id.toString())
+    );
 
     return NextResponse.json({
       success: true,
       payments: payments.map(payment => ({
         _id: payment._id,
+        shopId: (payment.shopId as any)?._id?.toString() || (payment.shopId as any)?.toString(),
         shopName: (payment.shopId as any)?.name || 'N/A',
+        planId: (payment.planId as any)?._id?.toString() || (payment.planId as any)?.toString(),
         planName: (payment.planId as any)?.name || (payment.shopId as any)?.planId?.name || 'N/A',
+        planPrice: (payment.planId as any)?.price || 0,
         amount: payment.amount,
         status: payment.status === 'success' ? 'success' : payment.status === 'pending' ? 'pending' : 'failed',
         date: payment.createdAt.toISOString().split('T')[0],
         transactionId: payment.razorpayOrderId || payment._id.toString(),
+      })),
+      pendingShops: shopsNeedingPayment.map(shop => ({
+        shopId: shop._id.toString(),
+        shopName: shop.name,
+        planId: (shop.planId as any)?._id?.toString() || (shop.planId as any)?.toString(),
+        planName: (shop.planId as any)?.name || 'N/A',
+        planPrice: (shop.planId as any)?.price || 0,
+        amount: (shop.planId as any)?.price || 0,
+        status: 'pending',
       })),
     });
   } catch (error: any) {

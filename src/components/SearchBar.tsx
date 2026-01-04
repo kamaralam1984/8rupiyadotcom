@@ -35,7 +35,7 @@ export default function SearchBar({ onSearch, onRefresh, onShowAll }: SearchBarP
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-1 pl-14 pr-4 py-4 text-gray-700 bg-transparent border-none outline-none text-lg"
+          className="flex-1 pl-14 pr-4 py-4 text-gray-900 dark:text-gray-100 bg-transparent border-none outline-none text-lg font-medium placeholder-gray-500 dark:placeholder-gray-400"
         />
         <motion.button
           onClick={handleSearch}
