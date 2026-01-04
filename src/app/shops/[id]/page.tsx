@@ -124,14 +124,19 @@ export default function ShopDetailPage() {
           body: JSON.stringify({ visitorCount: (data.shop.visitorCount || 0) + 1 }),
         }).catch(console.error);
 
-        // Fetch nearby shops
+        // Fetch nearby shops of the same category
         if (data.shop.location?.coordinates) {
           const nearbyResponse = await fetch(
-            `/api/shops/nearby?lat=${data.shop.location.coordinates[1]}&lng=${data.shop.location.coordinates[0]}&limit=6`
+            `/api/shops/nearby?lat=${data.shop.location.coordinates[1]}&lng=${data.shop.location.coordinates[0]}&category=${encodeURIComponent(data.shop.category)}&limit=10`
           );
           const nearbyData = await nearbyResponse.json();
           if (nearbyData.shops) {
-            setNearbyShops(nearbyData.shops.filter((s: Shop) => s._id !== data.shop._id).slice(0, 4));
+            // Filter out current shop and ensure same category, then limit to 4
+            const filteredShops = nearbyData.shops.filter((s: Shop) => 
+              s._id !== data.shop._id && 
+              s.category?.toLowerCase() === data.shop.category?.toLowerCase()
+            ).slice(0, 4);
+            setNearbyShops(filteredShops);
           }
         }
       } catch (err: any) {
@@ -275,7 +280,7 @@ export default function ShopDetailPage() {
                     src={allImages[selectedImage]}
                     alt={shop.name}
                     fill
-                    className="object-cover"
+                    style={{ objectFit: 'cover' }}
                     unoptimized
                   />
                 ) : (
@@ -305,7 +310,7 @@ export default function ShopDetailPage() {
                         src={image}
                         alt={`${shop.name} - ${index + 1}`}
                         fill
-                        className="object-cover"
+                        style={{ objectFit: 'cover' }}
                         unoptimized
                       />
                     </button>

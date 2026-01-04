@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPhone, FiMessageCircle, FiExternalLink, FiStar, FiMapPin, FiShoppingBag, FiMail, FiGlobe, FiClock, FiEdit3, FiUser } from 'react-icons/fi';
+import Link from 'next/link';
 import OptimizedImage from './OptimizedImage';
 import AdSlot from './AdSlot';
 import DisplayAd from './DisplayAd';
@@ -30,6 +31,9 @@ interface Shop {
   email?: string;
   website?: string;
   source?: 'mongodb' | 'google';
+  location?: {
+    coordinates: [number, number]; // [longitude, latitude]
+  };
 }
 
 interface ShopPopupProps {
@@ -56,13 +60,16 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [nearbyShops, setNearbyShops] = useState<Shop[]>([]);
+  const [loadingNearby, setLoadingNearby] = useState(false);
 
-  // Fetch reviews when popup opens
+  // Fetch reviews and nearby shops when popup opens
   useEffect(() => {
     if (isOpen && shop?._id) {
       fetchReviews();
+      fetchNearbyShops();
     }
-  }, [isOpen, shop?._id]);
+  }, [isOpen, shop?._id, shop?.category, shop?.location]);
 
   const fetchReviews = async () => {
     if (!shop?._id) return;
@@ -79,6 +86,38 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
       console.error('Failed to fetch reviews:', error);
     } finally {
       setLoadingReviews(false);
+    }
+  };
+
+  const fetchNearbyShops = async () => {
+    if (!shop?._id || !shop?.category) return;
+    
+    // Use shop location if available, otherwise use user location
+    const lat = shop.location?.coordinates?.[1] || userLocation?.lat;
+    const lng = shop.location?.coordinates?.[0] || userLocation?.lng;
+    
+    if (!lat || !lng) return;
+    
+    try {
+      setLoadingNearby(true);
+      const response = await fetch(
+        `/api/shops/nearby?lat=${lat}&lng=${lng}&category=${encodeURIComponent(shop.category)}&limit=10`
+      );
+      const data = await response.json();
+      
+      if (data.shops) {
+        // Filter out current shop and ensure same category, then limit to 4
+        const filteredShops = data.shops.filter((s: Shop) => 
+          s._id !== shop._id && 
+          s.place_id !== shop.place_id &&
+          s.category?.toLowerCase() === shop.category?.toLowerCase()
+        ).slice(0, 4);
+        setNearbyShops(filteredShops);
+      }
+    } catch (error) {
+      console.error('Failed to fetch nearby shops:', error);
+    } finally {
+      setLoadingNearby(false);
     }
   };
 
@@ -200,12 +239,11 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                         src={shop.images[0]}
                         alt={shop.name}
                         fill
-                        className="object-cover"
                         priority={true}
                         objectFit="cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         fallbackIcon={<FiShoppingBag className="text-8xl text-white opacity-50" />}
-                    />
+                      />
                     </motion.div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -506,6 +544,47 @@ export default function ShopPopup({ shop, isOpen, onClose, userLocation }: ShopP
                       </div>
                     )}
                   </div>
+
+                  {/* Nearby Similar Businesses */}
+                  {nearbyShops.length > 0 && (
+                    <div className="mb-6 pt-6 border-t border-gray-200">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        More {shop.category} Businesses Nearby
+                      </h3>
+                      {loadingNearby ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {nearbyShops.map((nearbyShop) => (
+                            <Link
+                              key={nearbyShop._id || nearbyShop.place_id}
+                              href={`/shops/${nearbyShop._id || nearbyShop.place_id}`}
+                              onClick={onClose}
+                              className="block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:shadow-md transition-all border border-gray-200 dark:border-gray-700 hover:border-blue-500"
+                            >
+                              <h4 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm line-clamp-1">
+                                {nearbyShop.name}
+                              </h4>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-1">
+                                {nearbyShop.address}
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center text-yellow-500 text-xs">
+                                  <FiStar className="mr-1" />
+                                  <span className="font-semibold">{nearbyShop.rating.toFixed(1)}</span>
+                                </div>
+                                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                  View →
+                                </span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">

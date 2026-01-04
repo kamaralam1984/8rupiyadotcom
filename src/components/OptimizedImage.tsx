@@ -44,6 +44,12 @@ export default function OptimizedImage({
   const [hasError, setHasError] = useState(false);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
+  // Update imgSrc when src prop changes
+  useEffect(() => {
+    setImgSrc(src);
+    setHasError(false);
+  }, [src]);
+
   // Get image dimensions if not provided (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined' && (!width || !height) && !fill && !hasError) {
@@ -82,14 +88,29 @@ export default function OptimizedImage({
   }
 
   // If using fill, render with fill prop
-  // Note: When using fill, cannot set width/height in style - only objectFit
+  // Note: When using fill, cannot set width/height in style or className - only objectFit
   if (fill) {
+    // Filter out width/height related classes when fill is true
+    // These classes conflict with fill prop
+    const safeClassName = className
+      .split(' ')
+      .filter(cls => 
+        !cls.includes('w-') && 
+        !cls.includes('h-') && 
+        !cls.includes('width') && 
+        !cls.includes('height') &&
+        cls !== 'w-full' &&
+        cls !== 'h-full'
+      )
+      .join(' ')
+      .trim();
+    
     return (
       <Image
         src={imgSrc}
         alt={alt}
         fill
-        className={className}
+        className={safeClassName || undefined}
         priority={priority}
         sizes={sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
         style={{ objectFit }}

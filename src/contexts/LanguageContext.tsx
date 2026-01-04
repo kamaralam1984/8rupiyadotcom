@@ -35,7 +35,7 @@ const translations: Record<Language, Record<string, string>> = {
     'shop.premium': 'Premium Shops',
     'shop.topRated': 'Top Rated Shops',
     'shop.nearby': 'Nearby Shops',
-    'shop.allShops': 'Nearby Shops',
+    'shop.allShops': 'All Shops',
     'shop.in': 'Shops in',
     'shop.rating': 'Rating',
     'shop.reviews': 'Reviews',
