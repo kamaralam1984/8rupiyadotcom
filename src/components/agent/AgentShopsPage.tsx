@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FiEye, FiEdit, FiPlus, FiSearch, FiFilter, FiX, FiCheck, FiCamera, FiMapPin } from 'react-icons/fi';
 import AgentShopCreateModal from './AgentShopCreateModal';
 import PayNowButton from '@/components/payments/PayNowButton';
+import PhoneAndPostalInput from '@/components/common/PhoneAndPostalInput';
+import { getCountryByCode, validatePhoneNumber, validatePostalCode } from '@/lib/countryData';
 
 interface Shop {
   _id: string;
@@ -48,6 +50,7 @@ export default function AgentShopsPage() {
   const [formData, setFormData] = useState({
     // Step 1: Shop Details
     name: '',
+    countryCode: 'IN', // Default to India
     phone: '',
     category: '',
     address: '',
@@ -254,6 +257,7 @@ export default function AgentShopsPage() {
       setCurrentStep(1);
       setFormData({
         name: '',
+        countryCode: 'IN',
         phone: '',
         category: '',
         address: '',
@@ -306,6 +310,24 @@ export default function AgentShopsPage() {
         setSubmitting(false);
         setCurrentStep(2);
         return;
+      }
+
+      // Validate postal code and phone based on country
+      const country = getCountryByCode(formData.countryCode);
+      if (country) {
+        if (country.postalCode.length > 0 && !validatePostalCode(formData.pincode, country)) {
+          setError(`Invalid pincode format. Expected: ${country.postalCode.format} (e.g., ${country.postalCode.example})`);
+          setSubmitting(false);
+          setCurrentStep(2);
+          return;
+        }
+        
+        if (formData.phone && !validatePhoneNumber(formData.phone, country)) {
+          setError(`Mobile number must be ${country.phoneLength.min}-${country.phoneLength.max} digits`);
+          setSubmitting(false);
+          setCurrentStep(1);
+          return;
+        }
       }
 
       if (!formData.planId) {
@@ -379,7 +401,9 @@ export default function AgentShopsPage() {
         city: formData.city || 'Patna',
         state: formData.state || 'Bihar',
         pincode: formData.pincode,
-        phone: formData.phone.startsWith('+91') ? formData.phone : `+91${formData.phone.replace(/\s+/g, '')}`,
+        phone: formData.phone.startsWith('+') 
+          ? formData.phone 
+          : `${getCountryByCode(formData.countryCode)?.dialCode || '+91'}${formData.phone.replace(/\s+/g, '')}`,
         email: `${formData.phone.replace(/\s+/g, '')}@shop.8rupiya.com`, // Generate email from phone
         location: {
           type: 'Point',
@@ -812,19 +836,6 @@ export default function AgentShopsPage() {
                           />
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Mobile Number: *
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            value={formData.phone || ''}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            placeholder="Enter mobile number"
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                          />
-                        </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -973,16 +984,18 @@ export default function AgentShopsPage() {
                             />
                           </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Pincode: *
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={formData.pincode || ''}
-                              onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          <div className="md:col-span-2">
+                            <PhoneAndPostalInput
+                              countryCode={formData.countryCode}
+                              onCountryChange={(code) => setFormData({ ...formData, countryCode: code })}
+                              phoneValue={formData.phone}
+                              onPhoneChange={(phone) => setFormData({ ...formData, phone })}
+                              postalValue={formData.pincode}
+                              onPostalChange={(postal) => setFormData({ ...formData, pincode: postal })}
+                              phoneLabel="Mobile Number"
+                              postalLabel="Pincode"
+                              phoneRequired={true}
+                              postalRequired={true}
                             />
                           </div>
                         </div>

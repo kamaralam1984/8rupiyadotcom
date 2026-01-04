@@ -11,6 +11,10 @@ import {
   FiAlertCircle,
   FiX,
 } from 'react-icons/fi';
+import PhoneAndPostalInput from '@/components/common/PhoneAndPostalInput';
+import CountryNameSelector from '@/components/common/CountryNameSelector';
+import { getCountryByCode, validatePhoneNumber, validatePostalCode } from '@/lib/countryData';
+import { getPriceForCountry } from '@/lib/currencyConverter';
 
 declare global {
   interface Window {
@@ -46,6 +50,7 @@ interface FormData {
   // Step 2: Basic Information
   shopName: string;
   ownerName: string;
+  countryCode: string;
   mobileNumber: string;
   email: string;
   category: string;
@@ -95,6 +100,7 @@ export default function AddNewShopPage() {
     selectedPlan: null,
     shopName: '',
     ownerName: '',
+    countryCode: 'IN', // Default to India
     mobileNumber: '',
     email: '',
     category: '',
@@ -322,13 +328,20 @@ export default function AddNewShopPage() {
         setError('Please fill all required fields');
         return;
       }
-      if (formData.mobileNumber.length !== 10) {
-        setError('Mobile number must be 10 digits');
-        return;
-      }
-      if (formData.pincode.length !== 6) {
-        setError('Pincode must be 6 digits');
-        return;
+      
+      // Validate phone number based on country
+      const country = getCountryByCode(formData.countryCode);
+      if (country) {
+        if (!validatePhoneNumber(formData.mobileNumber, country)) {
+          setError(`Mobile number must be ${country.phoneLength.min}-${country.phoneLength.max} digits`);
+          return;
+        }
+        
+        // Validate postal code if country uses it
+        if (country.postalCode.length > 0 && !validatePostalCode(formData.pincode, country)) {
+          setError(`Invalid pincode format. Expected: ${country.postalCode.format} (e.g., ${country.postalCode.example})`);
+          return;
+        }
       }
     } else if (currentStep === 3) {
       if (!formData.photo) {
@@ -448,7 +461,7 @@ export default function AddNewShopPage() {
         city: formData.city || 'Patna',
         state: 'Bihar',
         pincode: formData.pincode,
-        phone: `+91${formData.mobileNumber}`,
+        phone: `${getCountryByCode(formData.countryCode)?.dialCode || '+91'}${formData.mobileNumber}`,
         email: formData.email,
         location: {
           type: 'Point',
@@ -901,6 +914,22 @@ export default function AddNewShopPage() {
               </div>
 
               <div className="space-y-4">
+                {/* Country Selector for Currency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Country (for currency conversion) *
+                  </label>
+                  <CountryNameSelector
+                    value={formData.countryCode}
+                    onChange={(code) => setFormData({ ...formData, countryCode: code })}
+                    showFlag={true}
+                    showDialCode={true}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Plans will be displayed in {getCountryByCode(formData.countryCode)?.currency.symbol} {getCountryByCode(formData.countryCode)?.currency.code}
+                  </p>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Plan *
@@ -958,9 +987,12 @@ export default function AddNewShopPage() {
                               featureText = features.length > 0 ? ` (${features.join(', ')})` : '';
                             }
                             
+                            // Get converted price for selected country
+                            const priceInfo = getPriceForCountry(plan.price, formData.countryCode);
+                            
                             return (
                               <option key={plan._id} value={plan._id}>
-                                {plan.name} - ₹{plan.price}/year{featureText}
+                                {plan.name} - {priceInfo.formatted}/year{featureText}
                               </option>
                             );
                           })
@@ -985,7 +1017,7 @@ export default function AddNewShopPage() {
                       {formData.selectedPlan.name} Features
                     </h3>
                     <ul className="space-y-1 text-sm text-gray-700">
-                      <li>✓ Price: ₹{formData.selectedPlan.price}/year</li>
+                      <li>✓ Price: {getPriceForCountry(formData.selectedPlan.price, formData.countryCode).formatted}/year</li>
                       {(formData.selectedPlan.maxPhotos ?? formData.selectedPlan.photos) && (
                         <li>✓ Photos: {formData.selectedPlan.maxPhotos ?? formData.selectedPlan.photos} photo{(formData.selectedPlan.maxPhotos ?? formData.selectedPlan.photos ?? 0) > 1 ? 's' : ''}</li>
                       )}
@@ -1054,29 +1086,18 @@ export default function AddNewShopPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number * (10 digits only)
-                  </label>
-                  <div className="flex gap-2">
-                    <select className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-50">
-                      <option>+91 🇮🇳</option>
-                    </select>
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      value={formData.mobileNumber || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          mobileNumber: e.target.value.replace(/\D/g, ''),
-                        })
-                      }
-                      placeholder="Enter 10 digit mobile number"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
+                <PhoneAndPostalInput
+                  countryCode={formData.countryCode}
+                  onCountryChange={(code) => setFormData({ ...formData, countryCode: code })}
+                  phoneValue={formData.mobileNumber}
+                  onPhoneChange={(phone) => setFormData({ ...formData, mobileNumber: phone })}
+                  postalValue={formData.pincode}
+                  onPostalChange={(postal) => setFormData({ ...formData, pincode: postal })}
+                  phoneLabel="Mobile Number"
+                  postalLabel="Pincode"
+                  phoneRequired={true}
+                  postalRequired={true}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1128,24 +1149,6 @@ export default function AddNewShopPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pincode *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={formData.pincode || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        pincode: e.target.value.replace(/\D/g, ''),
-                      })
-                    }
-                    placeholder="Enter 6-digit pincode"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1457,14 +1460,14 @@ export default function AddNewShopPage() {
                         Change Plan
                       </button>
                     </div>
-                    <p className="text-gray-700">Amount: ₹{formData.selectedPlan.price}/year</p>
+                    <p className="text-gray-700">Amount: {getPriceForCountry(formData.selectedPlan.price, formData.countryCode).formatted}/year</p>
                   </div>
                 )}
 
                 {/* Amount */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount (₹)
+                    Amount ({getCountryByCode(formData.countryCode)?.currency.symbol || '₹'})
                   </label>
                   <input
                     type="number"

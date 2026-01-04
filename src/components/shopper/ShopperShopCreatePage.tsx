@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiMapPin, FiUpload, FiCheck, FiAlertCircle, FiCamera, FiX } from 'react-icons/fi';
+import PhoneAndPostalInput from '@/components/common/PhoneAndPostalInput';
+import CountryNameSelector from '@/components/common/CountryNameSelector';
+import { getCountryByCode, validatePhoneNumber, validatePostalCode } from '@/lib/countryData';
+import { getPriceForCountry } from '@/lib/currencyConverter';
 
 declare global {
   interface Window {
@@ -44,6 +48,7 @@ export default function ShopperShopCreatePage() {
     area: '',
     city: '',
     state: '',
+    countryCode: 'IN', // Default to India
     pincode: '',
     phone: '',
     email: '',
@@ -265,6 +270,22 @@ export default function ShopperShopCreatePage() {
         return;
       }
 
+      // Validate phone number and postal code based on country
+      const country = getCountryByCode(formData.countryCode);
+      if (country) {
+        if (!validatePhoneNumber(formData.phone, country)) {
+          setError(`Mobile number must be ${country.phoneLength.min}-${country.phoneLength.max} digits`);
+          setSubmitting(false);
+          return;
+        }
+        
+        if (country.postalCode.length > 0 && !validatePostalCode(formData.pincode, country)) {
+          setError(`Invalid pincode format. Expected: ${country.postalCode.format} (e.g., ${country.postalCode.example})`);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const response = await fetch('/api/shopper/shop/create', {
         method: 'POST',
         headers: {
@@ -281,7 +302,7 @@ export default function ShopperShopCreatePage() {
           city: formData.city || 'Patna',
           state: formData.state || 'Bihar',
           pincode: formData.pincode,
-          phone: formData.phone,
+          phone: `${getCountryByCode(formData.countryCode)?.dialCode || '+91'}${formData.phone}`,
           email: formData.email,
           planId: formData.planId,
           images: formData.images,
@@ -632,6 +653,22 @@ export default function ShopperShopCreatePage() {
         {currentStep === 1 && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Select Plan</h3>
+            
+            {/* Country Selector for Currency */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Country (for currency conversion) *
+              </label>
+              <CountryNameSelector
+                value={formData.countryCode}
+                onChange={(code) => setFormData(prev => ({ ...prev, countryCode: code }))}
+                showFlag={true}
+                showDialCode={true}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Plans will be displayed in {getCountryByCode(formData.countryCode)?.currency.symbol} {getCountryByCode(formData.countryCode)?.currency.code}
+              </p>
+            </div>
             {loadingPlans ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-600 border-t-transparent mx-auto"></div>
@@ -652,7 +689,9 @@ export default function ShopperShopCreatePage() {
                     }`}
                   >
                     <h4 className="font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h4>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">₹{plan.price}</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
+                      {getPriceForCountry(plan.price, formData.countryCode).formatted}
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Duration: {plan.duration} days</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Photos: {plan.maxPhotos}</p>
                   </motion.button>
@@ -717,18 +756,18 @@ export default function ShopperShopCreatePage() {
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
-                  placeholder="Enter phone number"
-                  maxLength={10}
+              <div className="md:col-span-2">
+                <PhoneAndPostalInput
+                  countryCode={formData.countryCode}
+                  onCountryChange={(code) => setFormData(prev => ({ ...prev, countryCode: code }))}
+                  phoneValue={formData.phone}
+                  onPhoneChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
+                  postalValue={formData.pincode}
+                  onPostalChange={(postal) => setFormData(prev => ({ ...prev, pincode: postal }))}
+                  phoneLabel="Phone"
+                  postalLabel="Pincode"
+                  phoneRequired={true}
+                  postalRequired={true}
                 />
               </div>
               <div>
@@ -741,20 +780,6 @@ export default function ShopperShopCreatePage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   placeholder="Enter email (optional)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Pincode *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.pincode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
-                  placeholder="Enter pincode"
-                  maxLength={6}
                 />
               </div>
               <div>
@@ -954,7 +979,7 @@ export default function ShopperShopCreatePage() {
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Plan Selected</h4>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {formData.selectedPlan?.name} - ₹{formData.selectedPlan?.price}
+                  {formData.selectedPlan?.name} - {getPriceForCountry(formData.selectedPlan?.price || 0, formData.countryCode).formatted}
                 </p>
               </div>
               <div>
@@ -967,7 +992,9 @@ export default function ShopperShopCreatePage() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Payment Method</h4>
-                <p className="text-gray-700 dark:text-gray-300">Online Payment Only - ₹{formData.selectedPlan?.price}</p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  Online Payment Only - {getPriceForCountry(formData.selectedPlan?.price || 0, formData.countryCode).formatted}
+                </p>
               </div>
             </div>
           </div>
@@ -996,6 +1023,21 @@ export default function ShopperShopCreatePage() {
                   if (currentStep === 2 && (!formData.shopName || !formData.category || !formData.address || !formData.latitude || !formData.longitude || !formData.pincode || !formData.phone)) {
                     setError('Please fill all required fields');
                     return;
+                  }
+                  
+                  // Validate phone and postal code based on country
+                  if (currentStep === 2 && formData.phone && formData.pincode) {
+                    const country = getCountryByCode(formData.countryCode);
+                    if (country) {
+                      if (!validatePhoneNumber(formData.phone, country)) {
+                        setError(`Mobile number must be ${country.phoneLength.min}-${country.phoneLength.max} digits`);
+                        return;
+                      }
+                      if (country.postalCode.length > 0 && !validatePostalCode(formData.pincode, country)) {
+                        setError(`Invalid pincode format. Expected: ${country.postalCode.format} (e.g., ${country.postalCode.example})`);
+                        return;
+                      }
+                    }
                   }
                   setCurrentStep(currentStep + 1);
                   setError('');

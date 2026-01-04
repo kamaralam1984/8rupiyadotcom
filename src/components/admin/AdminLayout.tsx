@@ -96,6 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Jyotish', icon: FiStar, href: '/admin/jyotish', badge: null },
     { name: 'Reports', icon: FiFileText, href: '/admin/reports', badge: null },
     { name: 'Database', icon: FiDatabase, href: '/admin/database', badge: null },
+    { name: 'Bugs', icon: FiAlertCircle, href: '/admin/bugs', badge: null },
     { name: 'Settings', icon: FiSettings, href: '/admin/settings', badge: null },
   ];
 

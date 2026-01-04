@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheck, FiMapPin, FiCamera, FiCreditCard, FiDollarSign, FiUpload, FiTrash2 } from 'react-icons/fi';
 import { compressImage } from '@/lib/imageCompression';
+import PhoneAndPostalInput from '@/components/common/PhoneAndPostalInput';
+import { getCountryByCode, validatePhoneNumber, validatePostalCode } from '@/lib/countryData';
 
 interface Plan {
   _id: string;
@@ -32,7 +34,9 @@ interface FormData {
   area?: string;
   city?: string;
   state?: string;
+  countryCode: string;
   pincode?: string;
+  phone?: string;
   
   // Step 3: Images
   images: File[];
@@ -75,7 +79,9 @@ export default function AgentShopCreateModal({ isOpen, onClose, onSuccess }: Age
     area: '',
     city: '',
     state: '',
+    countryCode: 'IN', // Default to India
     pincode: '',
+    phone: '',
     images: [],
     imagePreviews: [],
     paymentMode: 'cash',
@@ -213,6 +219,19 @@ export default function AgentShopCreateModal({ isOpen, onClose, onSuccess }: Age
     } else if (currentStep === 2) {
       if (!formData.shopName || !formData.category || !formData.address || !formData.latitude || !formData.longitude || !formData.pincode) {
         setError('Please fill all required fields (Shop Name, Category, Address, Latitude, Longitude, Pincode)');
+        return;
+      }
+      
+      // Validate postal code based on country
+      const country = getCountryByCode(formData.countryCode);
+      if (country && country.postalCode.length > 0 && !validatePostalCode(formData.pincode || '', country)) {
+        setError(`Invalid pincode format. Expected: ${country.postalCode.format} (e.g., ${country.postalCode.example})`);
+        return;
+      }
+      
+      // Validate phone if provided
+      if (formData.phone && country && !validatePhoneNumber(formData.phone, country)) {
+        setError(`Mobile number must be ${country.phoneLength.min}-${country.phoneLength.max} digits`);
         return;
       }
     } else if (currentStep === 3) {
@@ -493,7 +512,9 @@ export default function AgentShopCreateModal({ isOpen, onClose, onSuccess }: Age
           longitude: '',
           city: '',
           state: '',
+          countryCode: 'IN',
           pincode: '',
+          phone: '',
           images: [],
           imagePreviews: [],
           paymentMode: 'cash',
@@ -726,17 +747,18 @@ export default function AgentShopCreateModal({ isOpen, onClose, onSuccess }: Age
                       placeholder="Enter area/locality"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.pincode}
-                      onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                      placeholder="Enter pincode"
-                      maxLength={6}
+                  <div className="md:col-span-2">
+                    <PhoneAndPostalInput
+                      countryCode={formData.countryCode}
+                      onCountryChange={(code) => setFormData(prev => ({ ...prev, countryCode: code }))}
+                      phoneValue={formData.phone || ''}
+                      onPhoneChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
+                      postalValue={formData.pincode || ''}
+                      onPostalChange={(postal) => setFormData(prev => ({ ...prev, pincode: postal }))}
+                      phoneLabel="Phone (Optional)"
+                      postalLabel="Pincode"
+                      phoneRequired={false}
+                      postalRequired={true}
                     />
                   </div>
                   <div>

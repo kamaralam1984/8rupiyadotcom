@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Error from '@/models/Error';
 import { ErrorType, ErrorStatus } from '@/types/error';
+import { checkBugPrevention, createBugFromError } from '@/lib/bugPrevention';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +28,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check bug prevention rules
+    const preventionCheck = await checkBugPrevention(message, errorType, endpoint);
+    if (preventionCheck.matched && preventionCheck.action === 'block') {
+      return NextResponse.json({
+        success: false,
+        blocked: true,
+        message: `Error blocked by prevention rule: ${preventionCheck.rule?.name}`,
+      });
+    }
+
     // Check if similar error exists in last 5 minutes (prevent duplicates)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const existingError = await Error.findOne({
@@ -36,6 +47,9 @@ export async function POST(req: NextRequest) {
       createdAt: { $gte: fiveMinutesAgo },
     });
 
+    let error;
+    let isNewError = false;
+
     if (existingError) {
       // Update existing error count
       existingError.metadata = {
@@ -44,42 +58,56 @@ export async function POST(req: NextRequest) {
         lastOccurrence: new Date(),
       };
       await existingError.save();
-      return NextResponse.json({ 
-        success: true, 
-        errorId: existingError._id,
-        duplicate: true 
+      error = existingError;
+    } else {
+      // Create new error
+      error = new Error({
+        errorType,
+        status: ErrorStatus.PENDING,
+        message: message.substring(0, 1000), // Limit message length
+        stack: stack?.substring(0, 5000), // Limit stack length
+        endpoint,
+        method,
+        userAgent,
+        userId,
+        sessionId,
+        metadata: {
+          ...metadata,
+          occurrenceCount: 1,
+          firstOccurrence: new Date(),
+          lastOccurrence: new Date(),
+        },
       });
+
+      await error.save();
+      isNewError = true;
     }
 
-    // Create new error
-    const error = new Error({
-      errorType,
-      status: ErrorStatus.PENDING,
-      message: message.substring(0, 1000), // Limit message length
-      stack: stack?.substring(0, 5000), // Limit stack length
-      endpoint,
-      method,
-      userAgent,
-      userId,
-      sessionId,
-      metadata: {
-        ...metadata,
-        occurrenceCount: 1,
-        firstOccurrence: new Date(),
-        lastOccurrence: new Date(),
-      },
-    });
-
-    await error.save();
+    // Automatically create bug from error if it's new or if occurrence count is high
+    let bugId = null;
+    if (isNewError || (error.metadata?.occurrenceCount || 0) >= 5) {
+      bugId = await createBugFromError(
+        error._id.toString(),
+        message,
+        errorType,
+        endpoint,
+        stack
+      );
+    }
 
     return NextResponse.json({ 
       success: true, 
-      errorId: error._id 
+      errorId: error._id,
+      bugId,
+      duplicate: !isNewError,
+      warning: preventionCheck.matched && preventionCheck.action === 'warn' 
+        ? `Warning: ${preventionCheck.rule?.description}` 
+        : undefined,
     });
   } catch (error: any) {
     console.error('Error logging failed:', error);
     return NextResponse.json(
-      { error: 'Failed to log error' },
+      { error: 'Failed to log error', details: error.message },
       { status: 500 }
     );
   }
