@@ -35,6 +35,11 @@ const LeftRail = dynamic(() => import('./LeftRail'), {
   loading: () => null,
 });
 
+const MobileFilterPanel = dynamic(() => import('./MobileFilterPanel'), {
+  ssr: false,
+  loading: () => null,
+});
+
 const RightRail = dynamic(() => import('./RightRail'), {
   ssr: false,
   loading: () => null,
@@ -1118,6 +1123,16 @@ export default function HomepageClient() {
           <div className="flex-1 order-1 lg:order-2 min-w-0">
             {/* Modern Mixed Content Sections - Reordered */}
             <div className="space-y-0">
+              {/* Mobile Filter Panel - Only visible on mobile, above Best Shops Near You */}
+              {homepageLayout?.sections?.nearbyShops?.enabled !== false && bestShops.length > 0 && (
+                <MobileFilterPanel
+                  onCategoryChange={handleCategoryChange}
+                  onCityChange={handleCityChange}
+                  selectedCategory={selectedCategory}
+                  selectedCity={selectedCity}
+                />
+              )}
+              
               {/* Section 1: Nearby Shops (10 shops) */}
               {homepageLayout?.sections?.nearbyShops?.enabled !== false && bestShops.length > 0 && (
                 <motion.section
