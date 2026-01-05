@@ -79,7 +79,8 @@ export default function ShopperShopCreatePage() {
   const fetchCategories = async () => {
     setLoadingCategories(true);
     try {
-      const response = await fetch('/api/categories');
+      // Fetch all active categories from admin panel
+      const response = await fetch('/api/categories?all=true');
       const data = await response.json();
       
       if (response.ok && data.success) {

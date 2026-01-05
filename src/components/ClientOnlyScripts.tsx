@@ -58,37 +58,37 @@ export default function ClientOnlyScripts() {
         />
       )}
 
-      {/* Theme Initialization Script */}
+      {/* Force Light Mode Script */}
       <Script
-        id="theme-init"
+        id="force-light-mode"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             (function() {
               try {
-                const theme = localStorage.getItem('theme') || 'light';
                 const root = document.documentElement;
                 
-                // Ensure theme is either light or dark
-                const validTheme = (theme === 'light' || theme === 'dark') ? theme : 'light';
-                
-                // Remove all theme classes first
-                root.classList.remove('light', 'dark');
-                // Add the theme class immediately
-                root.classList.add(validTheme);
-                
-                // Set data attribute for additional styling
-                root.setAttribute('data-theme', validTheme);
-                
-                // Force color-scheme property
-                root.style.colorScheme = validTheme;
-              } catch (e) {
-                // If anything fails, default to light mode
-                const root = document.documentElement;
+                // Always force light mode
                 root.classList.remove('light', 'dark');
                 root.classList.add('light');
                 root.setAttribute('data-theme', 'light');
                 root.style.colorScheme = 'light';
+                localStorage.setItem('theme', 'light');
+                
+                // Prevent dark mode from being applied
+                const observer = new MutationObserver(function(mutations) {
+                  mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                      if (root.classList.contains('dark')) {
+                        root.classList.remove('dark');
+                        root.classList.add('light');
+                      }
+                    }
+                  });
+                });
+                observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+              } catch (e) {
+                console.error('Error forcing light mode:', e);
               }
             })();
           `,

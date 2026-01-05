@@ -57,7 +57,6 @@ const TopRated = dynamic(() => import('./TopRated'), {
 import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import ThemeToggle from './ThemeToggle';
 import AdStatusIndicator from './AdStatusIndicator';
 
 // ⚡ Dynamic imports for heavy components (lazy load for better performance)
@@ -851,9 +850,9 @@ export default function HomepageClient() {
                 href="#main-content"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-white text-gray-900 dark:text-gray-900 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2 border-2 border-gray-200 dark:border-gray-700"
+                className="bg-pink-300 dark:bg-pink-300 text-black dark:text-black px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
               >
-                <FiSearch className="text-base sm:text-lg md:text-xl text-gray-900 dark:text-gray-900" />
+                <FiSearch className="text-base sm:text-lg md:text-xl" />
                 Explore Shops
               </motion.a>
               <motion.a
@@ -917,9 +916,6 @@ export default function HomepageClient() {
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
               {/* Ad Status Indicator */}
               <AdStatusIndicator />
-              
-              {/* Theme Toggle */}
-              <ThemeToggle />
               
               {/* Jyotish Button - Hidden for 30 days (until 30 Jan 2026) */}
               {new Date() >= new Date('2026-01-30') && (
@@ -1095,7 +1091,7 @@ export default function HomepageClient() {
       {/* Main Content with Sidebars */}
       <main id="main-content" className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8" role="main">
         {/* Main Page Heading - h1 for SEO */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 px-4 sm:px-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-yellow-400 mb-4 px-4 sm:px-6">
           {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
         </h1>
         
@@ -1104,7 +1100,7 @@ export default function HomepageClient() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
+          className="text-base md:text-lg text-gray-700 dark:text-yellow-400 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
         >
           Discover trusted nearby shops and services in your area. Find verified businesses with accurate contact information, real customer reviews, and detailed profiles. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
         </motion.p>

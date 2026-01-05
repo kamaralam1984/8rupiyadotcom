@@ -5,6 +5,7 @@ import PageView from '@/models/PageView';
 import User from '@/models/User';
 import { getClientIP, getLocationFromIPAlternative } from '@/lib/geolocation';
 import { verifyToken } from '@/lib/auth';
+import { extractSearchKeyword } from '@/lib/keyword-extractor';
 import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
@@ -117,6 +118,9 @@ export async function POST(req: NextRequest) {
       await visitor.save();
     }
 
+    // Extract search keyword from referrer
+    const { keyword: searchKeyword, searchEngine } = extractSearchKeyword(referrer);
+
     // Create page view record
     await PageView.create({
       visitorId,
@@ -125,6 +129,8 @@ export async function POST(req: NextRequest) {
       path,
       title,
       referrer,
+      searchKeyword: searchKeyword || undefined,
+      searchEngine: searchEngine || undefined,
       deviceType,
       country: visitor.country,
       city: visitor.city,

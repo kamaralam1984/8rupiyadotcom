@@ -4,7 +4,6 @@ import Script from "next/script";
 import "./globals.css";
 import { generateMetadata as generateSEOMetadata } from "@/lib/seo";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AdStatusProvider } from "@/contexts/AdStatusContext";
 import AnalyticsProvider from "@/components/AnalyticsProvider";
 
@@ -59,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-IN" suppressHydrationWarning>
+    <html lang="en-IN" suppressHydrationWarning className="light">
       {/* ⚡ MOBILE PERFORMANCE: Resource hints for faster loading */}
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -152,7 +151,40 @@ export default function RootLayout({
           }}
         />
         
-        <ThemeProvider>
+        {/* Force light mode - prevent dark mode */}
+        <Script
+          id="force-light-mode"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const root = document.documentElement;
+                  root.classList.remove('dark');
+                  root.classList.add('light');
+                  root.setAttribute('data-theme', 'light');
+                  root.style.colorScheme = 'light';
+                  localStorage.setItem('theme', 'light');
+                  
+                  // Prevent dark mode from being applied
+                  const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        if (root.classList.contains('dark')) {
+                          root.classList.remove('dark');
+                          root.classList.add('light');
+                        }
+                      }
+                    });
+                  });
+                  observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+                } catch(e) {
+                  console.error('Error forcing light mode:', e);
+                }
+              })();
+            `,
+          }}
+        />
         <AdStatusProvider>
         <LanguageProvider>
         <AnalyticsProvider>
@@ -160,7 +192,6 @@ export default function RootLayout({
         </AnalyticsProvider>
         </LanguageProvider>
         </AdStatusProvider>
-        </ThemeProvider>
       </body>
     </html>
   );

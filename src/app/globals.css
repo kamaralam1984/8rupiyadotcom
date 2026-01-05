@@ -212,25 +212,6 @@ html.dark .bg-white {
   color: #ffffff;
 }
 
-/* Buttons with white background - ensure text is visible */
-.bg-white button,
-.bg-white a,
-button.bg-white,
-a.bg-white {
-  color: #0f0f0f !important;
-}
-
-.dark .bg-white button,
-.dark .bg-white a,
-.dark button.bg-white,
-.dark a.bg-white,
-html.dark .bg-white button,
-html.dark .bg-white a,
-html.dark button.bg-white,
-html.dark a.bg-white {
-  color: #ffffff !important;
-}
-
 /* Cards with gray backgrounds */
 .bg-gray-50,
 .bg-gray-100 {
@@ -257,21 +238,6 @@ html.dark .bg-gray-100 {
 
 /* Mobile specific - ensure text visibility on small screens */
 @media (max-width: 768px) {
-  /* Light mode - ensure dark text on light backgrounds */
-  .light,
-  :root:not(.dark) {
-    --mobile-text: #0f0f0f;
-    --mobile-bg: #ffffff;
-  }
-  
-  /* Dark mode - ensure light text on dark backgrounds */
-  .dark,
-  html.dark {
-    --mobile-text: #ffffff;
-    --mobile-bg: #1f2937;
-  }
-  
-  /* Mobile text visibility improvements */
   .agent-panel p,
   .agent-panel span,
   .agent-panel div,
@@ -283,98 +249,6 @@ html.dark .bg-gray-100 {
   .shopper-panel td,
   .shopper-panel th {
     color: inherit;
-  }
-  
-  /* Mobile light mode - force dark text for better visibility */
-  .light *:not(.dark *),
-  :root:not(.dark) *:not(.dark *) {
-    color: var(--mobile-text, #0f0f0f);
-  }
-  
-  /* Ensure white backgrounds have dark text in light mode */
-  .light .bg-white,
-  :root:not(.dark) .bg-white {
-    color: #0f0f0f !important;
-  }
-  
-  .light .bg-gray-50,
-  .light .bg-gray-100,
-  :root:not(.dark) .bg-gray-50,
-  :root:not(.dark) .bg-gray-100 {
-    color: #0f0f0f !important;
-  }
-  
-  /* Ensure buttons have good contrast */
-  .light button:not(.dark button),
-  :root:not(.dark) button:not(.dark button) {
-    color: #0f0f0f;
-  }
-  
-  /* Input fields - better contrast */
-  .light input:not([type="submit"]):not([type="button"]):not([type="reset"]),
-  .light textarea,
-  .light select,
-  :root:not(.dark) input:not([type="submit"]):not([type="button"]):not([type="reset"]),
-  :root:not(.dark) textarea,
-  :root:not(.dark) select {
-    color: #0f0f0f !important;
-    background-color: #ffffff !important;
-    border-color: #d1d5db !important;
-  }
-  
-  /* Input placeholder text - better visibility */
-  .light input::placeholder,
-  .light textarea::placeholder,
-  :root:not(.dark) input::placeholder,
-  :root:not(.dark) textarea::placeholder {
-    color: #6b7280 !important;
-    opacity: 1 !important;
-  }
-  
-  /* Input text when focused */
-  .light input:focus,
-  .light textarea:focus,
-  .light select:focus,
-  :root:not(.dark) input:focus,
-  :root:not(.dark) textarea:focus,
-  :root:not(.dark) select:focus {
-    color: #0f0f0f !important;
-    background-color: #ffffff !important;
-  }
-  
-  /* Links - better visibility */
-  .light a:not(.dark a),
-  :root:not(.dark) a:not(.dark a) {
-    color: #1e40af;
-  }
-  
-  .light a:hover:not(.dark a:hover),
-  :root:not(.dark) a:hover:not(.dark a:hover) {
-    color: #1e3a8a;
-  }
-  
-  /* Mobile Light Mode - Grey Payment Info Background */
-  .light .bg-gray-100,
-  :root:not(.dark) .bg-gray-100 {
-    background-color: #f3f4f6 !important;
-    color: #0f0f0f !important;
-  }
-  
-  /* Mobile Light Mode - Blue Borders for Payment Info */
-  .light .border-blue-500,
-  :root:not(.dark) .border-blue-500 {
-    border-color: #3b82f6 !important;
-  }
-  
-  /* Ensure text is black in light mode payment sections */
-  .light .text-gray-900,
-  :root:not(.dark) .text-gray-900 {
-    color: #0f0f0f !important;
-  }
-  
-  .light .text-gray-700,
-  :root:not(.dark) .text-gray-700 {
-    color: #374151 !important;
   }
 }
 

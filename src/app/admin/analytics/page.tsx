@@ -18,6 +18,8 @@ import {
   FiUserCheck,
   FiActivity,
   FiZap,
+  FiSearch,
+  FiTarget,
 } from 'react-icons/fi';
 import StatCard from '@/components/analytics/StatCard';
 import { exportCompleteReport, exportStatsToCSV, exportTopPagesToCSV, exportDailyTrendToCSV } from '@/lib/export-utils';
@@ -112,10 +114,105 @@ interface GeographyData {
   }>;
 }
 
+interface KeywordsData {
+  keywords: Array<{
+    keyword: string;
+    count: number;
+    searchEngine: string;
+    avgTimeSpent: number;
+    uniqueVisitors: number;
+  }>;
+  searchEngines: Array<{
+    engine: string;
+    count: number;
+    uniqueVisitors: number;
+  }>;
+  total: number;
+}
+
+interface TimeSpentData {
+  stats: {
+    pageView: {
+      totalSeconds: number;
+      totalMinutes: number;
+      totalHours: number;
+      avgSeconds: number;
+      avgMinutes: number;
+      minSeconds: number;
+      maxSeconds: number;
+      count: number;
+    };
+    visitor: {
+      totalSeconds: number;
+      totalMinutes: number;
+      totalHours: number;
+      avgSeconds: number;
+      avgMinutes: number;
+      minSeconds: number;
+      maxSeconds: number;
+      count: number;
+    };
+  };
+  distribution: Array<any>;
+  byPage: Array<{
+    path: string;
+    totalSeconds: number;
+    totalMinutes: number;
+    totalHours: number;
+    avgSeconds: number;
+    count: number;
+  }>;
+  byCountry: Array<{
+    country: string;
+    totalSeconds: number;
+    totalMinutes: number;
+    totalHours: number;
+    avgSeconds: number;
+    count: number;
+    uniqueVisitors: number;
+  }>;
+}
+
+interface CountriesData {
+  countries: Array<{
+    country: string;
+    totalVisits: number;
+    uniqueVisitors: number;
+    totalTimeSpent: number;
+    totalTimeMinutes: number;
+    totalTimeHours: number;
+    avgTimeSpent: number;
+    avgTimeMinutes: number;
+    pagesCount: number;
+    citiesCount: number;
+    mobile: number;
+    desktop: number;
+    tablet: number;
+  }>;
+  cities: Array<{
+    country: string;
+    city: string;
+    totalVisits: number;
+    uniqueVisitors: number;
+    totalTimeSpent: number;
+    totalTimeMinutes: number;
+    totalTimeHours: number;
+    avgTimeSpent: number;
+  }>;
+  keywords: Array<{
+    country: string;
+    keywords: Array<{ keyword: string; count: number }>;
+  }>;
+  total: number;
+}
+
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<AnalyticsStats | null>(null);
   const [realtime, setRealtime] = useState<RealtimeData | null>(null);
   const [geography, setGeography] = useState<GeographyData | null>(null);
+  const [keywords, setKeywords] = useState<KeywordsData | null>(null);
+  const [timeSpent, setTimeSpent] = useState<TimeSpentData | null>(null);
+  const [countries, setCountries] = useState<CountriesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<'today' | '7days' | '30days'>('7days');
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +221,9 @@ export default function AnalyticsPage() {
     fetchStats();
     fetchRealtime();
     fetchGeography();
+    fetchKeywords();
+    fetchTimeSpent();
+    fetchCountries();
     
     // Refresh realtime data every 30 seconds
     const interval = setInterval(() => {
@@ -195,10 +295,86 @@ export default function AnalyticsPage() {
     }
   };
 
+  const fetchKeywords = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/analytics/keywords?range=${range}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setKeywords(data);
+      }
+    } catch (err: any) {
+      console.error('Keywords analytics error:', err);
+    }
+  };
+
+  const fetchTimeSpent = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/analytics/time-spent?range=${range}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTimeSpent(data);
+      }
+    } catch (err: any) {
+      console.error('Time spent analytics error:', err);
+    }
+  };
+
+  const fetchCountries = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/analytics/countries?range=${range}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCountries(data);
+      }
+    } catch (err: any) {
+      console.error('Countries analytics error:', err);
+    }
+  };
+
   const formatTime = (seconds: number) => {
+    if (seconds < 60) {
+      return `${Math.round(seconds)}s`;
+    }
     const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}m ${secs}s`;
+    const secs = Math.round(seconds % 60);
+    if (minutes < 60) {
+      return `${minutes}m ${secs}s`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const formatTimeDetailed = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.round(seconds % 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
+    }
   };
 
   // Device breakdown data for pie chart
@@ -614,7 +790,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Top Pages Table */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <FiFileText className="text-blue-600" />
             Top Pages
@@ -657,8 +833,343 @@ export default function AnalyticsPage() {
             </div>
           )}
         </div>
+
+        {/* Advanced Analytics Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <FiTarget className="text-purple-600" />
+            Advanced Analytics
+          </h2>
+        </div>
+
+        {/* Keywords & Search Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Top Keywords */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FiSearch className="text-green-600" />
+              Top Search Keywords
+            </h3>
+            {!keywords ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+              </div>
+            ) : keywords.keywords.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                No search keywords found
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {keywords.keywords.slice(0, 20).map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg font-semibold text-gray-900">#{index + 1}</span>
+                        <span className="text-sm font-medium text-gray-900">{item.keyword}</span>
+                        <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+                          {item.searchEngine}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {item.uniqueVisitors} visitors • {formatTime(item.avgTimeSpent)} avg time
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-600">{item.count}</div>
+                      <div className="text-xs text-gray-500">visits</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Search Engines Breakdown */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FiGlobe className="text-blue-600" />
+              Search Engines
+            </h3>
+            {!keywords ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : keywords.searchEngines.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                No search engine data
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={keywords.searchEngines.map(se => ({
+                        name: se.engine,
+                        value: se.count
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                      outerRadius={70}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {keywords.searchEngines.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2">
+                  {keywords.searchEngines.map((engine, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <span className="text-sm font-medium text-gray-900 capitalize">{engine.engine}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-900">{engine.count.toLocaleString()}</div>
+                        <div className="text-xs text-gray-500">{engine.uniqueVisitors} visitors</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Time Spent Analytics */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <FiClock className="text-purple-600" />
+            Detailed Time Spent Analytics
+          </h3>
+          {!timeSpent ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                  <div className="text-sm text-blue-700 font-medium mb-1">Total Time (All Pages)</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {formatTimeDetailed(timeSpent.stats.pageView.totalSeconds)}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {timeSpent.stats.pageView.totalHours.toFixed(2)} hours
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                  <div className="text-sm text-green-700 font-medium mb-1">Average Time per Page</div>
+                  <div className="text-2xl font-bold text-green-900">
+                    {formatTimeDetailed(timeSpent.stats.pageView.avgSeconds)}
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    {timeSpent.stats.pageView.count.toLocaleString()} pages
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                  <div className="text-sm text-purple-700 font-medium mb-1">Total Visitor Time</div>
+                  <div className="text-2xl font-bold text-purple-900">
+                    {formatTimeDetailed(timeSpent.stats.visitor.totalSeconds)}
+                  </div>
+                  <div className="text-xs text-purple-600 mt-1">
+                    {timeSpent.stats.visitor.totalHours.toFixed(2)} hours
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                  <div className="text-sm text-orange-700 font-medium mb-1">Avg Time per Visitor</div>
+                  <div className="text-2xl font-bold text-orange-900">
+                    {formatTimeDetailed(timeSpent.stats.visitor.avgSeconds)}
+                  </div>
+                  <div className="text-xs text-orange-600 mt-1">
+                    {timeSpent.stats.visitor.count.toLocaleString()} visitors
+                  </div>
+                </div>
+              </div>
+
+              {/* Time by Page */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-3">Time Spent by Page</h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Page</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total Time</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Time</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Views</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {timeSpent.byPage.slice(0, 10).map((page, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{page.path}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {formatTimeDetailed(page.totalSeconds)}
+                            <div className="text-xs text-gray-500">{page.totalHours.toFixed(2)}h</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {formatTimeDetailed(page.avgSeconds)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{page.count.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Country Analytics */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <FiGlobe className="text-indigo-600" />
+            Country-Wise Detailed Analytics
+          </h3>
+          {!countries ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : countries.countries.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">No country data available</div>
+          ) : (
+            <div className="space-y-6">
+              {/* Top Countries Table */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-3">Top Countries by Visits</h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Visits</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Visitors</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total Time</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Time</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Pages</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Cities</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Devices</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {countries.countries.slice(0, 15).map((country, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">
+                                {country.country === 'India' ? '🇮🇳' : 
+                                 country.country === 'United States' ? '🇺🇸' : 
+                                 country.country === 'United Kingdom' ? '🇬🇧' : '🌍'}
+                              </span>
+                              <span className="text-sm font-medium text-gray-900">{country.country}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right font-semibold">
+                            {country.totalVisits.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {country.uniqueVisitors.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {formatTimeDetailed(country.totalTimeSpent)}
+                            <div className="text-xs text-gray-500">{country.totalTimeHours.toFixed(2)}h</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {formatTimeDetailed(country.avgTimeSpent)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {country.pagesCount}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            {country.citiesCount}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs">📱 {country.mobile}</span>
+                              <span className="text-xs">💻 {country.desktop}</span>
+                              <span className="text-xs">📱 {country.tablet}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Top Cities */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-3">Top Cities</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {countries.cities.slice(0, 12).map((city, index) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="font-semibold text-gray-900">{city.city}</div>
+                          <div className="text-xs text-gray-500">{city.country}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-indigo-600">{city.totalVisits}</div>
+                          <div className="text-xs text-gray-500">visits</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <div className="text-gray-500">Visitors</div>
+                          <div className="font-semibold text-gray-900">{city.uniqueVisitors}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Time</div>
+                          <div className="font-semibold text-gray-900">{formatTimeDetailed(city.avgTimeSpent)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Country Keywords */}
+              {countries.keywords.length > 0 && (
+                <div>
+                  <h4 className="text-md font-semibold text-gray-900 mb-3">Top Search Keywords by Country</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {countries.keywords.slice(0, 6).map((item, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-4">
+                        <div className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                          <span className="text-lg">
+                            {item.country === 'India' ? '🇮🇳' : 
+                             item.country === 'United States' ? '🇺🇸' : '🌍'}
+                          </span>
+                          {item.country}
+                        </div>
+                        <div className="space-y-1">
+                          {item.keywords.slice(0, 5).map((kw, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">{kw.keyword}</span>
+                              <span className="font-semibold text-indigo-600">{kw.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899'];
 

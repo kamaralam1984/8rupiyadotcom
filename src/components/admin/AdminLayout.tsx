@@ -27,7 +27,6 @@ import {
   FiPackage,
   FiLayout,
 } from 'react-icons/fi';
-import ThemeToggle from '../ThemeToggle';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -96,6 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Jyotish', icon: FiStar, href: '/admin/jyotish', badge: null },
     { name: 'Reports', icon: FiFileText, href: '/admin/reports', badge: null },
     { name: 'Database', icon: FiDatabase, href: '/admin/database', badge: null },
+    { name: 'Errors', icon: FiAlertCircle, href: '/admin/errors', badge: null },
     { name: 'Bugs', icon: FiAlertCircle, href: '/admin/bugs', badge: null },
     { name: 'Settings', icon: FiSettings, href: '/admin/settings', badge: null },
   ];
@@ -106,7 +106,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -170,11 +169,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               })}
             </nav>
 
-            {/* Theme Toggle and Logout */}
+            {/* Logout */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-              <div className="flex justify-center">
-                <ThemeToggle />
-              </div>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
