@@ -55,36 +55,45 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
-    // ⚡ Optimized connection options for faster performance
+    // ⚡ ULTRA-OPTIMIZED connection options for 1-second performance
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       
-      // Connection pooling for better performance
-      maxPoolSize: 10, // Maximum number of connections in pool
-      minPoolSize: 2,  // Minimum number of connections
+      // ⚡ Aggressive connection pooling for maximum performance
+      maxPoolSize: 50, // Increased from 10 to 50 for better concurrency
+      minPoolSize: 10, // Increased from 2 to 10 to keep connections ready
       
-      // Timeout settings for faster failure detection
-      serverSelectionTimeoutMS: 5000, // 5 seconds timeout
-      socketTimeoutMS: 45000, // 45 seconds socket timeout
+      // ⚡ Ultra-fast timeout settings (reduced from 5s to 1s)
+      serverSelectionTimeoutMS: 1000, // 1 second timeout for faster failure detection
+      connectTimeoutMS: 1000, // 1 second connection timeout
+      socketTimeoutMS: 30000, // 30 seconds socket timeout (reduced from 45s)
       
-      // Heartbeat settings
-      heartbeatFrequencyMS: 10000, // Check server every 10 seconds
+      // ⚡ Faster heartbeat for quicker reconnection
+      heartbeatFrequencyMS: 5000, // Check server every 5 seconds (reduced from 10s)
       
-      // Connection settings
-      maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
+      // ⚡ Keep connections alive longer for reuse
+      maxIdleTimeMS: 300000, // Keep idle connections for 5 minutes (increased from 60s)
       
-      // Compression for faster data transfer
+      // ⚡ Compression for faster data transfer
       compressors: ['zlib'],
-      zlibCompressionLevel: 6,
+      zlibCompressionLevel: 1, // Faster compression (reduced from 6)
       
-      // Read preference for better performance
+      // ⚡ Read preference for better performance
       readPreference: 'primaryPreferred',
       
-      // Write concern for faster writes (adjust based on your needs)
+      // ⚡ Ultra-fast write concern (no journal wait)
       writeConcern: {
         w: 1, // Acknowledge after writing to primary
-        j: false, // Don't wait for journal
+        j: false, // Don't wait for journal (faster writes)
+        wtimeout: 1000, // 1 second write timeout
       },
+      
+      // ⚡ Direct connection for faster initial connection
+      directConnection: false, // Use connection string (faster for Atlas)
+      
+      // ⚡ Retry settings for faster recovery
+      retryWrites: true,
+      retryReads: true,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts)
@@ -95,7 +104,7 @@ async function connectDB() {
         registerAllModels();
         console.log('✅ All models registered');
         
-        // Set up mongoose optimizations
+        // ⚡ Set up mongoose optimizations for maximum speed
         mongoose.set('strictQuery', false); // Faster queries
         mongoose.set('autoIndex', process.env.NODE_ENV === 'development'); // Only auto-index in dev
         

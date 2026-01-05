@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
       mongoQuery.category = { $regex: category, $options: 'i' };
     }
 
-    // If we have valid coordinates, use $near
+    // If we have valid coordinates, use $near (0km to 20000km range)
     if (hasValidCoords) {
       mongoQuery.location = {
         $near: {
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
             type: 'Point',
             coordinates: [lng, lat],
           },
-          $maxDistance: 1000000, // 1000km radius
+          $maxDistance: 20000000, // 20000km radius (0km to 20000km)
         },
       };
     } else if (city) {
@@ -246,28 +246,31 @@ export async function GET(req: NextRequest) {
               place.geometry.location.lng
             );
 
-            mergedShops.push({
-              place_id: place.place_id,
-              name: place.name,
-              description: '',
-              category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
-              address: place.formatted_address,
-              city: place.formatted_address.split(',')[place.formatted_address.split(',').length - 2]?.trim() || '',
-              location: {
-                type: 'Point',
-                coordinates: [place.geometry.location.lng, place.geometry.location.lat],
-              },
-              rating: place.rating || 0,
-              reviewCount: place.user_ratings_total || 0,
-              visitorCount: 0,
-              likeCount: 0,
-              distance: Math.round(distance * 100) / 100,
-              isFeatured: false,
-              isPaid: false,
-              planPriority: 0,
-              rankScore: (place.rating || 0) * 10 - distance,
-              source: 'google',
-            });
+            // Only add Google places within 20000km range
+            if (distance <= 20000) {
+              mergedShops.push({
+                place_id: place.place_id,
+                name: place.name,
+                description: '',
+                category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
+                address: place.formatted_address,
+                city: place.formatted_address.split(',')[place.formatted_address.split(',').length - 2]?.trim() || '',
+                location: {
+                  type: 'Point',
+                  coordinates: [place.geometry.location.lng, place.geometry.location.lat],
+                },
+                rating: place.rating || 0,
+                reviewCount: place.user_ratings_total || 0,
+                visitorCount: 0,
+                likeCount: 0,
+                distance: Math.round(distance * 100) / 100,
+                isFeatured: false,
+                isPaid: false,
+                planPriority: 0,
+                rankScore: (place.rating || 0) * 10 - distance,
+                source: 'google',
+              });
+            }
           }
         }
       } catch (error) {
@@ -275,54 +278,84 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Sort: Paid shops first, then by rank score
-    mergedShops.sort((a, b) => {
-      // First priority: Paid shops
-      if (a.isPaid && !b.isPaid) return -1;
-      if (!a.isPaid && b.isPaid) return 1;
-
-      // Second priority: Plan priority
-      if (a.planPriority !== b.planPriority) {
-        return b.planPriority - a.planPriority;
+    // 3. Filter shops by distance (0km to 20000km) - nearby system
+    const MAX_DISTANCE_KM = 20000;
+    const filteredShops = mergedShops.filter((shop) => {
+      // If shop has distance, it must be within 20000km
+      if (shop.distance !== undefined) {
+        return shop.distance <= MAX_DISTANCE_KM;
       }
-
-      // Third priority: Featured shops (for best type)
-      if (type === 'best') {
-        if (a.isFeatured && !b.isFeatured) return -1;
-        if (!a.isFeatured && b.isFeatured) return 1;
-      }
-      
-      // For premium type, ensure paid shops are prioritized
-      if (type === 'premium') {
-        if (a.isPaid && !b.isPaid) return -1;
-        if (!a.isPaid && b.isPaid) return 1;
-      }
-
-      // Fourth priority: Rank score
-      if (a.rankScore !== b.rankScore) {
-        return b.rankScore - a.rankScore;
-      }
-
-      // Fifth priority: Distance (closer is better)
-      // Handle undefined distances - shops with valid distance come first
-      // 0km shops should be shown first (same location)
-      if (a.distance === undefined && b.distance === undefined) return 0;
-      if (a.distance === undefined) return 1; // Put undefined distances at the end
-      if (b.distance === undefined) return -1;
-      // Sort by distance: 0km first, then ascending order
-      if (a.distance === 0 && b.distance !== 0) return -1;
-      if (a.distance !== 0 && b.distance === 0) return 1;
-      return a.distance - b.distance;
+      // If no distance (no user location), include all shops
+      return true;
     });
 
-    // 4. Return exactly 10 shops
+    // 4. Sort based on type
+    if (type === 'best') {
+      // ⚡ Best Shops Near You: Sort by DISTANCE only (0km to 20000km)
+      filteredShops.sort((a, b) => {
+        // Handle undefined distances - shops with valid distance come first
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1; // Put undefined distances at the end
+        if (b.distance === undefined) return -1;
+        // Sort by distance: 0km first, then ascending order (closer = better)
+        if (a.distance === 0 && b.distance !== 0) return -1;
+        if (a.distance !== 0 && b.distance === 0) return 1;
+        return a.distance - b.distance;
+      });
+    } else if (type === 'featured') {
+      // ⚡ Featured Shops: Sort by RATING (highest first), but still use nearby system (0-20000km)
+      filteredShops.sort((a, b) => {
+        // First priority: Rating (highest first)
+        if (a.rating !== b.rating) {
+          return b.rating - a.rating;
+        }
+        // Second priority: Review count (more reviews = better)
+        if (a.reviewCount !== b.reviewCount) {
+          return b.reviewCount - a.reviewCount;
+        }
+        // Third priority: Distance (closer is better) - for nearby system
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        if (a.distance === 0 && b.distance !== 0) return -1;
+        if (a.distance !== 0 && b.distance === 0) return 1;
+        return a.distance - b.distance;
+      });
+    } else {
+      // Premium or other types: Original sorting logic
+      filteredShops.sort((a, b) => {
+        // First priority: Paid shops
+        if (a.isPaid && !b.isPaid) return -1;
+        if (!a.isPaid && b.isPaid) return 1;
+
+        // Second priority: Plan priority
+        if (a.planPriority !== b.planPriority) {
+          return b.planPriority - a.planPriority;
+        }
+
+        // Third priority: Rank score
+        if (a.rankScore !== b.rankScore) {
+          return b.rankScore - a.rankScore;
+        }
+
+        // Fourth priority: Distance (closer is better)
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        if (a.distance === 0 && b.distance !== 0) return -1;
+        if (a.distance !== 0 && b.distance === 0) return 1;
+        return a.distance - b.distance;
+      });
+    }
+
+    // 5. Return exactly 10 shops (from filtered and sorted list)
     const result = {
-      shops: mergedShops.slice(0, 10),
-      total: mergedShops.length,
+      shops: filteredShops.slice(0, 10),
+      total: filteredShops.length,
       type,
       sources: {
         mongodb: mongoShops.length,
-        google: mergedShops.filter((s) => s.source === 'google').length,
+        google: filteredShops.filter((s) => s.source === 'google').length,
       },
     };
 
