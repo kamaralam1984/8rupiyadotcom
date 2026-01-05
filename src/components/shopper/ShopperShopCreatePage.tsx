@@ -693,7 +693,7 @@ export default function ShopperShopCreatePage() {
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">
                       {getPriceForCountry(plan.price, formData.countryCode).formatted}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Duration: {plan.duration} days</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Duration: 365 days</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Photos: {plan.maxPhotos}</p>
                   </motion.button>
                 ))}

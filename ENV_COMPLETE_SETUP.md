@@ -49,6 +49,10 @@ GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 # Google Places - Nearby places
 GOOGLE_PLACES_API_KEY=AIzaSy...your_key
 
+# Google Business Profile API - For admin panel Google Business account creation
+GOOGLE_BUSINESS_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
+GOOGLE_BUSINESS_CLIENT_SECRET=your_client_secret_here
+
 # ================================================
 # WEATHER API (REQUIRED for weather features)
 # ================================================
@@ -177,7 +181,18 @@ NEXT_PUBLIC_ENABLE_MEDIA_CONTROL=true
   4. Free tier: 1000 calls/day
 - **Required For:** Weather information
 
-### **5. Razorpay** 💳
+### **5. Google Business Profile API** 🏢
+- **Website:** https://console.cloud.google.com/
+- **Steps:**
+  1. Google Cloud Console me project banao
+  2. "Google Business Profile API" enable karo
+  3. OAuth 2.0 Client ID create karo (Web application)
+  4. Redirect URI add karo: `http://localhost:3000/api/admin/google-business/oauth/callback`
+  5. Client ID aur Client Secret copy karo
+- **Required For:** Admin panel me Google Business account creation
+- **See:** `GOOGLE_BUSINESS_SETUP.md` for detailed setup
+
+### **6. Razorpay** 💳
 - **Website:** https://dashboard.razorpay.com/
 - **Steps:**
   1. Account banao
@@ -186,7 +201,7 @@ NEXT_PUBLIC_ENABLE_MEDIA_CONTROL=true
   4. Live mode activate karne ke liye KYC complete karo
 - **Required For:** Payment processing
 
-### **6. SendGrid** 📧
+### **7. SendGrid** 📧
 - **Website:** https://sendgrid.com/
 - **Steps:**
   1. Free account banao (100 emails/day free)

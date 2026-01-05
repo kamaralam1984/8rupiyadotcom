@@ -26,6 +26,7 @@ import {
   FiPercent,
   FiPackage,
   FiLayout,
+  FiGlobe,
 } from 'react-icons/fi';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -94,6 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'AI & Golu', icon: FiCpu, href: '/admin/ai', badge: null },
     { name: 'Jyotish', icon: FiStar, href: '/admin/jyotish', badge: null },
     { name: 'Reports', icon: FiFileText, href: '/admin/reports', badge: null },
+    { name: 'Google Business', icon: FiGlobe, href: '/admin/google-business', badge: null },
     { name: 'Database', icon: FiDatabase, href: '/admin/database', badge: null },
     { name: 'Errors', icon: FiAlertCircle, href: '/admin/errors', badge: null },
     { name: 'Bugs', icon: FiAlertCircle, href: '/admin/bugs', badge: null },

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Devanagari } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -45,11 +45,15 @@ export const metadata: Metadata = {
   verification: {
     google: 'K8rF07hqdaG9aERLCYdlNrPQrL91W5sYmKzdiur3_Ao',
   },
-  themeColor: '#2563eb',
   icons: {
     icon: '/favicon.ico',
     apple: '/favicon_512.png',
   },
+};
+
+// Move themeColor to viewport export (Next.js requirement)
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({

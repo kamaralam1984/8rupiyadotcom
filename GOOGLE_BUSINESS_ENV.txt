@@ -1,0 +1,54 @@
+# ======================================
+# ADD THESE LINES TO YOUR .env.local FILE
+# ======================================
+# Google Business Profile API Configuration
+# For Admin Panel - Google Business Account Creation
+
+# Step 1: Get these from Google Cloud Console
+# Visit: https://console.cloud.google.com/
+# 1. Create/Select project
+# 2. Enable "Google Business Profile API"
+# 3. Go to "APIs & Services" > "Credentials"
+# 4. Create OAuth 2.0 Client ID (Web application)
+# 5. Add redirect URI: http://localhost:3000/api/admin/google-business/oauth/callback
+# 6. Copy Client ID and Client Secret
+
+# Step 2: Add to .env.local file:
+
+GOOGLE_BUSINESS_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
+GOOGLE_BUSINESS_CLIENT_SECRET=your_client_secret_here
+
+# Step 3: Set NextAuth URL (for OAuth callback)
+# Development:
+NEXTAUTH_URL=http://localhost:3000
+
+# Production (replace with your domain):
+# NEXTAUTH_URL=https://yourdomain.com
+
+# ======================================
+# EXAMPLE VALUES (Replace with your actual values):
+# ======================================
+# GOOGLE_BUSINESS_CLIENT_ID=123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+# GOOGLE_BUSINESS_CLIENT_SECRET=GOCSPX-abcdefghijklmnopqrstuvwxyz123456
+# NEXTAUTH_URL=http://localhost:3000
+
+# ======================================
+# IMPORTANT NOTES:
+# ======================================
+# 1. Client ID format: xxxxxx-xxxxx.apps.googleusercontent.com
+# 2. Client Secret format: GOCSPX-xxxxx
+# 3. NEXTAUTH_URL must match your redirect URI exactly
+# 4. For production, update NEXTAUTH_URL to your domain
+# 5. After adding, restart server: npm run dev
+
+# ======================================
+# VERIFICATION:
+# ======================================
+# After adding these variables:
+# 1. Restart your development server
+# 2. Go to Admin Panel > Google Business
+# 3. Try creating an account
+# 4. OAuth flow should work correctly
+
+# For detailed setup instructions, see: GOOGLE_BUSINESS_SETUP.md
+

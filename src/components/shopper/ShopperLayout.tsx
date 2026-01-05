@@ -71,14 +71,14 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Shopper Panel</h1>
+      <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Shopper Panel</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-lg hover:bg-gray-100"
           >
             {sidebarOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
           </button>
@@ -90,19 +90,19 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
         <aside
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 lg:translate-x-0`}
+          } fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0`}
         >
           <div className="flex flex-col h-full">
             {/* Logo & User Profile */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                   {shopper.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-white truncate">{shopper.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{shopper.email}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                  <p className="font-semibold text-gray-900 truncate">{shopper.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{shopper.email}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-700">
                     Shopper
                   </span>
                 </div>
@@ -110,7 +110,7 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
             </div>
 
             {/* Back to Homepage Button */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 border-b border-gray-200">
               <Link
                 href="/"
                 className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
@@ -131,8 +131,8 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
                     href={item.href}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-green-100 text-green-700'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <Icon className="text-xl" />
@@ -143,10 +143,10 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
             </nav>
 
             {/* Logout */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            <div className="p-4 border-t border-gray-200 space-y-2">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
               >
                 <FiLogOut className="text-xl" />
                 <span className="font-medium">Logout</span>
@@ -182,17 +182,17 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-md w-full mx-4"
+              className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4"
             >
               <div className="text-center">
-                <FiAlertCircle className="text-red-600 dark:text-red-400 text-5xl mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                <FiAlertCircle className="text-red-600 text-5xl mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
                   Access Denied
                 </h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                <p className="text-lg text-gray-600 mb-6">
                   This panel is only accessible to shoppers. Redirecting to login...
                 </p>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: '100%' }}
@@ -200,7 +200,7 @@ export default function ShopperLayout({ children }: { children: React.ReactNode 
                     className="bg-red-600 h-2 rounded-full"
                   />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500">
                   Please login with a shopper account
                 </p>
               </div>
