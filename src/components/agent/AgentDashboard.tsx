@@ -119,13 +119,13 @@ export default function AgentDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'pending':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'rejected':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-600';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -153,9 +153,9 @@ export default function AgentDashboard() {
     <div className="space-y-6 agent-panel">
       {/* Welcome Banner */}
       {agent && (
-        <div className="bg-blue-600 dark:bg-blue-700 text-white rounded-lg p-6 shadow-lg">
+        <div className="bg-blue-600 text-white rounded-lg p-6 shadow-lg">
           <h1 className="text-2xl font-bold mb-1 text-white">Welcome, {agent.name}</h1>
-          <p className="text-blue-100 dark:text-blue-200">Agent ID: {agent.agentId}</p>
+          <p className="text-blue-100">Agent ID: {agent.agentId}</p>
         </div>
       )}
 
@@ -165,15 +165,15 @@ export default function AgentDashboard() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Shops Today</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.shopsToday || 0}</p>
+                <p className="text-sm text-gray-600 mb-1">Total Shops Today</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.shopsToday || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <FiBarChart2 className="text-blue-600 dark:text-blue-400 text-xl" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiBarChart2 className="text-blue-600 text-xl" />
               </div>
             </div>
           </motion.div>
@@ -182,15 +182,15 @@ export default function AgentDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">This Month</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.shopsThisMonth || 0}</p>
+                <p className="text-sm text-gray-600 mb-1">This Month</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.shopsThisMonth || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <FiCalendar className="text-blue-600 dark:text-blue-400 text-xl" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiCalendar className="text-blue-600 text-xl" />
               </div>
             </div>
           </motion.div>
@@ -199,15 +199,15 @@ export default function AgentDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Shops</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalShops || 0}</p>
+                <p className="text-sm text-gray-600 mb-1">Total Shops</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalShops || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <FiShoppingBag className="text-blue-600 dark:text-blue-400 text-xl" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiShoppingBag className="text-blue-600 text-xl" />
               </div>
             </div>
           </motion.div>
@@ -216,16 +216,16 @@ export default function AgentDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
+            className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Commission</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{(stats.commission || 0).toLocaleString('en-IN')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">20% of Total Earnings</p>
+                <p className="text-sm text-gray-600 mb-1">Commission</p>
+                <p className="text-2xl font-bold text-gray-900">₹{(stats.commission || 0).toLocaleString('en-IN')}</p>
+                <p className="text-xs text-gray-500 mt-1">20% of Total Earnings</p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <FiDollarSign className="text-blue-600 dark:text-blue-400 text-xl" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FiDollarSign className="text-blue-600 text-xl" />
               </div>
             </div>
           </motion.div>
@@ -252,58 +252,58 @@ export default function AgentDashboard() {
       </div>
 
       {/* Recent Shops Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Shops</h2>
-          <Link href="/agent/shops" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium text-sm">
+      <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">Recent Shops</h2>
+          <Link href="/agent/shops" className="text-blue-600 hover:text-blue-800 font-medium text-sm">
             View All
           </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Shop Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Pincode
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Plan
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-200">
               {recentShops.map((shop) => (
                 <motion.tr
                   key={shop._id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-semibold text-sm">
                           {shop.name.substring(0, 2).toUpperCase()}
                         </span>
                       </div>
-                      <span className="font-medium text-gray-900 dark:text-white">{shop.name}</span>
+                      <span className="font-medium text-gray-900">{shop.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{shop.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{shop.pincode}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300 font-medium">{shop.plan}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">{shop.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">{shop.pincode}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">{shop.plan}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
@@ -316,7 +316,7 @@ export default function AgentDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
                       href={`/agent/shops/${shop._id}`}
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium text-sm"
+                      className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                     >
                       View Details
                     </Link>
@@ -327,7 +327,7 @@ export default function AgentDashboard() {
           </table>
           {recentShops.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">No shops found</p>
+              <p className="text-gray-500">No shops found</p>
             </div>
           )}
         </div>
