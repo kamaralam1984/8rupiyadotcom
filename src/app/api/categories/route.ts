@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     if (getAllCategories) {
       const categories = await Category.find({ isActive: true })
         .select('_id name slug description icon displayOrder')
-        .sort({ displayOrder: 1, name: 1 });
+        .sort({ displayOrder: 1, name: 1 })
+        .lean(); // Use lean() for faster queries
 
       return NextResponse.json({
         success: true,
@@ -59,7 +60,8 @@ export async function GET(req: NextRequest) {
       ]
     })
       .select('_id name slug description icon displayOrder')
-      .sort({ displayOrder: 1, name: 1 });
+      .sort({ displayOrder: 1, name: 1 })
+      .lean(); // Use lean() for faster queries
 
     // If category not found in Category model, create a simple category object from shop data
     const foundCategoryNames = categories.map(cat => cat.name.toLowerCase());

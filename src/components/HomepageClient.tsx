@@ -54,7 +54,7 @@ const TopRated = dynamic(() => import('./TopRated'), {
   ssr: false,
   loading: () => null,
 });
-import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck, FiCheckCircle, FiShield, FiUsers, FiPlay, FiX } from 'react-icons/fi';
+import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck, FiCheckCircle, FiShield, FiUsers, FiPlay, FiX, FiDatabase, FiRefreshCw, FiXCircle } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdStatusIndicator from './AdStatusIndicator';
@@ -969,6 +969,70 @@ export default function HomepageClient() {
             <nav className="flex gap-2 sm:gap-4 items-center flex-shrink-0" role="navigation" aria-label="Main navigation">
               {/* Ad Status Indicator */}
               <AdStatusIndicator />
+              
+              {/* Admin Only Links - No Ads, DB, Cache */}
+              {user && user.role === 'admin' && (
+                <>
+                  {/* No Ads Button */}
+                  <button
+                    onClick={() => {
+                      // Toggle ads visibility or disable ads
+                      const adElements = document.querySelectorAll('[data-ad-slot], [id*="ad"], .ad-container');
+                      adElements.forEach(el => {
+                        const htmlEl = el as HTMLElement;
+                        htmlEl.style.display = htmlEl.style.display === 'none' ? '' : 'none';
+                      });
+                    }}
+                    className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-xs sm:text-sm flex items-center gap-1"
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                    title="Toggle Ads"
+                  >
+                    <FiXCircle className="text-sm sm:text-base" />
+                    <span className="hidden sm:inline">NO ADS</span>
+                  </button>
+
+                  {/* DB Button */}
+                  <Link
+                    href="/admin/database"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-xs sm:text-sm flex items-center gap-1"
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                    title="Database Management"
+                  >
+                    <FiDatabase className="text-sm sm:text-base" />
+                    <span className="hidden sm:inline">DB</span>
+                  </Link>
+
+                  {/* Cache Button */}
+                  <button
+                    onClick={async () => {
+                      if (confirm('Clear all cache? This will refresh all cached data.')) {
+                        try {
+                          const response = await fetch('/api/admin/cache/clear', {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            },
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            alert('Cache cleared successfully!');
+                          } else {
+                            alert('Failed to clear cache');
+                          }
+                        } catch (error) {
+                          alert('Error clearing cache');
+                        }
+                      }
+                    }}
+                    className="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all text-xs sm:text-sm flex items-center gap-1"
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                    title="Clear Cache"
+                  >
+                    <FiRefreshCw className="text-sm sm:text-base" />
+                    <span className="hidden sm:inline">CACHE</span>
+                  </button>
+                </>
+              )}
               
               {/* Jyotish Button - Hidden for 30 days (until 30 Jan 2026) */}
               {new Date() >= new Date('2026-01-30') && (

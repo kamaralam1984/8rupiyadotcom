@@ -63,9 +63,9 @@ async function connectDB() {
       maxPoolSize: 50, // Increased from 10 to 50 for better concurrency
       minPoolSize: 10, // Increased from 2 to 10 to keep connections ready
       
-      // ⚡ Ultra-fast timeout settings (reduced from 5s to 1s)
-      serverSelectionTimeoutMS: 1000, // 1 second timeout for faster failure detection
-      connectTimeoutMS: 1000, // 1 second connection timeout
+      // ⚡ Optimized timeout settings (balanced for SSL/TLS connections)
+      serverSelectionTimeoutMS: 5000, // 5 seconds timeout for server selection (SSL connections need more time)
+      connectTimeoutMS: 5000, // 5 seconds connection timeout (secureConnect needs more time for TLS handshake)
       socketTimeoutMS: 30000, // 30 seconds socket timeout (reduced from 45s)
       
       // ⚡ Faster heartbeat for quicker reconnection
