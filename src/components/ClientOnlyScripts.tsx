@@ -6,7 +6,7 @@ import { generateOrganizationSchema, generateWebSiteSchema } from '@/lib/seo';
 export default function ClientOnlyScripts() {
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
-  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID;
 
   return (

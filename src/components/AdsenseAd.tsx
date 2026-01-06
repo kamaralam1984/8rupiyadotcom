@@ -1,23 +1,23 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
 import { initializeAd, waitForAdSense, cleanupAd } from "@/lib/adsense";
+import { useShouldBlockAds } from "@/lib/adBlocking";
 
-export default function AdsenseAd() {
-  const pathname = usePathname();
+interface AdsenseAdProps {
+  shopsCount?: number; // Optional: Number of shops (for empty category pages)
+  contentLength?: number; // Optional: Number of words on the page
+}
+
+export default function AdsenseAd({ shopsCount, contentLength }: AdsenseAdProps = {}) {
   const adRef = useRef<HTMLDivElement>(null);
   const insRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
 
-  // Block ads on admin, agent, operator, accountant, and shopper panels
-  const isAdminPanel = pathname?.startsWith('/admin') || 
-                       pathname?.startsWith('/agent') || 
-                       pathname?.startsWith('/operator') ||
-                       pathname?.startsWith('/accountant') ||
-                       pathname?.startsWith('/shopper');
+  // Block ads on specific routes or if content is too short
+  const shouldBlock = useShouldBlockAds(shopsCount, contentLength);
 
   useEffect(() => {
-    if (isAdminPanel || initializedRef.current) return;
+    if (shouldBlock || initializedRef.current) return;
 
     const insElement = insRef.current;
     if (!insElement) return;
@@ -39,9 +39,11 @@ export default function AdsenseAd() {
         cleanupAd(insElement);
       }
     };
-  }, [isAdminPanel]);
+  }, [shouldBlock]);
 
-  if (isAdminPanel) {
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+
+  if (shouldBlock || !adsenseId) {
     return null;
   }
 
@@ -51,7 +53,7 @@ export default function AdsenseAd() {
         ref={insRef}
         className="adsbygoogle"
         style={{ display: "block" }}
-        data-ad-client="ca-pub-4472734290958984"
+        data-ad-client={adsenseId}
         data-ad-slot="4723091404"
         data-ad-format="auto"
         data-full-width-responsive="true"

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { 
   FiShoppingBag, 
   FiMapPin, 
@@ -12,11 +13,21 @@ import {
   FiStar,
   FiSearch,
   FiShield,
-  FiArrowLeft
+  FiArrowLeft,
+  FiPlay,
+  FiX
 } from 'react-icons/fi';
 import Footer from '@/components/common/Footer';
 
+// Load AdSense script only on content pages
+const AdSenseLoader = dynamic(() => import('@/components/AdSenseLoader'), {
+  ssr: false,
+  loading: () => null,
+});
+
 export default function About() {
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
   // Set page title dynamically
   useEffect(() => {
     document.title = "About Us - 8rupiya.com";
@@ -333,6 +344,13 @@ export default function About() {
                   <FiShoppingBag />
                   <span>Add Your Business</span>
                 </Link>
+                <button
+                  onClick={() => setShowVideoModal(true)}
+                  className="bg-green-400 text-gray-900 px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+                >
+                  <FiPlay />
+                  <span>Learn Shopper</span>
+                </button>
               </div>
             </div>
           </motion.div>
@@ -364,6 +382,57 @@ export default function About() {
           animation-delay: 4s;
         }
       `}</style>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+            onClick={() => setShowVideoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative bg-black rounded-xl overflow-hidden shadow-2xl max-w-4xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowVideoModal(false)}
+                className="absolute top-4 right-4 z-10 bg-red-600 hover:bg-red-700 rounded-full p-2 transition-all shadow-lg"
+                aria-label="Close video"
+              >
+                <FiX className="text-white text-2xl" />
+              </button>
+              
+              {/* Video Player */}
+              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                <video
+                  className="absolute top-0 left-0 w-full h-full"
+                  controls
+                  autoPlay
+                  style={{ objectFit: 'contain' }}
+                >
+                  <source src="/uploads/8rupiya-shoper-compressed.mp4" type="video/mp4" />
+                  <source src="/uploads/8rupiya shoper.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              
+              {/* Video Title */}
+              <div className="bg-gray-900 p-4">
+                <h3 className="text-white text-lg font-semibold text-center">
+                  Join as a Shopper on 8rupiya.com
+                </h3>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <Footer />

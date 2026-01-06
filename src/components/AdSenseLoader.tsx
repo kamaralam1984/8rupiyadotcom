@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Script from 'next/script';
 
 export default function AdSenseLoader() {
-  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
   if (!adsenseId) {
     return null;

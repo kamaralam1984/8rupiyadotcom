@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         searchAds: settings.searchAds,
         shopPageAds: settings.shopPageAds,
         adsenseCode: settings.adsenseCode,
-        adsenseId: settings.adsenseId || process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || '',
+        adsenseId: settings.adsenseId || process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || '',
         customAds: settings.customAds || {
           homepage: [],
           category: [],

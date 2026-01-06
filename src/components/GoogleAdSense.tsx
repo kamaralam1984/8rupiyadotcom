@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
 import { useAdStatus } from '@/contexts/AdStatusContext';
+import { useShouldBlockAds } from '@/lib/adBlocking';
 
 // Window interface extension removed - using global declaration from @/lib/adsense
 
@@ -12,6 +12,8 @@ interface GoogleAdSenseProps {
   format?: string;
   responsive?: string;
   adsenseId?: string;
+  shopsCount?: number; // Optional: Number of shops (for empty category pages)
+  contentLength?: number; // Optional: Number of words on the page
 }
 
 export default function GoogleAdSense({
@@ -20,22 +22,19 @@ export default function GoogleAdSense({
   format = 'auto',
   responsive = 'true',
   adsenseId: propAdsenseId,
+  shopsCount,
+  contentLength,
 }: GoogleAdSenseProps) {
-  const pathname = usePathname();
   const { incrementAdsCount } = useAdStatus();
-  const envAdsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+  const envAdsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   const adsenseId = propAdsenseId || envAdsenseId;
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
 
-  // Block ads on admin, agent, operator, accountant, and shopper panels
-  const isAdminPanel = pathname?.startsWith('/admin') || 
-                       pathname?.startsWith('/agent') || 
-                       pathname?.startsWith('/operator') ||
-                       pathname?.startsWith('/accountant') ||
-                       pathname?.startsWith('/shopper');
+  // Block ads on specific routes or if content is too short
+  const shouldBlock = useShouldBlockAds(shopsCount, contentLength);
 
-  if (isAdminPanel) {
+  if (shouldBlock) {
     return null;
   }
 

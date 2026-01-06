@@ -160,23 +160,6 @@ export default function RootLayout({
           }}
         />
         
-        {/* ⚡ Google AdSense - Load after page is interactive */}
-        <Script
-          id="google-adsense"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var script = document.createElement('script');
-                script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4472734290958984';
-                script.async = true;
-                script.crossOrigin = 'anonymous';
-                document.head.appendChild(script);
-              })();
-            `,
-          }}
-        />
-        
         {/* ⚡ Google Analytics - Load lazily to not block page load */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AM-1765454983"

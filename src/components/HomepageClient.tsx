@@ -86,6 +86,11 @@ const DisplayAd = dynamic(() => import('./DisplayAd'), {
   loading: () => null,
 });
 
+const AdSenseLoader = dynamic(() => import('./AdSenseLoader'), {
+  ssr: false,
+  loading: () => null,
+});
+
 interface Shop {
   _id?: string;
   place_id?: string;
@@ -862,6 +867,9 @@ export default function HomepageClient() {
 
   return (
     <>
+      {/* AdSense Script Loader - Only on content pages */}
+      <AdSenseLoader />
+      
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -1201,7 +1209,7 @@ export default function HomepageClient() {
       {/* Display Ad - Below SEO Section (AdSense-Safe Zone) */}
       {homepageLayout?.sections?.displayAd1?.enabled !== false && (
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
-          <DisplayAd />
+          <DisplayAd shopsCount={shops.length} contentLength={5378} />
         </div>
       )}
 
@@ -1212,15 +1220,37 @@ export default function HomepageClient() {
           {selectedCity ? `Best Shops in ${selectedCity}` : 'Best Shops Near You'}
         </h1>
         
-        {/* Brief description - Detailed content moved to /about page */}
-        <motion.p
+        {/* SEO Content Section - Minimum 250-300 words */}
+        <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-base md:text-lg text-gray-700 dark:text-yellow-400 mb-6 px-4 sm:px-6 max-w-4xl leading-relaxed"
+          className="px-4 sm:px-6 mb-8"
         >
-          Discover trusted nearby shops and services in your area. Find verified businesses with accurate contact information, real customer reviews, and detailed profiles. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
-        </motion.p>
+          <div className="max-w-4xl space-y-4 text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Discover Trusted Local Businesses on 8rupiya.com
+            </h2>
+            <p>
+              <strong className="text-gray-900 dark:text-white">8rupiya.com</strong> is India's premier local business discovery platform, designed to connect users with trusted shops, services, and businesses in their neighborhood. Whether you're searching for nearby shops, doctors, teachers, technicians, or any local service provider, our platform makes it easy to find exactly what you need, right where you are.
+            </p>
+            <p>
+              Our smart location system helps you discover businesses based on your current location. Simply enter your area or allow location access, and instantly see verified shops, restaurants, hotels, and service providers nearby. From jewelry stores and furniture shops to doctors, teachers, and technicians, our directory covers every type of local business.
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mt-6 mb-4">
+              Why Choose 8rupiya.com for Local Business Discovery?
+            </h2>
+            <p>
+              Every business listed on our platform undergoes a verification process. We ensure that contact information, addresses, and business details are accurate and up-to-date, giving you confidence in your choices. Our community-driven platform features authentic reviews and ratings from real customers, helping you make informed decisions.
+            </p>
+            <p>
+              By using 8rupiya.com, you're directly supporting local businesses and shopkeepers. We help small and medium enterprises gain online visibility, reach more customers, and grow their businesses in the digital age. The platform's user-friendly interface and powerful search capabilities ensure that finding what you need is quick and effortless.
+            </p>
+            <p>
+              Filter by category, location, ratings, or specific services to narrow down your search. With detailed business profiles including photos, contact information, operating hours, and customer reviews, you have all the information needed to make the right choice. <Link href="/about" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Learn more about 8rupiya.com</Link>.
+            </p>
+          </div>
+        </motion.section>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Rail - Render immediately, don't wait for homepageLayout */}
@@ -1275,7 +1305,7 @@ export default function HomepageClient() {
                         if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < bestShops.length) {
                           items.push(
                             <div key={`ad-nearby-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
-                              <InFeedAd />
+                              <InFeedAd shopsCount={bestShops.length} contentLength={5378} />
                             </div>
                           );
                         }
@@ -1290,7 +1320,7 @@ export default function HomepageClient() {
               {/* Ad Space - Between Nearby and Featured Shops */}
               {homepageLayout?.sections?.displayAd2?.enabled !== false && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <AdSlot slot="homepage" />
+                  <AdSlot slot="homepage" shopsCount={bestShops.length} contentLength={5378} />
                 </div>
               )}
 
@@ -1334,7 +1364,7 @@ export default function HomepageClient() {
                           if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < featuredShops.length) {
                             items.push(
                               <div key={`ad-featured-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
-                                <InFeedAd />
+                                <InFeedAd shopsCount={featuredShops.length} contentLength={5378} />
                               </div>
                             );
                           }
@@ -1350,7 +1380,7 @@ export default function HomepageClient() {
               {/* Ad Space - Between Featured and Premium Shops */}
               {homepageLayout?.sections?.displayAd2?.enabled !== false && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <AdSlot slot="homepage" />
+                  <AdSlot slot="homepage" shopsCount={featuredShops.length} contentLength={5378} />
                 </div>
               )}
 
@@ -1383,7 +1413,7 @@ export default function HomepageClient() {
                         if (homepageLayout?.sections?.inFeedAds?.enabled !== false && (index + 1) % 2 === 0 && (index + 1) < premiumShops.length) {
                             items.push(
                             <div key={`ad-premium-${index}`} className="col-span-1 sm:col-span-2 lg:col-span-3 my-4">
-                                <InFeedAd />
+                                <InFeedAd shopsCount={premiumShops.length} contentLength={5378} />
                               </div>
                             );
                           }
@@ -1398,7 +1428,7 @@ export default function HomepageClient() {
               {/* Ad Space - After Premium Shops (AdSense-Safe Zone) */}
               {homepageLayout?.sections?.displayAd2?.enabled !== false && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <AdSlot slot="homepage" />
+                  <AdSlot slot="homepage" shopsCount={premiumShops.length} contentLength={5378} />
                   <AdvertisementBanner slot="homepage" className="my-8" uniqueId="homepage-main" />
                 </div>
               )}
@@ -1419,7 +1449,7 @@ export default function HomepageClient() {
         {/* Homepage Ad - Before All Shops (AdSense-Safe Zone) */}
         {homepageLayout?.sections?.displayAd2?.enabled !== false && (
           <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-            <AdSlot slot="homepage" />
+            <AdSlot slot="homepage" shopsCount={shops.length} contentLength={5378} />
           </div>
         )}
 
@@ -1494,7 +1524,7 @@ export default function HomepageClient() {
 
       {/* Display Ad - Before Footer (Placement 3) */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
-        <DisplayAd />
+        <DisplayAd shopsCount={shops.length} contentLength={5378} />
       </div>
 
       {/* How to Join as a Shopper Section */}
@@ -1848,7 +1878,6 @@ export default function HomepageClient() {
                 className="w-full h-auto"
                 controls
                 preload="metadata"
-                poster="/uploads/8rupiya-shoper-poster.jpg"
                 style={{ maxHeight: '600px', objectFit: 'contain' }}
               >
                 <source src="/uploads/8rupiya-shoper-compressed.mp4" type="video/mp4" />

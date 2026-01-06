@@ -1,29 +1,26 @@
 'use client';
 
 import { useEffect, useRef, useId } from 'react';
-import { usePathname } from 'next/navigation';
 import { initializeAd, waitForAdSense, cleanupAd } from '@/lib/adsense';
+import { useShouldBlockAds } from '@/lib/adBlocking';
 
 interface InFeedAdProps {
   className?: string;
+  shopsCount?: number; // Optional: Number of shops (for empty category pages)
+  contentLength?: number; // Optional: Number of words on the page
 }
 
-export default function InFeedAd({ className = '' }: InFeedAdProps) {
-  const pathname = usePathname();
+export default function InFeedAd({ className = '', shopsCount, contentLength }: InFeedAdProps) {
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
   const uniqueId = useId();
-  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || 'ca-pub-4472734290958984';
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   const adSlot = '4723091404';
 
-  // Block ads on admin panels
-  const isAdminPanel = pathname?.startsWith('/admin') || 
-                       pathname?.startsWith('/agent') || 
-                       pathname?.startsWith('/operator') ||
-                       pathname?.startsWith('/accountant') ||
-                       pathname?.startsWith('/shopper');
+  // Block ads on specific routes or if content is too short
+  const shouldBlock = useShouldBlockAds(shopsCount, contentLength);
 
-  if (isAdminPanel) {
+  if (shouldBlock) {
     return null;
   }
 

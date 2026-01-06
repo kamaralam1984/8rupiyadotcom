@@ -65,7 +65,7 @@ export const POST = withAuth(async (req: AuthRequest) => {
         searchAds: searchAds ?? false,
         shopPageAds: shopPageAds ?? true,
         adsenseCode: adsenseCode || '',
-        adsenseId: process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID || '',
+        adsenseId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || '',
         customAds: {
           homepage: [],
           category: [],
