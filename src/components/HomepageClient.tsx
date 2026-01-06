@@ -54,7 +54,7 @@ const TopRated = dynamic(() => import('./TopRated'), {
   ssr: false,
   loading: () => null,
 });
-import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck, FiCheckCircle, FiShield, FiUsers } from 'react-icons/fi';
+import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck, FiCheckCircle, FiShield, FiUsers, FiPlay, FiX } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdStatusIndicator from './AdStatusIndicator';
@@ -99,6 +99,8 @@ interface Shop {
   images?: string[];
   rating: number;
   reviewCount: number;
+  visitorCount?: number;
+  likeCount?: number;
   distance?: number;
   location?: {
     coordinates: [number, number]; // [longitude, latitude]
@@ -157,6 +159,7 @@ export default function HomepageClient() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [selectedCity, setSelectedCity] = useState<string>('');
+  const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -798,6 +801,25 @@ export default function HomepageClient() {
   const paidShops = sortShopsByPriority(shops.filter((shop) => shop.isPaid))
     .slice(0, 6);
 
+  // Get trending shops - based on visitor count, likes, rating, and recent activity
+  const trendingShops = [...shops]
+    .sort((a, b) => {
+      // Calculate trending score
+      const getTrendingScore = (shop: Shop) => {
+        const visitorScore = (shop.visitorCount || 0) * 0.3;
+        const likeScore = (shop.likeCount || 0) * 0.4;
+        const ratingScore = (shop.rating || 0) * 20; // Multiply by 20 to give weight
+        const reviewScore = (shop.reviewCount || 0) * 0.2;
+        const featuredBonus = shop.isFeatured ? 50 : 0;
+        const paidBonus = shop.isPaid ? 30 : 0;
+        
+        return visitorScore + likeScore + ratingScore + reviewScore + featuredBonus + paidBonus;
+      };
+      
+      return getTrendingScore(b) - getTrendingScore(a);
+    })
+    .slice(0, 10); // Get top 10 trending shops
+
   // ⚡ Skeleton loader with fixed dimensions to prevent layout shifts
   if (loading) {
     return (
@@ -885,6 +907,15 @@ export default function HomepageClient() {
                 <FiShoppingBag className="text-base sm:text-lg md:text-xl" />
                 Add Your Business
               </motion.a>
+              <motion.button
+                onClick={() => setShowVideoModal(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-green-400 text-gray-900 px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base md:text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center justify-center gap-2"
+              >
+                <FiPlay className="text-base sm:text-lg md:text-xl" />
+                Learn Shopper
+              </motion.button>
             </div>
           </div>
         </div>
@@ -1315,7 +1346,7 @@ export default function HomepageClient() {
             <aside className="w-full lg:w-64 flex-shrink-0 order-3" aria-label="Top rated and trending shops">
               <RightRail
                 topRatedShops={topRatedShops}
-                trendingShops={sortShopsByPriority(shops.filter((s) => s.isFeatured))}
+                trendingShops={trendingShops}
               />
             </aside>
           )}
@@ -1729,6 +1760,42 @@ export default function HomepageClient() {
         </div>
       </section>
 
+      {/* Video Section - Before Footer */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="relative w-full py-12 md:py-16 bg-gradient-to-br from-gray-50 to-white"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Join as a Shopper on 8rupiya.com
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Watch this video to learn how easy it is to list your business and reach more customers
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="relative rounded-xl overflow-hidden shadow-2xl bg-black">
+              <video
+                className="w-full h-auto"
+                controls
+                preload="metadata"
+                poster="/uploads/8rupiya-shoper-poster.jpg"
+                style={{ maxHeight: '600px', objectFit: 'contain' }}
+              >
+                <source src="/uploads/8rupiya-shoper-compressed.mp4" type="video/mp4" />
+                <source src="/uploads/8rupiya shoper.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Footer */}
       {homepageLayout?.sections?.footer?.enabled !== false && (
       <motion.footer
@@ -1780,6 +1847,57 @@ export default function HomepageClient() {
 
       {/* Shop Popup */}
       <ShopPopup shop={selectedShop} isOpen={isPopupOpen} onClose={handleClosePopup} userLocation={location} />
+      
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+            onClick={() => setShowVideoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative bg-black rounded-xl overflow-hidden shadow-2xl max-w-4xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowVideoModal(false)}
+                className="absolute top-4 right-4 z-10 bg-red-600 hover:bg-red-700 rounded-full p-2 transition-all shadow-lg"
+                aria-label="Close video"
+              >
+                <FiX className="text-white text-2xl" />
+              </button>
+              
+              {/* Video Player */}
+              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                <video
+                  className="absolute top-0 left-0 w-full h-full"
+                  controls
+                  autoPlay
+                  style={{ objectFit: 'contain' }}
+                >
+                  <source src="/uploads/8rupiya-shoper-compressed.mp4" type="video/mp4" />
+                  <source src="/uploads/8rupiya shoper.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              
+              {/* Video Title */}
+              <div className="bg-gray-900 p-4">
+                <h3 className="text-white text-lg font-semibold text-center">
+                  Join as a Shopper on 8rupiya.com
+                </h3>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* AI Assistant */}
       <AIAssistant userLocation={location} userId={user?.id} />
