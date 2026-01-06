@@ -54,7 +54,7 @@ const TopRated = dynamic(() => import('./TopRated'), {
   ssr: false,
   loading: () => null,
 });
-import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck } from 'react-icons/fi';
+import { FiShoppingBag, FiTrendingUp, FiAward, FiSearch, FiMapPin, FiUser, FiLogOut, FiCheck, FiCheckCircle, FiShield, FiUsers } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AdStatusIndicator from './AdStatusIndicator';
@@ -798,21 +798,42 @@ export default function HomepageClient() {
   const paidShops = sortShopsByPriority(shops.filter((shop) => shop.isPaid))
     .slice(0, 6);
 
+  // ⚡ Skeleton loader with fixed dimensions to prevent layout shifts
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-16 h-16 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"
-          />
-          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">{t('common.loading')}</p>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={{ background: 'var(--bg)' }}>
+        {/* Header Skeleton */}
+        <div className="bg-black/95 backdrop-blur-md shadow-lg border-b border-gray-800/50 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3">
+            <div className="flex justify-between items-center">
+              <div className="skeleton h-12 w-32 rounded"></div>
+              <div className="skeleton h-10 w-24 rounded"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Hero Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="skeleton h-64 w-full rounded-2xl mb-8"></div>
+          
+          {/* Shop Cards Skeleton Grid - Fixed dimensions prevent CLS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200" style={{ minHeight: '400px' }}>
+                <div className="skeleton h-48 w-full"></div>
+                <div className="p-4 space-y-3">
+                  <div className="skeleton h-6 w-3/4 rounded"></div>
+                  <div className="skeleton h-4 w-full rounded"></div>
+                  <div className="skeleton h-4 w-2/3 rounded"></div>
+                  <div className="flex gap-2 mt-4">
+                    <div className="skeleton h-6 w-16 rounded"></div>
+                    <div className="skeleton h-6 w-16 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -877,7 +898,7 @@ export default function HomepageClient() {
         className="relative bg-black/95 backdrop-blur-md shadow-lg border-b border-gray-800/50 sticky top-0 z-50"
         role="banner"
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-[8.4px] sm:py-[11.2px]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex justify-between items-center gap-2 sm:gap-4">
             {/* Logo and Connection Status */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -887,22 +908,23 @@ export default function HomepageClient() {
                   className="flex items-center relative"
                 >
                   {!logoError ? (
-                    <div className="relative h-12 sm:h-14 md:h-18 w-auto">
+                    <div className="relative h-10 sm:h-12 md:h-14 w-auto max-h-full flex items-center">
                       <img
                         src="/uploads/logo.png"
                         alt="8rupiya.com Logo"
-                        className="h-full w-auto object-contain"
+                        className="h-full w-auto object-contain max-h-full"
                         loading="eager"
                         decoding="async"
                         width="150"
                         height="60"
+                        style={{ maxHeight: '100%', objectFit: 'contain' }}
                         onError={() => setLogoError(true)}
                         onLoad={() => setLogoError(false)}
                       />
                     </div>
                   ) : (
-                    <div className="h-12 sm:h-14 md:h-16 w-auto flex items-center">
-                      <span className="text-white text-lg sm:text-xl md:text-2xl font-bold">Logo</span>
+                    <div className="h-10 sm:h-12 md:h-14 w-auto flex items-center">
+                      <span className="text-white text-base sm:text-lg md:text-xl font-bold">8RUPIYA</span>
                     </div>
                   )}
                 </motion.div>
@@ -1379,6 +1401,333 @@ export default function HomepageClient() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         <DisplayAd />
       </div>
+
+      {/* How to Join as a Shopper Section */}
+      <section className="relative py-16 md:py-24 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50" style={{ background: 'var(--bg)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              How to Join as a <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Shopper</span>
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Follow these simple steps to create your shopper account and start listing your business on 8rupiya.com
+            </p>
+          </motion.div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="space-y-6">
+              {/* Step 1 */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border-l-4 border-green-500"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                      Visit the Add Shop Page
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed mb-4">
+                      Navigate to the <strong className="text-gray-900">"Add Your Business"</strong> page on 8rupiya.com. You can find this option in the main navigation menu or by clicking the <strong className="text-green-600">"Add Shop"</strong> button on the homepage.
+                    </p>
+                    <Link
+                      href="/add-shop"
+                      className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold transition-colors"
+                    >
+                      <FiShoppingBag />
+                      <span>Go to Add Shop Page</span>
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 2 */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border-l-4 border-blue-500"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                      Fill in Your Personal Information
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed mb-4">
+                      Complete the registration form with your details:
+                    </p>
+                    <ul className="space-y-2 text-gray-600 mb-4">
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                        <span><strong className="text-gray-900">Full Name:</strong> Enter your complete name as you want it to appear on your profile</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                        <span><strong className="text-gray-900">Email Address:</strong> Provide a valid email address that you have access to</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                        <span><strong className="text-gray-900">Phone Number:</strong> Enter your active mobile number</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-blue-500 mt-1 flex-shrink-0" />
+                        <span><strong className="text-gray-900">Password:</strong> Create a strong password (minimum 6 characters) for your account security</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 3 */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border-l-4 border-purple-500"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                      Verify Your Email with OTP
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed mb-4">
+                      After submitting your information, you will receive a 6-digit OTP (One-Time Password) via email. This is a security measure to verify that the email address belongs to you.
+                    </p>
+                    <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-gray-700">
+                        <strong className="text-purple-600">Important:</strong> Check your email inbox (and spam folder if needed) for the OTP. Enter the 6-digit code in the verification field on the registration page.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 4 */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="bg-white rounded-2xl p-6 md:p-8 shadow-xl border-l-4 border-pink-500"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    4
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
+                      Complete Registration
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed mb-4">
+                      Once you enter the correct OTP, your shopper account will be automatically created. You will be redirected to your <strong className="text-gray-900">Shopper Dashboard</strong> where you can:
+                    </p>
+                    <ul className="space-y-2 text-gray-600">
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-pink-500 mt-1 flex-shrink-0" />
+                        <span>Add and manage your business listings</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-pink-500 mt-1 flex-shrink-0" />
+                        <span>View your shop statistics and analytics</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-pink-500 mt-1 flex-shrink-0" />
+                        <span>Update business information and photos</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-pink-500 mt-1 flex-shrink-0" />
+                        <span>Manage payments and subscriptions</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <FiCheckCircle className="text-pink-500 mt-1 flex-shrink-0" />
+                        <span>Respond to customer reviews and inquiries</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Step 5 */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl p-6 md:p-8 shadow-2xl text-white"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    5
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl md:text-2xl font-bold text-white mb-3">
+                      Start Adding Your Business
+                    </h3>
+                    <p className="text-white/90 leading-relaxed mb-4">
+                      Congratulations! You're now a registered shopper on 8rupiya.com. You can immediately start adding your business details, including shop name, category, address, contact information, photos, and more. Your business will be visible to thousands of potential customers searching for services in your area.
+                    </p>
+                    <div className="bg-white/10 backdrop-blur-lg rounded-lg p-4 mt-4">
+                      <p className="text-sm text-white/90">
+                        <strong className="text-white">Tip:</strong> Make sure to provide complete and accurate information about your business to attract more customers. Add high-quality photos and keep your business details updated regularly.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Additional Information */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="mt-12 bg-blue-50 rounded-2xl p-6 md:p-8 border border-blue-200"
+            >
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <FiShield className="text-blue-600" />
+                Important Notes
+              </h3>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-3">
+                  <FiCheckCircle className="text-blue-600 mt-1 flex-shrink-0" />
+                  <span><strong>Registration is completely free</strong> - There are no charges for creating a shopper account</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <FiCheckCircle className="text-blue-600 mt-1 flex-shrink-0" />
+                  <span><strong>Email verification is mandatory</strong> - You must verify your email with OTP to complete registration</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <FiCheckCircle className="text-blue-600 mt-1 flex-shrink-0" />
+                  <span><strong>One account per email</strong> - Each email address can only be used for one shopper account</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <FiCheckCircle className="text-blue-600 mt-1 flex-shrink-0" />
+                  <span><strong>Secure and safe</strong> - Your personal information is protected and encrypted</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <FiCheckCircle className="text-blue-600 mt-1 flex-shrink-0" />
+                  <span><strong>Need help?</strong> If you face any issues during registration, contact our support team</span>
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Discover Nearby Shops and Services Section */}
+      <section className="relative py-16 md:py-24" style={{ backgroundColor: '#800000' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 md:p-12 shadow-xl border border-white/20"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Discover Nearby Shops and Services on 8rupiya.com
+            </h2>
+            
+            <div className="prose prose-lg max-w-none text-white space-y-6">
+              <p className="text-lg leading-relaxed text-white/90">
+                <strong className="text-white">8rupiya.com</strong> is India's premier local business discovery platform, designed to connect users with trusted shops, services, and businesses in their neighborhood. Whether you're searching for nearby shops, doctors, teachers, technicians, or any local service provider, our platform makes it easy to find exactly what you need, right where you are.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 my-8">
+                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <FiMapPin className="text-2xl text-blue-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Location-Based Discovery</h3>
+                    <p className="text-white/80">
+                      Our smart location system helps you discover businesses based on your current location. Simply enter your area or allow location access, and instantly see verified shops, restaurants, hotels, and service providers nearby.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <FiSearch className="text-2xl text-purple-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">Comprehensive Directory</h3>
+                    <p className="text-white/80">
+                      From jewelry stores and furniture shops to doctors, teachers, and technicians, our directory covers every type of local business. Find everything from daily essentials to specialized services in one convenient platform.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                The digital directory plays a crucial role in modern business discovery. In today's fast-paced world, people need quick access to reliable local services. <strong className="text-white">8rupiya.com bridges the gap</strong> between local businesses and customers, creating a seamless connection that benefits both parties.
+              </p>
+
+              <h3 className="text-2xl font-bold text-white mt-8 mb-4">Why Choose 8rupiya.com for Local Business Discovery?</h3>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <FiShield className="text-xl text-green-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Verified Businesses Only</h4>
+                    <p className="text-white/80">
+                      Every business listed on our platform undergoes a verification process. We ensure that contact information, addresses, and business details are accurate and up-to-date, giving you confidence in your choices.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <FiUsers className="text-xl text-blue-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Real User Reviews</h4>
+                    <p className="text-white/80">
+                      Our community-driven platform features authentic reviews and ratings from real customers. Read genuine experiences from people who have used these services, helping you make informed decisions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <FiTrendingUp className="text-xl text-purple-300 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-white mb-1">Supporting Local Economy</h4>
+                    <p className="text-white/80">
+                      By using 8rupiya.com, you're directly supporting local businesses and shopkeepers. We help small and medium enterprises gain online visibility, reach more customers, and grow their businesses in the digital age.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-lg leading-relaxed mt-6 text-white/90">
+                Whether you're looking for a nearby restaurant for dinner, a reliable doctor for a health checkup, a skilled technician for home repairs, or a trusted teacher for your child's education, <strong className="text-white">8rupiya.com has you covered</strong>. Our platform serves as your comprehensive guide to local businesses, making it easier than ever to discover and connect with services in your area.
+              </p>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                The platform's user-friendly interface and powerful search capabilities ensure that finding what you need is quick and effortless. Filter by category, location, ratings, or specific services to narrow down your search. With detailed business profiles including photos, contact information, operating hours, and customer reviews, you have all the information needed to make the right choice.
+              </p>
+
+              <p className="text-lg leading-relaxed text-white/90">
+                Join thousands of satisfied users who trust 8rupiya.com for their local business discovery needs. Experience the convenience of having a complete directory of verified local businesses at your fingertips, and discover how easy it is to find the best shops and services in your neighborhood.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Footer */}
       {homepageLayout?.sections?.footer?.enabled !== false && (

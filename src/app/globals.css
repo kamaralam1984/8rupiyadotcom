@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* ⚡ PERFORMANCE: Critical CSS for instant render */
 :root {
   --bg: #fafafe;
   --text: #0f0f0f;
@@ -7,6 +8,77 @@
   --main: #ffffff;
   --background: #fafafe;
   --foreground: #0f0f0f;
+}
+
+/* ⚡ SMOOTH LOADING: Prevent layout shifts and jitter */
+* {
+  /* Prevent layout shifts */
+  box-sizing: border-box;
+}
+
+html {
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  /* Prevent font flash */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+  /* Prevent layout shifts */
+  min-height: 100vh;
+  /* GPU acceleration for smooth animations */
+  will-change: scroll-position;
+  /* Smooth font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ⚡ SKELETON LOADER: Smooth shimmer animation */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ⚡ PREVENT LAYOUT SHIFTS: Fixed dimensions for images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  /* Prevent layout shift */
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* ⚡ SMOOTH ANIMATIONS: GPU acceleration */
+[data-animate],
+.motion-div,
+[class*="motion"] {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ⚡ PREVENT JITTER: Fixed heights for containers */
+[data-skeleton] {
+  min-height: 200px;
+  background: #f0f0f0;
 }
 
 @theme inline {

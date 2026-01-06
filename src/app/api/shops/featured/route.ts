@@ -248,28 +248,28 @@ export async function GET(req: NextRequest) {
 
             // Only add Google places within 20000km range
             if (distance <= 20000) {
-              mergedShops.push({
-                place_id: place.place_id,
-                name: place.name,
-                description: '',
-                category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
-                address: place.formatted_address,
-                city: place.formatted_address.split(',')[place.formatted_address.split(',').length - 2]?.trim() || '',
-                location: {
-                  type: 'Point',
-                  coordinates: [place.geometry.location.lng, place.geometry.location.lat],
-                },
-                rating: place.rating || 0,
-                reviewCount: place.user_ratings_total || 0,
-                visitorCount: 0,
-                likeCount: 0,
-                distance: Math.round(distance * 100) / 100,
-                isFeatured: false,
-                isPaid: false,
-                planPriority: 0,
-                rankScore: (place.rating || 0) * 10 - distance,
-                source: 'google',
-              });
+            mergedShops.push({
+              place_id: place.place_id,
+              name: place.name,
+              description: '',
+              category: place.types?.[0]?.replace(/_/g, ' ') || 'Business',
+              address: place.formatted_address,
+              city: place.formatted_address.split(',')[place.formatted_address.split(',').length - 2]?.trim() || '',
+              location: {
+                type: 'Point',
+                coordinates: [place.geometry.location.lng, place.geometry.location.lat],
+              },
+              rating: place.rating || 0,
+              reviewCount: place.user_ratings_total || 0,
+              visitorCount: 0,
+              likeCount: 0,
+              distance: Math.round(distance * 100) / 100,
+              isFeatured: false,
+              isPaid: false,
+              planPriority: 0,
+              rankScore: (place.rating || 0) * 10 - distance,
+              source: 'google',
+            });
             }
           }
         }
@@ -324,28 +324,28 @@ export async function GET(req: NextRequest) {
     } else {
       // Premium or other types: Original sorting logic
       filteredShops.sort((a, b) => {
-        // First priority: Paid shops
-        if (a.isPaid && !b.isPaid) return -1;
-        if (!a.isPaid && b.isPaid) return 1;
+      // First priority: Paid shops
+      if (a.isPaid && !b.isPaid) return -1;
+      if (!a.isPaid && b.isPaid) return 1;
 
-        // Second priority: Plan priority
-        if (a.planPriority !== b.planPriority) {
-          return b.planPriority - a.planPriority;
-        }
+      // Second priority: Plan priority
+      if (a.planPriority !== b.planPriority) {
+        return b.planPriority - a.planPriority;
+      }
 
         // Third priority: Rank score
-        if (a.rankScore !== b.rankScore) {
-          return b.rankScore - a.rankScore;
-        }
+      if (a.rankScore !== b.rankScore) {
+        return b.rankScore - a.rankScore;
+      }
 
         // Fourth priority: Distance (closer is better)
-        if (a.distance === undefined && b.distance === undefined) return 0;
+      if (a.distance === undefined && b.distance === undefined) return 0;
         if (a.distance === undefined) return 1;
-        if (b.distance === undefined) return -1;
-        if (a.distance === 0 && b.distance !== 0) return -1;
-        if (a.distance !== 0 && b.distance === 0) return 1;
-        return a.distance - b.distance;
-      });
+      if (b.distance === undefined) return -1;
+      if (a.distance === 0 && b.distance !== 0) return -1;
+      if (a.distance !== 0 && b.distance === 0) return 1;
+      return a.distance - b.distance;
+    });
     }
 
     // 5. Return exactly 10 shops (from filtered and sorted list)

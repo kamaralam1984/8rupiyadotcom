@@ -48,8 +48,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
     
-    // Enable partial prerendering for faster initial loads
-    ppr: false, // Can enable later if needed
+    // Note: cacheComponents disabled due to route segment config conflicts
+    // Performance optimizations are handled via other methods
   },
   
   // ⚡ Compiler optimizations
@@ -62,6 +62,8 @@ const nextConfig: NextConfig = {
   
   // ⚡ Production optimizations
   productionBrowserSourceMaps: false, // Disable source maps in production for faster builds
+  
+  // ⚡ SWC Minification for smaller bundles (enabled by default in Next.js 13+)
   
   // ⚡ PoweredByHeader - Remove for security and performance
   poweredByHeader: false,

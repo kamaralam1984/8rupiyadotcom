@@ -14,9 +14,12 @@ export default function HomePage() {
   // Schema is already included in layout.tsx to avoid duplication
   return (
     <>
-      {/* ⚡ MOBILE OPTIMIZATION: Prefetch critical API endpoints with reduced limit */}
-      <link rel="prefetch" href="/api/shops/nearby?limit=3&page=1" as="fetch" crossOrigin="anonymous" />
-      <link rel="prefetch" href="/api/categories" as="fetch" crossOrigin="anonymous" />
+      {/* ⚡ ULTRA-FAST LOADING: Preload critical resources */}
+      <link rel="preload" href="/api/shops/nearby?limit=3&page=1" as="fetch" crossOrigin="anonymous" />
+      <link rel="preload" href="/api/categories" as="fetch" crossOrigin="anonymous" />
+      <link rel="prefetch" href="/api/shops/nearby?limit=10&page=2" as="fetch" crossOrigin="anonymous" />
+      {/* Preload critical images */}
+      <link rel="preload" href="/uploads/logo.png" as="image" />
       <HomepageClient />
     </>
   );

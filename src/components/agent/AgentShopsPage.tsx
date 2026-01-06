@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEdit, FiPlus, FiSearch, FiFilter, FiX, FiCheck, FiCamera, FiMapPin } from 'react-icons/fi';
 import AgentShopCreateModal from './AgentShopCreateModal';
-import PayNowButton from '@/components/payments/PayNowButton';
 import PhoneAndPostalInput from '@/components/common/PhoneAndPostalInput';
 import { getCountryByCode, validatePhoneNumber, validatePostalCode } from '@/lib/countryData';
 
@@ -669,17 +668,6 @@ export default function AgentShopsPage() {
                       <button className="text-gray-600 hover:text-gray-800">
                         <FiEdit />
                       </button>
-                      {shop.paymentStatus === 'pending' && shop.planId && (
-                        <PayNowButton
-                          shopId={shop._id}
-                          planId={shop.planId._id}
-                          amount={shop.planId.price}
-                          shopName={shop.name}
-                          planName={shop.planId.name}
-                          onSuccess={() => window.location.reload()}
-                          className="text-xs"
-                        />
-                      )}
                     </div>
                   </td>
                 </motion.tr>

@@ -11,24 +11,29 @@ import AnalyticsProvider from "@/components/AnalyticsProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap',
+  display: 'swap', // Prevent FOIT - show fallback immediately
   preload: true,
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: 'swap',
-  preload: false,
+  preload: false, // Not critical for initial load
+  fallback: ['monospace'],
 });
 
 // Hindi/Devanagari font support
 const notoSansDevanagari = Noto_Sans_Devanagari({
   variable: "--font-noto-devanagari",
   subsets: ["devanagari", "latin"],
-  display: 'swap',
+  display: 'swap', // Prevent FOIT - show fallback immediately
   preload: true,
   weight: ['400', '500', '600', '700'],
+  fallback: ['Arial Unicode MS', 'Mangal', 'Arial', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
 // ✅ FINAL SAFE FIX (Production Grade)
@@ -63,17 +68,52 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-IN" suppressHydrationWarning className="light">
-      {/* ⚡ MOBILE PERFORMANCE: Resource hints for faster loading */}
+      {/* ⚡ ULTRA-FAST LOADING: Critical resource hints and preloads */}
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Critical font preloads */}
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" as="style" />
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" as="style" />
+        
+        {/* DNS prefetch for faster connections */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        
+        {/* Preconnect for critical domains */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* Critical CSS inline to prevent FOUC */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            /* Critical CSS for instant render */
+            html{font-family:system-ui,-apple-system,sans-serif;color-scheme:light}
+            body{margin:0;background:#fafafe;color:#0f0f0f;font-family:var(--font-geist-sans),system-ui,sans-serif}
+            *{box-sizing:border-box}
+            /* Prevent layout shifts */
+            img{max-width:100%;height:auto;display:block}
+            /* Skeleton loader styles */
+            .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+            @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+            /* Prevent jitter */
+            [data-skeleton]{min-height:200px;background:#f0f0f0}
+          `
+        }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSansDevanagari.variable} antialiased`}
-        style={{ background: 'var(--bg)', color: 'var(--text)' }}
+        style={{ 
+          background: 'var(--bg)', 
+          color: 'var(--text)',
+          // Prevent layout shifts
+          minHeight: '100vh',
+          // Smooth scrolling
+          scrollBehavior: 'smooth',
+          // GPU acceleration for smooth animations
+          willChange: 'scroll-position',
+        }}
       >
         {/* Structured Data for Google - Organization Logo */}
         <Script

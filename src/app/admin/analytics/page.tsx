@@ -1107,28 +1107,28 @@ export default function AnalyticsPage() {
 
               {/* Top Cities */}
               <div>
-                <h4 className="text-md font-semibold text-gray-900 mb-3">Top Cities</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {countries.cities.slice(0, 12).map((city, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <div className="font-semibold text-gray-900">{city.city}</div>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Top Cities</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {countries.cities.map((city, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900 text-sm mb-1">{city.city}</div>
                           <div className="text-xs text-gray-500">{city.country}</div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-indigo-600">{city.totalVisits}</div>
-                          <div className="text-xs text-gray-500">visits</div>
-                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <div className="text-gray-500">Visitors</div>
-                          <div className="font-semibold text-gray-900">{city.uniqueVisitors}</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Visitors</span>
+                          <span className="text-sm font-semibold text-gray-900">{city.uniqueVisitors}</span>
                         </div>
-                        <div>
-                          <div className="text-gray-500">Time</div>
-                          <div className="font-semibold text-gray-900">{formatTimeDetailed(city.avgTimeSpent)}</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Time</span>
+                          <span className="text-sm font-semibold text-gray-900">{formatTime(city.avgTimeSpent)}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <span className="text-xs text-gray-500">Visits</span>
+                          <span className="text-base font-bold text-purple-600">{city.totalVisits}</span>
                         </div>
                       </div>
                     </div>

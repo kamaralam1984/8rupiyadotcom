@@ -770,12 +770,12 @@ export default function PaymentManagementPage() {
                             <>
                               <div className="flex items-center gap-2">
                                 <FiCreditCard className="text-blue-600 dark:text-blue-400 text-sm" />
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
                                   {payment.razorpayPaymentId}
-                                </p>
+                          </p>
                               </div>
-                              {payment.razorpayOrderId && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {payment.razorpayOrderId && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                   Order: {payment.razorpayOrderId}
                                 </p>
                               )}
