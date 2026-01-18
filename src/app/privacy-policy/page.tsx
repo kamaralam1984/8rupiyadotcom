@@ -1,8 +1,10 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import Footer from '@/components/common/Footer';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Privacy Policy - 8rupiya.com",
+  description: "Privacy Policy for 8rupiya.com - Learn how we collect, use and protect your data.",
 };
 
 export default function PrivacyPolicy() {
