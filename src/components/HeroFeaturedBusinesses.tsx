@@ -34,10 +34,13 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
   const [featuredShops, setFeaturedShops] = useState<Shop[]>([]);
 
   useEffect(() => {
-    // Get top featured/paid shops and remove duplicates
+    // ⚡ Fix: Filter out invalid shops and get top featured/paid shops
     const seenIds = new Set<string>();
     const featured = shops
       .filter(shop => {
+        // ⚡ Fix: Ensure shop is valid before processing
+        if (!shop || typeof shop !== 'object') return false;
+        
         const shopId = shop._id || shop.place_id || '';
         if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
         if (shopId) seenIds.add(shopId);
@@ -53,17 +56,27 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
       .slice(0, 6);
     
     setFeaturedShops(featured);
+    // ⚡ Fix: Reset index when shops change
+    if (featured.length > 0) {
+      setCurrentIndex(0);
+    }
   }, [shops]);
 
   useEffect(() => {
-    if (featuredShops.length === 0) return;
+    if (featuredShops.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+    
+    // ⚡ Fix: Ensure currentIndex is within bounds
+    setCurrentIndex((prev) => Math.min(prev, featuredShops.length - 1));
     
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % featuredShops.length);
     }, 5000); // Change every 5 seconds
 
     return () => clearInterval(interval);
-  }, [featuredShops.length]);
+  }, [featuredShops.length, featuredShops]);
 
   const nextShop = () => {
     setCurrentIndex((prev) => (prev + 1) % featuredShops.length);
@@ -77,7 +90,14 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
     return null;
   }
 
-  const currentShop = featuredShops[currentIndex];
+  // ⚡ Fix: Ensure currentIndex is within bounds and currentShop exists
+  const safeIndex = Math.max(0, Math.min(currentIndex, featuredShops.length - 1));
+  const currentShop = featuredShops[safeIndex];
+
+  // ⚡ Fix: Double-check currentShop exists before rendering
+  if (!currentShop) {
+    return null;
+  }
 
   return (
     <section className="relative py-12 overflow-hidden">
@@ -104,11 +124,16 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
             >
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
                 <div className="relative h-64 sm:h-80 md:h-96">
-                  {currentShop.images?.[0] || currentShop.photos?.[0] || currentShop.photoUrl ? (
+                  {(currentShop.images && currentShop.images[0]) || (currentShop.photos && currentShop.photos[0]) || currentShop.photoUrl ? (
                     <img
-                      src={currentShop.images?.[0] || currentShop.photos?.[0] || currentShop.photoUrl}
-                      alt={`${currentShop.name || currentShop.shopName} - ${currentShop.category}`}
+                      src={(currentShop.images && currentShop.images[0]) || (currentShop.photos && currentShop.photos[0]) || currentShop.photoUrl || ''}
+                      alt={`${currentShop.name || currentShop.shopName || 'Shop'} - ${currentShop.category || 'Category'}`}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // ⚡ Fix: Handle image load errors gracefully
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
@@ -126,8 +151,8 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
                     </p>
                     <div className="flex items-center gap-2">
                       <FiStar className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-lg font-semibold">{currentShop.rating.toFixed(1)}</span>
-                      <span className="text-sm opacity-90">({currentShop.reviewCount} reviews)</span>
+                      <span className="text-lg font-semibold">{(currentShop.rating || 0).toFixed(1)}</span>
+                      <span className="text-sm opacity-90">({currentShop.reviewCount || 0} reviews)</span>
                     </div>
                   </div>
                 </div>
