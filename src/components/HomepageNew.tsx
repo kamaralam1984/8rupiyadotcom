@@ -97,6 +97,17 @@ function HomepageNewContent() {
   const searchQuery = searchParams?.get('q') || '';
   const categoryFilter = searchParams?.get('category') || '';
 
+  // ⚡ COMPREHENSIVE DUPLICATE FILTERING: Helper function to ensure no duplicate shops
+  const getUniqueShops = (shopList: Shop[]) => {
+    const seenIds = new Set<string>();
+    return shopList.filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+      if (shopId) seenIds.add(shopId);
+      return true;
+    });
+  };
+
   // Fetch user
   useEffect(() => {
     const fetchUser = async () => {
@@ -171,13 +182,15 @@ function HomepageNewContent() {
         const cacheKey = `shops-${location?.lat}-${location?.lng}-${searchQuery}-${categoryFilter}`;
         const cached = sessionStorage.getItem(cacheKey);
         if (cached && !searchQuery && !categoryFilter) {
-          const cachedData = JSON.parse(cached);
-          const now = Date.now();
-          if (now - cachedData.timestamp < 300000) { // 5 minutes cache
-            setShops(cachedData.shops);
-            setLoading(false);
-            // Still fetch fresh data in background
-          }
+            const cachedData = JSON.parse(cached);
+            const now = Date.now();
+            if (now - cachedData.timestamp < 300000) { // 5 minutes cache
+              // ⚡ Ensure cached data is also unique
+              const cachedUniqueShops = getUniqueShops(cachedData.shops || []);
+              setShops(cachedUniqueShops);
+              setLoading(false);
+              // Still fetch fresh data in background
+            }
         } else {
           setLoading(true);
         }
@@ -251,10 +264,14 @@ function HomepageNewContent() {
             website: shop.website,
             description: shop.description,
           }));
-          setShops(mappedShops);
+          
+          // ⚡ Ensure no duplicates in state
+          const finalUniqueShops = getUniqueShops(mappedShops);
+          setShops(finalUniqueShops);
+          
           // Cache the response
           sessionStorage.setItem(cacheKey, JSON.stringify({
-            shops: mappedShops,
+            shops: finalUniqueShops,
             timestamp: Date.now(),
           }));
           
@@ -406,10 +423,14 @@ function HomepageNewContent() {
             website: shop.website,
             description: shop.description,
           }));
-          setFeaturedShops(mappedShops);
+          
+          // ⚡ Ensure no duplicates in featured shops state
+          const finalUniqueFeaturedShops = getUniqueShops(mappedShops);
+          setFeaturedShops(finalUniqueFeaturedShops);
+          
           // Cache the response
           sessionStorage.setItem(cacheKey, JSON.stringify({
-            shops: mappedShops,
+            shops: finalUniqueFeaturedShops,
             timestamp: Date.now(),
           }));
         } else {
@@ -434,24 +455,40 @@ function HomepageNewContent() {
     setUser(null);
   };
 
-  // ⚡ Fix duplicate keys: Filter duplicates before creating derived arrays
-  const getUniqueShops = (shopList: Shop[]) => {
-    const seenIds = new Set<string>();
-    return shopList.filter(shop => {
-      const shopId = shop._id || shop.place_id || '';
-      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
-      if (shopId) seenIds.add(shopId);
-      return true;
-    });
-  };
+  // ⚡ Ensure shops state is always unique (filter on every render)
+  const uniqueShops = getUniqueShops(shops);
+  
+  // ⚡ Ensure featured shops don't overlap with regular shops
+  const featuredShopsIds = new Set(uniqueShops.map(s => s._id || s.place_id || '').filter(Boolean));
+  const uniqueFeaturedShops = getUniqueShops(featuredShops).filter(shop => {
+    const shopId = shop._id || shop.place_id || '';
+    // Exclude featured shops that are already in regular shops list
+    return !shopId || !featuredShopsIds.has(shopId);
+  });
 
-  // Get most rated shops (top 8 by rating)
-  const mostRatedShops = getUniqueShops([...shops])
+  // Get most rated shops (top 8 by rating) - exclude shops already in featured
+  const featuredAndRatedIds = new Set([
+    ...uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean),
+    ...uniqueShops.slice(0, 8).map(s => s._id || s.place_id || '').filter(Boolean)
+  ]);
+  const mostRatedShops = getUniqueShops([...uniqueShops])
+    .filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      return !shopId || !featuredAndRatedIds.has(shopId);
+    })
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 8);
 
-  // Get most reviewed shops (top 8 by review count)
-  const mostReviewedShops = getUniqueShops([...shops])
+  // Get most reviewed shops (top 8 by review count) - exclude shops already shown
+  const allShownIds = new Set([
+    ...featuredAndRatedIds,
+    ...mostRatedShops.map(s => s._id || s.place_id || '').filter(Boolean)
+  ]);
+  const mostReviewedShops = getUniqueShops([...uniqueShops])
+    .filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      return !shopId || !allShownIds.has(shopId);
+    })
     .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 8);
 
@@ -477,7 +514,7 @@ function HomepageNewContent() {
                     : `Shops in ${categoryFilter}`}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {shops.length} {shops.length === 1 ? 'shop found' : 'shops found'}
+                  {uniqueShops.length} {uniqueShops.length === 1 ? 'shop found' : 'shops found'}
                 </p>
               </div>
               <button
@@ -492,7 +529,7 @@ function HomepageNewContent() {
       )}
 
       {/* Show no results message */}
-      {!loading && (searchQuery || categoryFilter) && shops.length === 0 && (
+      {!loading && (searchQuery || categoryFilter) && uniqueShops.length === 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <div className="text-gray-400 dark:text-gray-600 mb-4">
@@ -522,11 +559,11 @@ function HomepageNewContent() {
 
       {/* FeaturedShopsSlider - Featured Shops */}
       {!searchQuery && !categoryFilter && (
-        <FeaturedShopsSlider shops={featuredShops} onShopClick={handleShopClick} />
+        <FeaturedShopsSlider shops={uniqueFeaturedShops} onShopClick={handleShopClick} />
       )}
 
       {/* HeroFeaturedBusinesses - Hero Section */}
-      <HeroFeaturedBusinesses shops={shops} onShopClick={handleShopClick} />
+      <HeroFeaturedBusinesses shops={uniqueShops} onShopClick={handleShopClick} />
 
       {/* AdSlider - Promotional Ads */}
       <AdSlider ads={[]} />
@@ -548,7 +585,7 @@ function HomepageNewContent() {
       />
 
       {/* FlashSpotlight - Limited Offers */}
-      <FlashSpotlight shops={shops} onShopClick={handleShopClick} />
+      <FlashSpotlight shops={uniqueShops} onShopClick={handleShopClick} />
 
       {/* ShopSection - Most Reviewed Shops */}
       <ShopSection
@@ -565,10 +602,10 @@ function HomepageNewContent() {
       {/* <SEOKeywordsSection shops={shops} /> */}
 
       {/* BusinessesGrid - All Listings with Filters */}
-      <BusinessesGrid shops={shops} onShopClick={handleShopClick} />
+      <BusinessesGrid shops={uniqueShops} onShopClick={handleShopClick} />
 
       {/* Dynamic SEO Structured Data */}
-      <SEODynamicContent shops={shops} />
+      <SEODynamicContent shops={uniqueShops} />
 
       {/* FooterMinimal - Footer */}
       <FooterMinimal />
