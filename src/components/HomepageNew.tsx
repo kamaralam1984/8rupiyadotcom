@@ -52,6 +52,7 @@ const ShopPopup = dynamic(() => import('./ShopPopup'), {
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -214,8 +215,18 @@ function HomepageNewContent() {
         const data = await response.json();
 
         if (data.shops && Array.isArray(data.shops)) {
-          const mappedShops = data.shops.map((shop: any) => ({
+          // ⚡ Fix duplicate keys: Filter duplicates by _id/place_id before mapping
+          const seenIds = new Set<string>();
+          const uniqueShops = data.shops.filter((shop: any) => {
+            const shopId = shop._id || shop.place_id || '';
+            if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+            if (shopId) seenIds.add(shopId);
+            return true;
+          });
+          
+          const mappedShops = uniqueShops.map((shop: any) => ({
             _id: shop._id,
+            place_id: shop.place_id,
             name: shop.name || shop.shopName || '',
             shopName: shop.shopName || shop.name || '',
             category: shop.category || '',
@@ -257,8 +268,16 @@ function HomepageNewContent() {
                 const moreResponse = await fetch(`/api/shops/nearby?${moreParams}`);
                 const moreData = await moreResponse.json();
                 if (moreData.shops && moreData.shops.length > 0) {
-                  const moreMappedShops = moreData.shops.map((shop: any) => ({
+                  // ⚡ Fix duplicate keys: Filter duplicates before adding
+                  const existingIds = new Set(shops.map(s => s._id || s.place_id || '').filter(Boolean));
+                  const uniqueMoreShops = moreData.shops.filter((shop: any) => {
+                    const shopId = shop._id || shop.place_id || '';
+                    return shopId && !existingIds.has(shopId);
+                  });
+                  
+                  const moreMappedShops = uniqueMoreShops.map((shop: any) => ({
                     _id: shop._id,
+                    place_id: shop.place_id,
                     name: shop.name || shop.shopName || '',
                     shopName: shop.shopName || shop.name || '',
                     category: shop.category || '',
@@ -283,7 +302,15 @@ function HomepageNewContent() {
                     website: shop.website,
                     description: shop.description,
                   }));
-                  setShops(prev => [...prev, ...moreMappedShops]);
+                  setShops(prev => {
+                    // ⚡ Double-check for duplicates when merging
+                    const prevIds = new Set(prev.map((s: Shop) => s._id || s.place_id || '').filter(Boolean));
+                    const newShops = moreMappedShops.filter((s: Shop) => {
+                      const shopId = s._id || s.place_id || '';
+                      return !shopId || !prevIds.has(shopId);
+                    });
+                    return [...prev, ...newShops];
+                  });
                 }
               } catch (error) {
                 // Silent fail for background loading
@@ -343,8 +370,18 @@ function HomepageNewContent() {
         const data = await response.json();
 
         if (data.shops && Array.isArray(data.shops)) {
-          const mappedShops = data.shops.map((shop: any) => ({
+          // ⚡ Fix duplicate keys: Filter duplicates by _id/place_id before mapping
+          const seenIds = new Set<string>();
+          const uniqueShops = data.shops.filter((shop: any) => {
+            const shopId = shop._id || shop.place_id || '';
+            if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+            if (shopId) seenIds.add(shopId);
+            return true;
+          });
+          
+          const mappedShops = uniqueShops.map((shop: any) => ({
             _id: shop._id,
+            place_id: shop.place_id,
             name: shop.name || shop.shopName || '',
             shopName: shop.shopName || shop.name || '',
             category: shop.category || '',
@@ -397,13 +434,24 @@ function HomepageNewContent() {
     setUser(null);
   };
 
+  // ⚡ Fix duplicate keys: Filter duplicates before creating derived arrays
+  const getUniqueShops = (shopList: Shop[]) => {
+    const seenIds = new Set<string>();
+    return shopList.filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+      if (shopId) seenIds.add(shopId);
+      return true;
+    });
+  };
+
   // Get most rated shops (top 8 by rating)
-  const mostRatedShops = [...shops]
+  const mostRatedShops = getUniqueShops([...shops])
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 8);
 
   // Get most reviewed shops (top 8 by review count)
-  const mostReviewedShops = [...shops]
+  const mostReviewedShops = getUniqueShops([...shops])
     .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 8);
 

@@ -7,6 +7,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -39,8 +40,17 @@ export default function FlashSpotlight({
   const [limitedOffers, setLimitedOffers] = useState<Shop[]>([]);
 
   useEffect(() => {
+    // ⚡ Fix duplicate keys: Remove duplicate shops first
+    const seenIds = new Set<string>();
+    const uniqueShops = shops.filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+      if (shopId) seenIds.add(shopId);
+      return true;
+    });
+    
     // Filter shops with offers or limited time deals
-    const offers = shops
+    const offers = uniqueShops
       .filter(shop => shop.offerText || shop.planType === 'PREMIUM' || shop.isPaid)
       .slice(0, 6);
     setLimitedOffers(offers);
@@ -68,9 +78,15 @@ export default function FlashSpotlight({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {limitedOffers.map((shop, index) => (
+          {limitedOffers.map((shop, index) => {
+            // ⚡ Fix duplicate keys: Create truly unique key
+            const uniqueKey = shop._id 
+              ? `flashspotlight-${shop._id}-${index}` 
+              : `flashspotlight-${shop.place_id || shop.name || 'shop'}-${index}`;
+            
+            return (
             <motion.div
-              key={shop._id || index}
+              key={uniqueKey}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -93,7 +109,8 @@ export default function FlashSpotlight({
                 )}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
