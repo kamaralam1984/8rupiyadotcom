@@ -6,6 +6,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -66,7 +67,15 @@ export default function ShopSection({
   };
 
   useEffect(() => {
-    setSortedShops(sortShops(shops, sortBy));
+    // ⚡ Fix duplicate keys: Remove duplicate shops before sorting
+    const seenIds = new Set<string>();
+    const uniqueShops = shops.filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+      if (shopId) seenIds.add(shopId);
+      return true;
+    });
+    setSortedShops(sortShops(uniqueShops, sortBy));
   }, [shops, sortBy]);
 
   if (shops.length === 0) {
@@ -107,15 +116,22 @@ export default function ShopSection({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {sortedShops.map((shop, index) => (
+          {sortedShops.map((shop, index) => {
+            // ⚡ Fix duplicate keys: Create truly unique key
+            const uniqueKey = shop._id 
+              ? `shopsection-${shop._id}-${index}` 
+              : `shopsection-${shop.place_id || shop.name || 'shop'}-${index}`;
+            
+            return (
             <div
-              key={shop._id || index}
+              key={uniqueKey}
               onClick={() => onShopClick?.(shop)}
               className="cursor-pointer"
             >
               <ShopCard shop={shop} />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

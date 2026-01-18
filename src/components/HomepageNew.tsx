@@ -4,17 +4,47 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import NavbarAirbnb from './NavbarAirbnb';
-import FeaturedShopsSlider from './FeaturedShopsSlider';
-import HeroFeaturedBusinesses from './HeroFeaturedBusinesses';
-import AdSlider from './AdSlider';
-import ShopSection from './ShopSection';
-import FlashSpotlight from './FlashSpotlight';
-import DiscoverSection from './DiscoverSection';
-import BusinessesGrid from './BusinessesGrid';
-import FooterMinimal from './FooterMinimal';
-import SEODynamicContent from './SEODynamicContent';
-import SEOKeywordsSection from './SEOKeywordsSection';
-import NearShop from './NearShop';
+// ⚡ ULTRA-FAST: Lazy load heavy components for faster initial load
+const FeaturedShopsSlider = dynamic(() => import('./FeaturedShopsSlider'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const HeroFeaturedBusinesses = dynamic(() => import('./HeroFeaturedBusinesses'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const AdSlider = dynamic(() => import('./AdSlider'), {
+  ssr: false,
+});
+const ShopSection = dynamic(() => import('./ShopSection'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const FlashSpotlight = dynamic(() => import('./FlashSpotlight'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const DiscoverSection = dynamic(() => import('./DiscoverSection'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const BusinessesGrid = dynamic(() => import('./BusinessesGrid'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
+const FooterMinimal = dynamic(() => import('./FooterMinimal'), {
+  ssr: false,
+});
+const SEODynamicContent = dynamic(() => import('./SEODynamicContent'), {
+  ssr: false,
+});
+const SEOKeywordsSection = dynamic(() => import('./SEOKeywordsSection'), {
+  ssr: false,
+});
+const NearShop = dynamic(() => import('./NearShop'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
+});
 // Dynamic import for ShopPopup
 const ShopPopup = dynamic(() => import('./ShopPopup'), {
   ssr: false,
@@ -94,23 +124,26 @@ function HomepageNewContent() {
     fetchUser();
   }, []);
 
-  // Get user location
+  // ⚡ ULTRA-FAST: Get user location - use default immediately, update in background
   useEffect(() => {
-    // Try to get from localStorage first
+    // ⚡ Set default location immediately (no blocking)
+    const defaultLoc = { lat: 25.5941, lng: 85.1376 };
+    setLocation(defaultLoc);
+    
+    // Try to get from localStorage first (non-blocking)
     const savedLocation = localStorage.getItem('userLocation');
     if (savedLocation) {
       try {
         const parsed = JSON.parse(savedLocation);
         if (parsed.lat && parsed.lng) {
           setLocation(parsed);
-          return;
         }
       } catch (e) {
-        // Invalid saved location, continue to geolocation
+        // Invalid saved location, keep default
       }
     }
 
-    // Try browser geolocation
+    // ⚡ Try browser geolocation in background (non-blocking, no timeout)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -122,26 +155,32 @@ function HomepageNewContent() {
           localStorage.setItem('userLocation', JSON.stringify(loc));
         },
         () => {
-          // Default to Patna if geolocation fails
-          const defaultLoc = { lat: 25.5941, lng: 85.1376 };
-          setLocation(defaultLoc);
-          localStorage.setItem('userLocation', JSON.stringify(defaultLoc));
+          // Keep default location if geolocation fails
         },
-        { timeout: 5000 } // 5 second timeout
+        { timeout: 10000, enableHighAccuracy: false } // Non-blocking, no strict timeout
       );
-    } else {
-      // Default to Patna if geolocation not available
-      const defaultLoc = { lat: 25.5941, lng: 85.1376 };
-      setLocation(defaultLoc);
-      localStorage.setItem('userLocation', JSON.stringify(defaultLoc));
     }
   }, []);
 
-  // Fetch shops
+  // ⚡ ULTRA-FAST: Progressive loading - show initial shops immediately, load more in background
   useEffect(() => {
     const fetchShops = async () => {
       try {
-        setLoading(true);
+        // ⚡ Show cached data immediately if available (instant display)
+        const cacheKey = `shops-${location?.lat}-${location?.lng}-${searchQuery}-${categoryFilter}`;
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached && !searchQuery && !categoryFilter) {
+          const cachedData = JSON.parse(cached);
+          const now = Date.now();
+          if (now - cachedData.timestamp < 300000) { // 5 minutes cache
+            setShops(cachedData.shops);
+            setLoading(false);
+            // Still fetch fresh data in background
+          }
+        } else {
+          setLoading(true);
+        }
+
         const params = new URLSearchParams();
         
         if (location) {
@@ -149,34 +188,24 @@ function HomepageNewContent() {
           params.append('lng', location.lng.toString());
         }
         
-        // Add search query from URL
         if (searchQuery) {
           params.append('shopName', searchQuery);
         }
         
-        // Add category filter from URL
         if (categoryFilter) {
           params.append('category', categoryFilter);
         }
         
-        params.append('limit', '50'); // Get more shops for homepage
+        // ⚡ Progressive loading: Fetch only 20 shops initially for fast response
+        params.append('limit', '20');
         params.append('page', '1');
+        params.append('google', 'false'); // Disable Google for faster response
 
-        // Use cache for faster loading (client-side caching)
-        // Include search query and category in cache key to avoid showing wrong results
-        const cacheKey = `shops-${location?.lat}-${location?.lng}-${searchQuery}-${categoryFilter}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached && !searchQuery && !categoryFilter) { // Only use cache if no search/filter active
-          const cachedData = JSON.parse(cached);
-          const now = Date.now();
-          if (now - cachedData.timestamp < 300000) { // 5 minutes cache
-            setShops(cachedData.shops);
-            setLoading(false);
-            return;
-          }
-        }
-
-        const response = await fetch(`/api/shops/nearby?${params}`);
+        // ⚡ Use fetch with cache control for faster response
+        const response = await fetch(`/api/shops/nearby?${params}`, {
+          cache: 'force-cache', // Aggressive caching
+          next: { revalidate: 60 }, // Revalidate every 60 seconds
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -185,7 +214,6 @@ function HomepageNewContent() {
         const data = await response.json();
 
         if (data.shops && Array.isArray(data.shops)) {
-          // Map API response to component format
           const mappedShops = data.shops.map((shop: any) => ({
             _id: shop._id,
             name: shop.name || shop.shopName || '',
@@ -218,6 +246,50 @@ function HomepageNewContent() {
             shops: mappedShops,
             timestamp: Date.now(),
           }));
+          
+          // ⚡ Load more shops in background (non-blocking)
+          if (!searchQuery && !categoryFilter) {
+            setTimeout(async () => {
+              const moreParams = new URLSearchParams(params);
+              moreParams.set('limit', '30');
+              moreParams.set('page', '2');
+              try {
+                const moreResponse = await fetch(`/api/shops/nearby?${moreParams}`);
+                const moreData = await moreResponse.json();
+                if (moreData.shops && moreData.shops.length > 0) {
+                  const moreMappedShops = moreData.shops.map((shop: any) => ({
+                    _id: shop._id,
+                    name: shop.name || shop.shopName || '',
+                    shopName: shop.shopName || shop.name || '',
+                    category: shop.category || '',
+                    address: shop.address || '',
+                    city: shop.city || '',
+                    area: shop.area || '',
+                    pincode: shop.pincode || '',
+                    images: shop.images || shop.photos || [],
+                    photos: shop.photos || shop.images || [],
+                    photoUrl: shop.images?.[0] || shop.photos?.[0] || shop.photoUrl || '',
+                    rating: shop.rating || 0,
+                    reviewCount: shop.reviewCount || 0,
+                    distance: shop.distance,
+                    isFeatured: shop.isFeatured || false,
+                    isPaid: shop.isPaid || !!shop.planId,
+                    planType: shop.planType || shop.planId?.name || '',
+                    visitorCount: shop.visitorCount || 0,
+                    createdAt: shop.createdAt,
+                    location: shop.location,
+                    phone: shop.phone,
+                    email: shop.email,
+                    website: shop.website,
+                    description: shop.description,
+                  }));
+                  setShops(prev => [...prev, ...moreMappedShops]);
+                }
+              } catch (error) {
+                // Silent fail for background loading
+              }
+            }, 1000); // Load more after 1 second
+          }
         } else {
           setShops([]);
         }
@@ -229,24 +301,15 @@ function HomepageNewContent() {
       }
     };
 
-    // Fetch shops - will work with or without location
+    // ⚡ Fetch shops immediately (location is always set to default)
     fetchShops();
   }, [location, searchQuery, categoryFilter]);
 
-  // Fetch featured shops
+  // ⚡ ULTRA-FAST: Fetch featured shops in parallel (non-blocking)
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const params = new URLSearchParams();
-        
-        if (location) {
-          params.append('lat', location.lat.toString());
-          params.append('lng', location.lng.toString());
-        }
-        params.append('type', 'featured');
-        params.append('google', 'false');
-
-        // Use cache for faster loading (client-side caching)
+        // ⚡ Check cache first
         const cacheKey = `featured-shops-${location?.lat}-${location?.lng}`;
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
@@ -254,12 +317,23 @@ function HomepageNewContent() {
           const now = Date.now();
           if (now - cachedData.timestamp < 300000) { // 5 minutes cache
             setFeaturedShops(cachedData.shops);
-            return;
+            // Still fetch fresh data in background
           }
         }
 
+        const params = new URLSearchParams();
+        
+        if (location) {
+          params.append('lat', location.lat.toString());
+          params.append('lng', location.lng.toString());
+        }
+        params.append('type', 'featured');
+        params.append('google', 'false'); // Disable Google for faster response
+
+        // ⚡ Use aggressive caching
         const response = await fetch(`/api/shops/featured?${params}`, {
-          cache: 'default',
+          cache: 'force-cache',
+          next: { revalidate: 300 }, // Revalidate every 5 minutes
         });
         
         if (!response.ok) {
@@ -269,7 +343,6 @@ function HomepageNewContent() {
         const data = await response.json();
 
         if (data.shops && Array.isArray(data.shops)) {
-          // Map API response to component format
           const mappedShops = data.shops.map((shop: any) => ({
             _id: shop._id,
             name: shop.name || shop.shopName || '',
@@ -311,7 +384,7 @@ function HomepageNewContent() {
       }
     };
 
-    // Fetch featured shops even without location
+    // ⚡ Fetch featured shops in parallel (non-blocking)
     fetchFeatured();
   }, [location]);
 
@@ -334,18 +407,8 @@ function HomepageNewContent() {
     .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 8);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ⚡ ULTRA-FAST: Don't block entire page - show content immediately with loading states
+  // Removed full-page loading spinner for faster perceived performance
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

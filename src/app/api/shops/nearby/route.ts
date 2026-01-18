@@ -138,16 +138,18 @@ export async function GET(req: NextRequest) {
       mongoQuery.category = { $regex: category, $options: 'i' };
     }
 
-    // ⚡ MOBILE OPTIMIZATION: Fetch shops with reduced limit for faster response
+    // ⚡ ULTRA-FAST: Optimized query with selective fields and reduced population
     let mongoShops;
     try {
-      // For initial page load (limit <= 3), fetch only what's needed
-      const fetchLimit = limit <= 3 ? 10 : (hasValidCoords ? 200 : 50); // Reduced for mobile
+      // ⚡ Progressive loading: Fetch only what's needed for initial load
+      const fetchLimit = limit <= 20 ? limit * 2 : (hasValidCoords ? 200 : 50);
+      
+      // ⚡ Optimized query - only select needed fields, minimal population
       mongoShops = await Shop.find(mongoQuery)
-        .populate('planId')
-        .populate('shopperId', 'name email phone')
-        .limit(fetchLimit) // Optimized limit for mobile
-        .lean();
+        .select('name shopName description category address city area state pincode phone email website images photos location status planId isFeatured rating reviewCount visitorCount likeCount createdAt rankScore')
+        .populate('planId', 'name priority') // Only get needed plan fields
+        .limit(fetchLimit)
+        .lean(); // ⚡ Use lean() for 5-10x faster queries
     } catch (error: any) {
       // If $near query fails (no geospatial index), try without it
       if (error.message?.includes('index') || error.message?.includes('near')) {
@@ -155,8 +157,8 @@ export async function GET(req: NextRequest) {
         delete mongoQuery.location;
         // Coordinate filter already in $and, no need to add again
         mongoShops = await Shop.find(mongoQuery)
-          .populate('planId')
-          .populate('shopperId', 'name email phone')
+          .select('name shopName description category address city area state pincode phone email website images photos location status planId isFeatured rating reviewCount visitorCount likeCount createdAt rankScore')
+          .populate('planId', 'name priority')
           .limit(100)
           .lean();
       } else {
@@ -384,10 +386,15 @@ export async function GET(req: NextRequest) {
       },
     };
 
-    // Cache for 5 minutes
+    // ⚡ ULTRA-FAST: Cache for 5 minutes (aggressive caching for homepage)
     await cacheSet(cacheKey, JSON.stringify(result), 300);
 
-    return NextResponse.json(result);
+    // ⚡ Add response headers for browser caching
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error: any) {
     console.error('Nearby shops error:', error);
     console.error('Error stack:', error.stack);

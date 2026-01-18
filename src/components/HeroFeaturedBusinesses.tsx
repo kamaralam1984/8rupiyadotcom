@@ -7,6 +7,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -33,9 +34,15 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
   const [featuredShops, setFeaturedShops] = useState<Shop[]>([]);
 
   useEffect(() => {
-    // Get top featured/paid shops
+    // Get top featured/paid shops and remove duplicates
+    const seenIds = new Set<string>();
     const featured = shops
-      .filter(shop => shop.isFeatured || shop.isPaid || shop.planType === 'FEATURED')
+      .filter(shop => {
+        const shopId = shop._id || shop.place_id || '';
+        if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+        if (shopId) seenIds.add(shopId);
+        return shop.isFeatured || shop.isPaid || shop.planType === 'FEATURED';
+      })
       .sort((a, b) => {
         // Sort by: paid first, then featured, then rating
         if (a.isPaid && !b.isPaid) return -1;
@@ -73,14 +80,13 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
   const currentShop = featuredShops[currentIndex];
 
   return (
-    <section className="relative py-12 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 overflow-hidden">
-      <div className="absolute inset-0 bg-black/20"></div>
+    <section className="relative py-12 overflow-hidden">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-black dark:text-white mb-4">
             Discover Featured Businesses
           </h1>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+          <p className="text-xl text-black dark:text-gray-300 max-w-2xl mx-auto">
             Find the best shops and services in your area
           </p>
         </div>
@@ -88,7 +94,7 @@ export default function HeroFeaturedBusinesses({ shops = [], onShopClick }: Hero
         <div className="relative max-w-4xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentShop._id || currentIndex}
+              key={`hero-${currentShop._id || currentShop.place_id || currentShop.name || currentIndex}-${currentIndex}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}

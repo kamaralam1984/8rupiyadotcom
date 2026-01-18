@@ -7,6 +7,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -46,7 +47,7 @@ export default function NearShop({ userLocation, onShopClick, searchQuery, categ
         console.log('🔍 NearShop: Fetching nearby shops from:', loc);
         
         // Build API URL with search and category filters
-        let apiUrl = `/api/shops/nearby?lat=${loc.lat}&lng=${loc.lng}&limit=200&google=false`;
+        let apiUrl = `/api/shops/nearby?lat=${loc.lat}&lng=${loc.lng}&limit=100&google=false`; // ⚡ Reduced limit for faster response
         
         if (searchQuery) {
           apiUrl += `&q=${encodeURIComponent(searchQuery)}`;
@@ -58,8 +59,11 @@ export default function NearShop({ userLocation, onShopClick, searchQuery, categ
         
         console.log('🔍 NearShop: Fetching with filters:', { searchQuery, categoryFilter });
         
-        // Fetch all nearby shops (20000km range) with optional filters
-        const shopsResponse = await fetch(apiUrl);
+        // ⚡ ULTRA-FAST: Fetch with aggressive caching
+        const shopsResponse = await fetch(apiUrl, {
+          cache: 'force-cache',
+          next: { revalidate: 300 }, // Revalidate every 5 minutes
+        });
         
         if (!shopsResponse.ok) {
           throw new Error(`API error: ${shopsResponse.status}`);
@@ -158,14 +162,26 @@ export default function NearShop({ userLocation, onShopClick, searchQuery, categ
         }
 
         // Convert to array, sort by distance, limit to 20
-        const result = Array.from(categoryMap.entries())
+        // ⚡ Fix duplicate keys: Filter out duplicate shops by _id first
+        const seenShopIds = new Set<string>();
+        const uniqueShops = Array.from(categoryMap.entries())
           .map(([category, shop]) => ({ category, shop }))
+          .filter(({ shop }) => {
+            const shopId = shop._id || shop.place_id || '';
+            if (shopId && seenShopIds.has(shopId)) {
+              return false; // Skip duplicate
+            }
+            if (shopId) seenShopIds.add(shopId);
+            return true;
+          })
           .sort((a, b) => {
             const distA = a.shop.distance !== undefined ? a.shop.distance : 999999;
             const distB = b.shop.distance !== undefined ? b.shop.distance : 999999;
             return distA - distB;
           })
           .slice(0, 20);
+        
+        const result = uniqueShops;
 
         console.log(`✅ NearShop: Displaying ${result.length} shops from different categories:`, 
           result.map(item => `${item.category} (${item.shop.distance?.toFixed(1) || 'N/A'}km)`));
@@ -218,9 +234,15 @@ export default function NearShop({ userLocation, onShopClick, searchQuery, categ
           </div>
         ) : categoryShops.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {categoryShops.map((item, index) => (
+            {categoryShops.map((item, index) => {
+              // ⚡ Fix duplicate keys: Create truly unique key
+              const uniqueKey = item.shop._id 
+                ? `nearshop-${item.shop._id}-${item.category}-${index}` 
+                : `nearshop-${item.category}-${index}-${Date.now()}`;
+              
+              return (
               <motion.div
-                key={item.shop._id || `${item.category}-${index}`}
+                key={uniqueKey}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -236,7 +258,8 @@ export default function NearShop({ userLocation, onShopClick, searchQuery, categ
                   </div>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">

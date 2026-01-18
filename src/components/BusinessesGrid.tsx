@@ -6,6 +6,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -57,7 +58,16 @@ export default function BusinessesGrid({ shops, onShopClick, showFilters = true 
   }, [shops]);
 
   useEffect(() => {
-    let filtered = [...shops];
+    // ⚡ Fix duplicate keys: Remove duplicate shops first
+    const seenIds = new Set<string>();
+    const uniqueShops = shops.filter(shop => {
+      const shopId = shop._id || shop.place_id || '';
+      if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+      if (shopId) seenIds.add(shopId);
+      return true;
+    });
+    
+    let filtered = [...uniqueShops];
 
     // Search filter
     if (searchQuery.trim()) {
@@ -212,15 +222,22 @@ export default function BusinessesGrid({ shops, onShopClick, showFilters = true 
         {/* Shops Grid */}
         {filteredShops.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredShops.map((shop, index) => (
+            {filteredShops.map((shop, index) => {
+              // ⚡ Fix duplicate keys: Create truly unique key
+              const uniqueKey = shop._id 
+                ? `businessgrid-${shop._id}-${index}` 
+                : `businessgrid-${shop.place_id || shop.name || 'shop'}-${index}`;
+              
+              return (
               <div
-                key={shop._id || index}
+                key={uniqueKey}
                 onClick={() => onShopClick?.(shop)}
                 className="cursor-pointer"
               >
                 <ShopCard shop={shop} />
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">

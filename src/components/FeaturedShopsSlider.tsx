@@ -7,6 +7,7 @@ import ShopCard from './ShopCard';
 
 interface Shop {
   _id?: string;
+  place_id?: string; // For Google Places shops
   name: string;
   shopName?: string;
   category: string;
@@ -33,9 +34,17 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
   const [displayShops, setDisplayShops] = useState<Shop[]>([]);
 
   useEffect(() => {
-    // Filter featured shops
-    const featured = shops.filter(shop => shop.isFeatured || shop.planType === 'FEATURED');
-    setDisplayShops(featured.slice(0, 10)); // Limit to 10 shops
+    // Filter featured shops and remove duplicates
+    const seenIds = new Set<string>();
+    const featured = shops
+      .filter(shop => {
+        const shopId = shop._id || shop.place_id || '';
+        if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
+        if (shopId) seenIds.add(shopId);
+        return shop.isFeatured || shop.planType === 'FEATURED';
+      })
+      .slice(0, 10); // Limit to 10 shops
+    setDisplayShops(featured);
   }, [shops]);
 
   const nextSlide = () => {
@@ -94,9 +103,15 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
               width: `${(displayShops.length / Math.min(3, displayShops.length)) * 100}%`,
             }}
           >
-            {displayShops.map((shop, index) => (
+            {displayShops.map((shop, index) => {
+              // ⚡ Fix duplicate keys: Create truly unique key
+              const uniqueKey = shop._id 
+                ? `featured-${shop._id}-${index}` 
+                : `featured-${shop.place_id || shop.name || 'shop'}-${index}`;
+              
+              return (
               <div
-                key={shop._id || index}
+                key={uniqueKey}
                 className="flex-shrink-0"
                 style={{ width: `${100 / displayShops.length}%` }}
               >
@@ -107,7 +122,8 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
                   <ShopCard shop={shop} />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </motion.div>
         </div>
 
