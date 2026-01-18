@@ -5,10 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import NavbarAirbnb from './NavbarAirbnb';
 // ⚡ ULTRA-FAST: Lazy load heavy components for faster initial load
-const FeaturedShopsSlider = dynamic(() => import('./FeaturedShopsSlider'), {
-  ssr: false,
-  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
-});
 const HeroFeaturedBusinesses = dynamic(() => import('./HeroFeaturedBusinesses'), {
   ssr: false,
   loading: () => <div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg" />,
@@ -86,7 +82,6 @@ function HomepageNewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [shops, setShops] = useState<Shop[]>([]);
-  const [featuredShops, setFeaturedShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
@@ -349,102 +344,6 @@ function HomepageNewContent() {
     fetchShops();
   }, [location, searchQuery, categoryFilter]);
 
-  // ⚡ ULTRA-FAST: Fetch featured shops in parallel (non-blocking)
-  useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        // ⚡ Check cache first
-        const cacheKey = `featured-shops-${location?.lat}-${location?.lng}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          const now = Date.now();
-          if (now - cachedData.timestamp < 300000) { // 5 minutes cache
-            setFeaturedShops(cachedData.shops);
-            // Still fetch fresh data in background
-          }
-        }
-
-        const params = new URLSearchParams();
-        
-        if (location) {
-          params.append('lat', location.lat.toString());
-          params.append('lng', location.lng.toString());
-        }
-        params.append('type', 'featured');
-        params.append('google', 'false'); // Disable Google for faster response
-
-        // ⚡ Use aggressive caching
-        const response = await fetch(`/api/shops/featured?${params}`, {
-          cache: 'force-cache',
-          next: { revalidate: 300 }, // Revalidate every 5 minutes
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-
-        if (data.shops && Array.isArray(data.shops)) {
-          // ⚡ Fix duplicate keys: Filter duplicates by _id/place_id before mapping
-          const seenIds = new Set<string>();
-          const uniqueShops = data.shops.filter((shop: any) => {
-            const shopId = shop._id || shop.place_id || '';
-            if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
-            if (shopId) seenIds.add(shopId);
-            return true;
-          });
-          
-          const mappedShops = uniqueShops.map((shop: any) => ({
-            _id: shop._id,
-            place_id: shop.place_id,
-            name: shop.name || shop.shopName || '',
-            shopName: shop.shopName || shop.name || '',
-            category: shop.category || '',
-            address: shop.address || '',
-            city: shop.city || '',
-            area: shop.area || '',
-            pincode: shop.pincode || '',
-            images: shop.images || shop.photos || [],
-            photos: shop.photos || shop.images || [],
-            photoUrl: shop.images?.[0] || shop.photos?.[0] || shop.photoUrl || '',
-            rating: shop.rating || 0,
-            reviewCount: shop.reviewCount || 0,
-            distance: shop.distance,
-            isFeatured: shop.isFeatured || false,
-            isPaid: shop.isPaid || !!shop.planId,
-            planType: shop.planType || shop.planId?.name || '',
-            visitorCount: shop.visitorCount || 0,
-            createdAt: shop.createdAt,
-            location: shop.location,
-            phone: shop.phone,
-            email: shop.email,
-            website: shop.website,
-            description: shop.description,
-          }));
-          
-          // ⚡ Ensure no duplicates in featured shops state
-          const finalUniqueFeaturedShops = getUniqueShops(mappedShops);
-          setFeaturedShops(finalUniqueFeaturedShops);
-          
-          // Cache the response
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            shops: finalUniqueFeaturedShops,
-            timestamp: Date.now(),
-          }));
-        } else {
-          setFeaturedShops([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch featured shops:', error);
-        setFeaturedShops([]);
-      }
-    };
-
-    // ⚡ Fetch featured shops in parallel (non-blocking)
-    fetchFeatured();
-  }, [location]);
 
   const handleShopClick = (shop: Shop) => {
     setSelectedShop(shop);
@@ -458,39 +357,10 @@ function HomepageNewContent() {
   // ⚡ Ensure shops state is always unique (filter on every render)
   const uniqueShops = getUniqueShops(shops);
   
-  // ⚡ Ensure featured shops don't overlap with regular shops
-  const featuredShopsIds = new Set(uniqueShops.map(s => s._id || s.place_id || '').filter(Boolean));
-  let uniqueFeaturedShops = getUniqueShops(featuredShops).filter(shop => {
-    const shopId = shop._id || shop.place_id || '';
-    // Exclude featured shops that are already in regular shops list
-    return !shopId || !featuredShopsIds.has(shopId);
-  });
-  
-  // ⚡ Ensure at least 3 shops for FeaturedShopsSlider - add top-rated/paid shops if needed
-  if (uniqueFeaturedShops.length < 3 && uniqueShops.length > 0) {
-    const existingFeaturedIds = new Set(uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean));
-    const additionalShops = uniqueShops
-      .filter(shop => {
-        const shopId = shop._id || shop.place_id || '';
-        return shopId && !existingFeaturedIds.has(shopId) && !featuredShopsIds.has(shopId);
-      })
-      .sort((a, b) => {
-        // Sort by: paid first, then rating
-        if (a.isPaid && !b.isPaid) return -1;
-        if (!a.isPaid && b.isPaid) return 1;
-        return (b.rating || 0) - (a.rating || 0);
-      })
-      .slice(0, 3 - uniqueFeaturedShops.length);
-    
-    uniqueFeaturedShops = [...uniqueFeaturedShops, ...additionalShops];
-  }
-  
-  // Get most rated shops (top 8 by rating) - exclude shops already in featured
-  const finalFeaturedIds = new Set(uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean));
-  const featuredAndRatedIds = new Set([
-    ...finalFeaturedIds,
-    ...uniqueShops.slice(0, 8).map(s => s._id || s.place_id || '').filter(Boolean)
-  ]);
+  // Get most rated shops (top 8 by rating)
+  const featuredAndRatedIds = new Set(
+    uniqueShops.slice(0, 8).map(s => s._id || s.place_id || '').filter(Boolean)
+  );
   const mostRatedShops = getUniqueShops([...uniqueShops])
     .filter(shop => {
       const shopId = shop._id || shop.place_id || '';
@@ -575,11 +445,6 @@ function HomepageNewContent() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* FeaturedShopsSlider - Featured Shops */}
-      {!searchQuery && !categoryFilter && (
-        <FeaturedShopsSlider shops={uniqueFeaturedShops} onShopClick={handleShopClick} />
       )}
 
       {/* HeroFeaturedBusinesses - Hero Section */}
