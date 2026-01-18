@@ -460,15 +460,35 @@ function HomepageNewContent() {
   
   // ⚡ Ensure featured shops don't overlap with regular shops
   const featuredShopsIds = new Set(uniqueShops.map(s => s._id || s.place_id || '').filter(Boolean));
-  const uniqueFeaturedShops = getUniqueShops(featuredShops).filter(shop => {
+  let uniqueFeaturedShops = getUniqueShops(featuredShops).filter(shop => {
     const shopId = shop._id || shop.place_id || '';
     // Exclude featured shops that are already in regular shops list
     return !shopId || !featuredShopsIds.has(shopId);
   });
-
+  
+  // ⚡ Ensure at least 3 shops for FeaturedShopsSlider - add top-rated/paid shops if needed
+  if (uniqueFeaturedShops.length < 3 && uniqueShops.length > 0) {
+    const existingFeaturedIds = new Set(uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean));
+    const additionalShops = uniqueShops
+      .filter(shop => {
+        const shopId = shop._id || shop.place_id || '';
+        return shopId && !existingFeaturedIds.has(shopId) && !featuredShopsIds.has(shopId);
+      })
+      .sort((a, b) => {
+        // Sort by: paid first, then rating
+        if (a.isPaid && !b.isPaid) return -1;
+        if (!a.isPaid && b.isPaid) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      })
+      .slice(0, 3 - uniqueFeaturedShops.length);
+    
+    uniqueFeaturedShops = [...uniqueFeaturedShops, ...additionalShops];
+  }
+  
   // Get most rated shops (top 8 by rating) - exclude shops already in featured
+  const finalFeaturedIds = new Set(uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean));
   const featuredAndRatedIds = new Set([
-    ...uniqueFeaturedShops.map(s => s._id || s.place_id || '').filter(Boolean),
+    ...finalFeaturedIds,
     ...uniqueShops.slice(0, 8).map(s => s._id || s.place_id || '').filter(Boolean)
   ]);
   const mostRatedShops = getUniqueShops([...uniqueShops])

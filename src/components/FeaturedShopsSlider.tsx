@@ -36,7 +36,7 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
   useEffect(() => {
     // Filter featured shops and remove duplicates
     const seenIds = new Set<string>();
-    const featured = shops
+    let featured = shops
       .filter(shop => {
         const shopId = shop._id || shop.place_id || '';
         if (shopId && seenIds.has(shopId)) return false; // Skip duplicate
@@ -44,6 +44,30 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
         return shop.isFeatured || shop.planType === 'FEATURED';
       })
       .slice(0, 10); // Limit to 10 shops
+    
+    // ⚡ Ensure at least 3 shops are displayed - fallback to top-rated/paid shops if needed
+    if (featured.length < 3) {
+      const remainingIds = new Set(featured.map(s => s._id || s.place_id || '').filter(Boolean));
+      
+      // Get additional shops: paid shops first, then top-rated shops
+      const additionalShops = shops
+        .filter(shop => {
+          const shopId = shop._id || shop.place_id || '';
+          if (!shopId || remainingIds.has(shopId) || seenIds.has(shopId)) return false;
+          seenIds.add(shopId);
+          return true;
+        })
+        .sort((a, b) => {
+          // Sort by: paid first, then rating
+          if (a.isPaid && !b.isPaid) return -1;
+          if (!a.isPaid && b.isPaid) return 1;
+          return (b.rating || 0) - (a.rating || 0);
+        })
+        .slice(0, 3 - featured.length); // Get enough to make 3 total
+      
+      featured = [...featured, ...additionalShops].slice(0, 10);
+    }
+    
     setDisplayShops(featured);
   }, [shops]);
 
@@ -55,7 +79,8 @@ export default function FeaturedShopsSlider({ shops = [], onShopClick }: Feature
     setCurrentIndex((prev) => (prev - 1 + Math.max(1, displayShops.length - 2)) % Math.max(1, displayShops.length - 2));
   };
 
-  if (displayShops.length === 0) {
+  // ⚡ Always show section if we have at least 3 shops
+  if (displayShops.length < 3) {
     return null;
   }
 
