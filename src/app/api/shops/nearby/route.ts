@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
             type: 'Point',
             coordinates: [lng, lat],
           },
-          $maxDistance: 1000000, // 1000km radius in meters
+          $maxDistance: 20000000, // 20000km radius in meters
         },
       };
     } else if (city && !shopName) {

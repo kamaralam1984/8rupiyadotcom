@@ -14,6 +14,7 @@ import BusinessesGrid from './BusinessesGrid';
 import FooterMinimal from './FooterMinimal';
 import SEODynamicContent from './SEODynamicContent';
 import SEOKeywordsSection from './SEOKeywordsSection';
+import NearShop from './NearShop';
 // Dynamic import for ShopPopup
 const ShopPopup = dynamic(() => import('./ShopPopup'), {
   ssr: false,
@@ -418,6 +419,14 @@ function HomepageNewContent() {
 
       {/* AdSlider - Promotional Ads */}
       <AdSlider ads={[]} />
+
+      {/* NearShop - Shops from 20 different categories nearby */}
+      <NearShop 
+        userLocation={location} 
+        onShopClick={handleShopClick}
+        searchQuery={searchQuery}
+        categoryFilter={categoryFilter}
+      />
 
       {/* ShopSection - Most Rated Shops */}
       <ShopSection
