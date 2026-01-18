@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
     const lng = lngParam ? parseFloat(lngParam) : null;
     const city = searchParams.get('city') || '';
     const category = searchParams.get('category') || '';
+    const shopName = searchParams.get('shopName') || searchParams.get('q') || '';
     const limit = parseInt(searchParams.get('limit') || '20');
     const page = parseInt(searchParams.get('page') || '1');
     const skip = (page - 1) * limit;
@@ -70,8 +71,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Create cache key
-    const cacheKey = `shops:nearby:${lat}:${lng}:${city}:${category}:${page}:${limit}:${useGoogle}`;
+    // Create cache key (include shopName for search queries)
+    const cacheKey = `shops:nearby:${lat}:${lng}:${city}:${category}:${shopName}:${page}:${limit}:${useGoogle}`;
 
     // Try to get from cache
     const cached = await cacheGet(cacheKey);
@@ -102,6 +103,21 @@ export async function GET(req: NextRequest) {
       ],
     };
 
+    // Search by shop name (supports both 'name' and 'shopName' fields)
+    // Add this before location query to avoid conflicts
+    if (shopName) {
+      mongoQuery.$and.push({
+        $or: [
+          { name: { $regex: shopName, $options: 'i' } },
+          { shopName: { $regex: shopName, $options: 'i' } },
+          { description: { $regex: shopName, $options: 'i' } },
+          { category: { $regex: shopName, $options: 'i' } },
+          { address: { $regex: shopName, $options: 'i' } },
+          { city: { $regex: shopName, $options: 'i' } },
+        ],
+      });
+    }
+
     // If we have valid coordinates, try to use $near (requires geospatial index)
     if (hasValidCoords) {
       mongoQuery.location = {
@@ -113,8 +129,8 @@ export async function GET(req: NextRequest) {
           $maxDistance: 1000000, // 1000km radius in meters
         },
       };
-    } else if (city) {
-      // If no location, filter by city
+    } else if (city && !shopName) {
+      // If no location and no shop name search, filter by city
       mongoQuery.city = { $regex: city, $options: 'i' };
     }
 

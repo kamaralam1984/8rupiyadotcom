@@ -27,7 +27,7 @@ export default function Contact() {
               <span className="text-2xl">📧</span>
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">Email</p>
-                <a href="mailto:support@8rupiya.com" className="text-blue-600 dark:text-blue-400 hover:underline">support@8rupiya.com</a>
+                <a href="mailto:support@8rupiya.com" className="text-blue-600 dark:text-blue-400 hover:underline">8rupiya@gmail.com</a>
               </div>
             </div>
             <div className="flex items-center gap-3">

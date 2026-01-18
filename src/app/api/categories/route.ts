@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 
     const searchParams = req.nextUrl.searchParams;
     const getAllCategories = searchParams.get('all') === 'true';
+    const withCounts = searchParams.get('withCounts') === 'true';
 
     // If all=true, return all active categories (for admin/agent panels)
     if (getAllCategories) {
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
       }));
 
     // Combine found categories and missing categories
-    const allCategories = [
+    let allCategories = [
       ...categories.map(cat => ({
         _id: cat._id.toString(),
         name: cat.name,
@@ -94,6 +95,46 @@ export async function GET(req: NextRequest) {
       }
       return a.name.localeCompare(b.name);
     });
+
+    // If withCounts=true, add shop counts for each category
+    if (withCounts) {
+      const categoriesWithCounts = await Promise.all(
+        allCategories.map(async (cat) => {
+          try {
+            const shopCount = await Shop.countDocuments({
+              status: { $in: [ShopStatus.ACTIVE, ShopStatus.APPROVED] },
+              category: { $regex: `^${cat.name}$`, $options: 'i' },
+            });
+            return {
+              ...cat,
+              shopCount,
+            };
+          } catch (err) {
+            console.error(`Error counting shops for category ${cat.name}:`, err);
+            return {
+              ...cat,
+              shopCount: 0,
+            };
+          }
+        })
+      );
+
+      // Sort by shopCount (descending) if counts are available
+      allCategories = categoriesWithCounts.sort((a, b) => {
+        // First by displayOrder
+        if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+          if (a.displayOrder !== b.displayOrder) {
+            return a.displayOrder - b.displayOrder;
+          }
+        }
+        // Then by shopCount (descending)
+        if ((b.shopCount || 0) !== (a.shopCount || 0)) {
+          return (b.shopCount || 0) - (a.shopCount || 0);
+        }
+        // Finally by name
+        return a.name.localeCompare(b.name);
+      });
+    }
 
     return NextResponse.json({
       success: true,

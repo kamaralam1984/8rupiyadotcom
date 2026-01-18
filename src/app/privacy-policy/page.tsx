@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Contact</h2>
-          <p className="text-lg">Email: <a href="mailto:support@8rupiya.com" className="text-blue-600 dark:text-blue-400 hover:underline">support@8rupiya.com</a></p>
+          <p className="text-lg">Email: <a href="mailto:support@8rupiya.com" className="text-blue-600 dark:text-blue-400 hover:underline">8rupiya@gmail.com</a></p>
         </div>
       </div>
 

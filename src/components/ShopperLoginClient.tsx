@@ -192,8 +192,21 @@ export default function ShopperLoginClient() {
               </motion.button>
             </form>
 
-            {/* Back to Homepage */}
+            {/* Signup Link */}
             <div className="mt-6 text-center">
+              <p className="text-emerald-200 text-sm mb-2">
+                Don't have a shopper account?
+              </p>
+              <Link 
+                href="/add-shop" 
+                className="inline-block text-emerald-300 hover:text-emerald-200 font-semibold transition-colors text-sm underline"
+              >
+                Create Shopper Account
+              </Link>
+            </div>
+
+            {/* Back to Homepage */}
+            <div className="mt-4 text-center">
               <Link 
                 href="/" 
                 className="text-emerald-300 hover:text-emerald-200 font-medium transition-colors text-sm"

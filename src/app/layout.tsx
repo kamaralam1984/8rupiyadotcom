@@ -145,17 +145,41 @@ export default function RootLayout({
         <Script
           id="website-schema"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: '8rupiya.com',
               url: 'https://8rupiya.com',
+              description: 'India\'s #1 local business directory. Find shops near me, local businesses, business directory, shop finder, and more.',
               potentialAction: {
                 '@type': 'SearchAction',
                 target: 'https://8rupiya.com/search?q={search_term_string}',
                 'query-input': 'required name=search_term_string',
               },
+              keywords: 'shops near me, local businesses, find shops, business directory, India shops, local shops, nearby shops, shop finder, local business directory, business listings, shop directory, local services, find businesses, shop search, business search',
+            }),
+          }}
+        />
+        
+        {/* BreadcrumbList Schema for Homepage */}
+        <Script
+          id="breadcrumb-schema"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Home',
+                  item: 'https://8rupiya.com',
+                },
+              ],
             }),
           }}
         />
